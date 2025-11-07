@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -32,9 +32,9 @@ const Navbar = () => {
                     <span className="logo">वडा पोर्टल</span>
                 </div>
                 <div className="navbar-center">
-                    <a href="#home" className="nav-link active">home</a>
-                    <a href="#about" className="nav-link">about</a>
-                    <a href="#contact" className="nav-link">contact</a>
+                    <a href="#home" className="nav-link active">Home</a>
+                    <a href="#about" className="nav-link">About</a>
+                    <a href="#contact" className="nav-link">Contact</a>
                 </div>
                 <div className="navbar-right">
                     <div className="language-selector">
