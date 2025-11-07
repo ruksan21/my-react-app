@@ -46,13 +46,12 @@ const Navbar = () => {
                     </div>
                     <button className="login-btn">login</button>
                 </div>
-            </nav>
-
+            </nav> 
             {/* Main Content */}
             <main className="main-content">
                 {/* Hero Section */}
                 <section className="hero">
-                    <img src="https://via.placeholder.com/1920x600?text=Mountain+Background" alt="Hero" />
+                    <img src="" alt="Hero" />
                     <div className="hero-overlay">
                         <h1>Ward Chairperson</h1>
                         <p>View your Ward Chairperson details</p>
