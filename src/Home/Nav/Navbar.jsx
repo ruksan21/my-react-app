@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './Navbar.css';
+import HeroImage from '../../Image/Home.png';
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -51,7 +52,7 @@ const Navbar = () => {
             <main className="main-content">
                 {/* Hero Section */}
                 <section className="hero">
-                    <img src="" alt="Hero" />
+                    <img src={HeroImage} alt="Hero" />
                     <div className="hero-overlay">
                         <h1>Ward Chairperson</h1>
                         <p>View your Ward Chairperson details</p>
@@ -61,6 +62,7 @@ const Navbar = () => {
 
                 {/* Dropdown Button */}
                 <div className="dropdown-container">
+                    <search className="search-bar"></search>
                     <button className="dropdown-btn" onClick={toggleDropdown}>
                         <span>📍 {selectedMuni}</span>
                         <span className="arrow">▲</span>
