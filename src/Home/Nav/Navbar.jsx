@@ -2,30 +2,11 @@ import { useState } from 'react';
 import './Navbar.css';
 import HeroImage from '../../Image/Home.png';
 import Profile from '../Profile/profile.jsx';
+import WardSelector from '../Component/wadaselector.jsx';
 
 const Navbar = () => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedMuni, setSelectedMuni] = useState("Kathmandu Metropolitan City - wardNumber 1");
-
-    // Municipality List
-    const municipalities = [
-        "Kathmandu Metropolitan City - wardNumber 1",
-        "Lalitpur Metropolitan City - wardNumber 29",
-        "Bhaktapur Municipality - wardNumber 10",
-        "Kirtipur Municipality - wardNumber 5",
-        "Tokha Municipality - wardNumber 7",
-        "Chandragiri Municipality - wardNumber 3",
-    ];
-
-    const toggleDropdown = () => {
-        setIsOpen(!isOpen);
-    };
-
-    const selectOption = (option) => {
-        setSelectedMuni(option);
-        setIsOpen(false);
-    };
-
+    const [selectedMuni, setSelectedMuni] = useState('Select Municipality');
+    
     return (
         <div className="app">
             {/* Top Navigation Bar */}
@@ -39,25 +20,8 @@ const Navbar = () => {
                     <a href="#contact" className="nav-link">Contact</a>
                 </div>
                  {/* Dropdown Button */}
-                <div className="dropdown-container">
-                    <search className="search-bar"></search>
-                    <button className="dropdown-btn" onClick={toggleDropdown}>
-                        <span>📍 {selectedMuni}</span>
-                        <span className="arrow">▲</span>
-                    </button>
-                    {isOpen && (
-                        <ul className="dropdown-list">
-                            {municipalities.map((muni, index) => (
-                                <li
-                                    key={index}
-                                    className="dropdown-item"
-                                    onClick={() => selectOption(muni)}
-                                >
-                                    {muni}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                <div className="navbar-center">
+                    <WardSelector onWardSelect={(muni, ward) => setSelectedMuni(`${muni} - Ward ${ward}`)} />
                 </div>
                 <div className="navbar-right">
                     <div className="language-selector">
