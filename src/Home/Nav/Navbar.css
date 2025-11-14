@@ -82,7 +82,7 @@
   background-color: #003f87;
 }
 
-/* Hero Section */
+
 .hero {
   position: relative;
   height: 400px;
@@ -127,7 +127,6 @@
   font-size: 1rem;
 }
 
-/* Dropdown */
 .dropdown-container {
   position: relative;
   margin: 20px auto;
@@ -192,7 +191,7 @@
   background-color: #f0f8ff;
 }
 
-/* Stats Section */
+
 .stats-section {
   display: flex;
   justify-content: center;
@@ -231,7 +230,7 @@
   font-size: 14px;
 }
 
-/* Responsive */
+
 @media (max-width: 768px) {
   .navbar {
     flex-direction: column;
