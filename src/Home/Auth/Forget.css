@@ -1,0 +1,136 @@
+.login-root {
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f4f4f4;
+}
+
+.success-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  display: none;
+}
+
+.success-notification.show {
+  display: block;
+}
+
+.error-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #ef4444;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  display: none;
+}
+
+.error-notification.show {
+  display: block;
+}
+
+.login-container {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #333;
+}
+
+.login-header p {
+  margin: 5px 0 20px;
+  color: #666;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px;
+}
+
+.input-wrapper i {
+  margin-right: 10px;
+  color: #888;
+}
+
+.form-control {
+  border: none;
+  outline: none;
+  flex: 1;
+}
+
+.form-control.error {
+  border-color: red;
+}
+
+.error-message {
+  color: red;
+  font-size: 12px;
+  display: none;
+}
+
+.error-message.show {
+  display: block;
+}
+
+.btn-login {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.btn-login:hover {
+  background-color: #0056b3;
+}
+
+.forgot-password {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.forgot-password a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.forgot-password a:hover {
+  text-decoration: underline;
+}
+
+.copyright {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+}
