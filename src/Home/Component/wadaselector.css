@@ -1,9 +1,11 @@
 /* Main Container */
 .ward-selector-container {
   position: relative;
-  width: 345px;
-  
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 100%;
+  max-width: 345px;
+  min-width: 280px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 /* Main Button */
@@ -68,7 +70,7 @@
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #ffffff;
+  color: #6b7280;
   font-style: normal;
 }
 
@@ -80,6 +82,7 @@
   font-size: 15px;
   box-sizing: border-box;
 }
+
 .search-input:focus {
   outline: none;
   border-color: #2563eb;
@@ -139,6 +142,7 @@
 .ward-grid-view {
   padding: 8px;
 }
+
 .back-button {
   background: none;
   border: none;
@@ -148,12 +152,14 @@
   margin-bottom: 12px;
   font-weight: 500;
 }
+
 .selected-municipality-title {
   font-size: 16px;
   font-weight: 600;
   text-align: center;
   margin-bottom: 16px;
 }
+
 .ward-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));

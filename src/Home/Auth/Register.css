@@ -12,7 +12,11 @@
 .login-container {
   width: 100%;
   max-width: 800px;
-  background-color: #ffffff;
+  /* Glassmorphism Effect */
+  background: rgba(255, 255, 255, 0.85); /* High opacity for readability */
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   padding: 40px;
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -78,13 +82,12 @@ label {
   font-size: 0.9rem;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: rgba(249, 249, 249, 0.8); /* Slightly transparent input */
   transition: all 0.2s ease;
   font-family: inherit;
 }
 
-/* Adjust padding if no icon is expected (though we use icons mostly) */
-/* We can add a class for no-icon inputs if needed, but for now standardizing is fine */
+/* Adjust padding if no icon is expected */
 input[type="text"].form-control:not(.input-wrapper input),
 input[type="date"].form-control:not(.input-wrapper input) {
   padding-left: 14px;

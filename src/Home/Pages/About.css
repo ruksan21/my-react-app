@@ -1,0 +1,275 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Navbar Styles */
+.about-navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 15px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.about-navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.about-navbar-logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #111827;
+}
+
+.about-navbar-links {
+  display: flex;
+  gap: 20px;
+}
+
+.about-nav-link {
+  text-decoration: none;
+  color: #374151;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.about-nav-link:hover {
+  color: #3b82f6;
+}
+
+.about-nav-link.active {
+  color: #3b82f6;
+}
+
+.about-login-btn {
+  padding: 8px 20px;
+  background: #3b82f6;
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.3s ease;
+}
+
+.about-login-btn:hover {
+  background: #2563eb;
+}
+
+.about-container {
+  min-height: 100vh;
+  width: 100%;
+  background-color: #f9fafb;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.about-hero {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+    url("../../Image/Home.png");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.about-hero-content {
+  text-align: center;
+  max-width: 700px;
+  padding: 20px;
+}
+
+.about-hero-content h1 {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+.about-hero-content p {
+  font-size: 24px;
+  opacity: 0.9;
+}
+
+.about-content {
+  width: 100%;
+  margin: 0 auto;
+  padding: 80px 20px;
+  flex: 1;
+}
+
+/* Add a container inside for max-width if needed */
+.mission-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 80px;
+  gap: 40px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mission-text {
+  flex: 1;
+  min-width: 280px;
+}
+
+.mission-text h2 {
+  font-size: 36px;
+  color: #111827;
+  margin-bottom: 20px;
+}
+
+.mission-text p {
+  color: #374151;
+  line-height: 1.8;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.mission-image {
+  flex: 1;
+  min-width: 280px;
+}
+
+.mission-image img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.features-section {
+  text-align: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.features-section h2 {
+  font-size: 36px;
+  margin-bottom: 50px;
+  color: #111827;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 30px;
+  width: 100%;
+}
+
+.feature-card {
+  background: white;
+  border-radius: 12px;
+  padding: 35px 25px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+}
+
+.feature-card i {
+  font-size: 40px;
+  margin-bottom: 20px;
+}
+
+.feature-card h3 {
+  font-size: 22px;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.feature-card p {
+  color: #6b7280;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .about-hero {
+    height: 300px;
+  }
+
+  .about-hero-content h1 {
+    font-size: 32px;
+  }
+
+  .about-hero-content p {
+    font-size: 18px;
+  }
+
+  .about-content {
+    padding: 50px 15px;
+  }
+
+  .mission-section {
+    gap: 25px;
+    margin-bottom: 50px;
+  }
+
+  .mission-text h2,
+  .features-section h2 {
+    font-size: 28px;
+  }
+
+  .mission-image img {
+    height: 300px;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-hero {
+    height: 250px;
+  }
+
+  .about-hero-content h1 {
+    font-size: 24px;
+  }
+
+  .about-hero-content p {
+    font-size: 16px;
+  }
+
+  .about-content {
+    padding: 30px 12px;
+  }
+
+  .mission-text h2,
+  .features-section h2 {
+    font-size: 24px;
+  }
+
+  .mission-section {
+    flex-direction: column;
+  }
+
+  .mission-image img {
+    height: 250px;
+  }
+}
