@@ -126,6 +126,34 @@
   font-weight: 600;
 }
 
+.role-restricted-message {
+  background: #f8fafc;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.role-restricted-message p {
+  margin: 0;
+  color: #475569;
+  font-size: 16px;
+}
+
+.role-restricted-message .sub-text {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.info-icon {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
 .comment-form {
   background: var(--card-bg);
   padding: 25px;
@@ -194,7 +222,6 @@
   color: #e0e0e0;
   cursor: pointer;
   transition: all 0.2s ease;
- 
 }
 
 .star.filled {
@@ -290,7 +317,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Comments List */

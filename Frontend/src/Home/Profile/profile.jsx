@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./profile.css";
 import Works from "./works";
 import jsPDF from "jspdf";
@@ -55,14 +55,36 @@ const StarRating = ({ rating, reviews }) => {
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("Details");
-  const [followers, setFollowers] = useState(profileData.followers);
+  const [followers, setFollowers] = useState(0);
+  const [rating, setRating] = useState(0);
+  const [reviews, setReviews] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
+
+  useEffect(() => {
+    // Fetch real stats from backend
+    fetch("http://127.0.0.1/my-react-app/Backend/api/get_profile_stats.php")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setFollowers(data.followers);
+          setRating(data.rating);
+          setReviews(data.reviews);
+        }
+      })
+      .catch((err) => console.error("Error fetching stats:", err));
+  }, []);
 
   const handleFollow = () => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
-    if (!isLoggedIn) {
-      // Show a more user-friendly message - could be replaced with a notification system
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!isLoggedIn || !user) {
       console.log("Please login to follow!");
+      return;
+    }
+
+    if (user.role !== "citizen") {
+      alert("Only citizens can follow officers.");
       return;
     }
 
@@ -254,10 +276,7 @@ const Profile = () => {
           </div>
         </div>
         <div className="profile-header-right">
-          <StarRating
-            rating={profileData.rating}
-            reviews={profileData.reviews}
-          />
+          <StarRating rating={rating} reviews={reviews} />
           <div className="followers-section">
             <span>&#128100; {followers} followers</span>
             <button

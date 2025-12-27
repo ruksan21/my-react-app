@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import OfficerLayout from "./OfficerLayout";
 import "../Home/Pages/Works.css";
 import "./OfficerWorks.css";
@@ -32,7 +32,11 @@ const WorkCard = ({ work, onEdit, onDelete }) => {
 
       <div className="work-image-container">
         <img
-          src={work.image}
+          src={
+            work.image
+              ? `http://127.0.0.1/my-react-app/Backend/api/${work.image}`
+              : "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=800&q=80"
+          }
           alt={work.title}
           className="work-image"
           onError={(e) => {
@@ -45,15 +49,17 @@ const WorkCard = ({ work, onEdit, onDelete }) => {
       <div className="work-stats-grid">
         <div className="stat-item">
           <label>Start Date</label>
-          <div>{work.startDate}</div>
+          <div>{work.start_date || work.startDate || "N/A"}</div>
         </div>
         <div className="stat-item">
           <label>End Date</label>
-          <div>{work.endDate}</div>
+          <div>{work.end_date || work.endDate || "N/A"}</div>
         </div>
         <div className="stat-item">
           <label>Budget</label>
-          <div>Rs. {work.budget}</div>
+          <div>
+            {work.budget.startsWith("Rs.") ? work.budget : `Rs. ${work.budget}`}
+          </div>
         </div>
         <div className="stat-item">
           <label>Beneficiaries</label>
@@ -70,42 +76,26 @@ const WorkCard = ({ work, onEdit, onDelete }) => {
 
 export default function OfficerWorks() {
   const { user } = useAuth();
-  const [works, setWorks] = useState([
-    {
-      id: 1,
-      title: "Road Repair Work",
-      municipality: "Kathmandu",
-      ward: "Ward No. 1",
-      status: "completed",
-      image:
-        "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=1000&q=80",
-      startDate: "2022/08/17",
-      endDate: "2022/12/11",
-      budget: "20,00,000",
-      beneficiaries: "5,000",
-      description:
-        "Main road repair and improvement, including road cleaning and asphalt refinement.",
-      fiscalYear: "2022/23",
-      contractorName: "ABC Construction Pvt. Ltd.",
-    },
-    {
-      id: 2,
-      title: "Park Renovation",
-      municipality: "Kathmandu",
-      ward: "Ward No. 1",
-      status: "ongoing",
-      image:
-        "https://images.unsplash.com/photo-1596230529625-7ee54135a963?auto=format&fit=crop&w=1000&q=80",
-      startDate: "2023/01/15",
-      endDate: "2023/06/30",
-      budget: "15,00,000",
-      beneficiaries: "2,500",
-      description:
-        "Renovation of community park including new benches, planting trees, and installing playground equipment.",
-      fiscalYear: "2023/24",
-      contractorName: "Green Spaces Ltd.",
-    },
-  ]);
+  const [works, setWorks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchWorks();
+  }, []);
+
+  const fetchWorks = () => {
+    setIsLoading(true);
+    fetch("http://127.0.0.1/my-react-app/Backend/api/get_works.php")
+      .then((res) => res.json())
+      .then((data) => {
+        setWorks(data);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching works:", err);
+        setIsLoading(false);
+      });
+  };
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingWork, setEditingWork] = useState(null);
@@ -174,25 +164,44 @@ export default function OfficerWorks() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newWork = {
-      id: editingWork ? editingWork.id : Date.now(),
-      ...formData,
-      municipality: user?.municipality || "Kathmandu",
-      ward: user?.ward || "Ward No. 1",
-    };
+    const formDataToSend = new FormData();
+    formDataToSend.append("title", formData.title);
+    formDataToSend.append("description", formData.description);
+    formDataToSend.append("status", formData.status);
+    formDataToSend.append("budget", formData.budget);
+    formDataToSend.append("start_date", formData.startDate);
+    formDataToSend.append("end_date", formData.endDate);
+    formDataToSend.append("beneficiaries", formData.beneficiaries);
+    formDataToSend.append("officer_id", user?.id || "");
 
-    if (editingWork) {
-      // Update existing work
-      setWorks(works.map((w) => (w.id === editingWork.id ? newWork : w)));
-    } else {
-      // Add new work
-      setWorks([...works, newWork]);
+    if (formData.imageFile) {
+      formDataToSend.append("image", formData.imageFile);
     }
 
-    handleCloseForm();
+    try {
+      const response = await fetch(
+        "http://127.0.0.1/my-react-app/Backend/api/add_work.php",
+        {
+          method: "POST",
+          body: formDataToSend,
+        }
+      );
+
+      const data = await response.json();
+      if (data.status === "success") {
+        alert("Work saved successfully!");
+        fetchWorks();
+        handleCloseForm();
+      } else {
+        alert("Error: " + data.message);
+      }
+    } catch (err) {
+      console.error("Error submitting work:", err);
+      alert("Failed to connect to server.");
+    }
   };
 
   const handleDelete = (id) => {
@@ -408,7 +417,9 @@ export default function OfficerWorks() {
 
       {/* Works List */}
       <div className="works-list">
-        {works.length === 0 ? (
+        {isLoading ? (
+          <div className="loading-state">Loading works...</div>
+        ) : works.length === 0 ? (
           <div className="empty-state">
             <p>No works created yet. Click "Create New Work" to get started.</p>
           </div>

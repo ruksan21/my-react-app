@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../Nav/Navbar";
 import { useWard } from "../Context/WardContext";
 import "./Works.css";
@@ -21,7 +21,11 @@ const WorkCard = ({ work }) => {
 
       <div className="work-image-container">
         <img
-          src={work.image}
+          src={
+            work.image
+              ? `http://127.0.0.1/my-react-app/Backend/api/${work.image}`
+              : "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=800&q=80"
+          }
           alt={work.title}
           className="work-image"
           onError={(e) => {
@@ -34,15 +38,17 @@ const WorkCard = ({ work }) => {
       <div className="work-stats-grid">
         <div className="stat-item">
           <label>Start Date</label>
-          <div>{work.startDate}</div>
+          <div>{work.start_date || work.startDate || "N/A"}</div>
         </div>
         <div className="stat-item">
           <label>End Date</label>
-          <div>{work.endDate}</div>
+          <div>{work.end_date || work.endDate || "N/A"}</div>
         </div>
         <div className="stat-item">
           <label>Budget</label>
-          <div>Rs. {work.budget}</div>
+          <div>
+            {work.budget.startsWith("Rs.") ? work.budget : `Rs. ${work.budget}`}
+          </div>
         </div>
         <div className="stat-item">
           <label>Beneficiaries</label>
@@ -59,40 +65,21 @@ const WorkCard = ({ work }) => {
 
 export default function Works({ embedded = false }) {
   const { municipality, ward } = useWard();
+  const [works, setWorks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock Data matching the user's image
-  const works = [
-    {
-      id: 1,
-      title: "Road Repair Work",
-      municipality: municipality || "Kathmandu",
-      ward: ward ? `Ward No. ${ward}` : "Ward No. 1",
-      status: "completed",
-      image:
-        "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=1000&q=80", // Construction image
-      startDate: "2022/08/17",
-      endDate: "2022/12/11",
-      budget: "20,00,000",
-      beneficiaries: "5,000",
-      description:
-        "Main road repair and improvement, including road cleaning and asphalt refinement.",
-    },
-    {
-      id: 2,
-      title: "Park Renovation",
-      municipality: municipality || "Kathmandu",
-      ward: ward ? `Ward No. ${ward}` : "Ward No. 1",
-      status: "ongoing",
-      image:
-        "https://images.unsplash.com/photo-1596230529625-7ee54135a963?auto=format&fit=crop&w=1000&q=80", // Park image
-      startDate: "2023/01/15",
-      endDate: "2023/06/30",
-      budget: "15,00,000",
-      beneficiaries: "2,500",
-      description:
-        "Renovation of community park including new benches, planting trees, and installing playground equipment.",
-    },
-  ];
+  useEffect(() => {
+    fetch("http://127.0.0.1/my-react-app/Backend/api/get_works.php")
+      .then((res) => res.json())
+      .then((data) => {
+        setWorks(data);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching works:", err);
+        setIsLoading(false);
+      });
+  }, []);
 
   return (
     <>
@@ -115,9 +102,15 @@ export default function Works({ embedded = false }) {
         )}
 
         <div className="works-list">
-          {works.map((work) => (
-            <WorkCard key={work.id} work={work} />
-          ))}
+          {isLoading ? (
+            <div className="loading-state">Loading works...</div>
+          ) : works.length === 0 ? (
+            <div className="empty-state">
+              No development works found for this ward.
+            </div>
+          ) : (
+            works.map((work) => <WorkCard key={work.id} work={work} />)
+          )}
         </div>
         <div className="works-note">
           These work details are officially created and managed by Ward

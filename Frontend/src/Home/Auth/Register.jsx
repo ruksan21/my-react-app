@@ -41,6 +41,10 @@ export default function RegisterPage({
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Preview URLs for images
+  const [citizenshipPreview, setCitizenshipPreview] = useState(null);
+  const [idCardPreview, setIdCardPreview] = useState(null);
+
   const districtMunicipalityData = {
     Kathmandu: [
       { id: 1, name: "Kathmandu Metropolitan City" },
@@ -83,7 +87,16 @@ export default function RegisterPage({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      // Scroll to the first error
+      const firstError = document.querySelector(
+        ".form-control.error, .error-message.show"
+      );
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
     setIsLoading(true);
 
     try {
@@ -122,12 +135,40 @@ export default function RegisterPage({
         setShowSuccess(true);
         setTimeout(() => navigate("/login"), 1500);
       } else {
-        setErrors({ submit: data.message || "Failed" });
+        setErrors({ submit: data.message || "Registration failed" });
       }
     } catch (err) {
       setErrors({ submit: "Network error: " + err.message });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCitizenshipPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setCitizenshipPhoto(file);
+      setCitizenshipPreview(URL.createObjectURL(file));
+      // Clear error once uploaded
+      if (errors.citizenshipPhoto) {
+        const newErrors = { ...errors };
+        delete newErrors.citizenshipPhoto;
+        setErrors(newErrors);
+      }
+    }
+  };
+
+  const handleIdCardPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setIdCardPhoto(file);
+      setIdCardPreview(URL.createObjectURL(file));
+      // Clear error once uploaded
+      if (errors.idCardPhoto) {
+        const newErrors = { ...errors };
+        delete newErrors.idCardPhoto;
+        setErrors(newErrors);
+      }
     }
   };
 
@@ -197,6 +238,7 @@ export default function RegisterPage({
                   <i className="fa-solid fa-user"></i>
                   <input
                     type="text"
+                    name="firstName"
                     className={`form-control ${
                       errors.firstName ? "error" : ""
                     }`}
@@ -205,6 +247,9 @@ export default function RegisterPage({
                     placeholder="First Name"
                   />
                 </div>
+                {errors.firstName && (
+                  <p className="error-message show">{errors.firstName}</p>
+                )}
               </div>
               <div className="form-group">
                 <label>Last Name *</label>
@@ -212,12 +257,16 @@ export default function RegisterPage({
                   <i className="fa-solid fa-user"></i>
                   <input
                     type="text"
+                    name="lastName"
                     className={`form-control ${errors.lastName ? "error" : ""}`}
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="Last Name"
                   />
                 </div>
+                {errors.lastName && (
+                  <p className="error-message show">{errors.lastName}</p>
+                )}
               </div>
             </div>
             <div className="form-row two-cols">
@@ -227,6 +276,7 @@ export default function RegisterPage({
                   <i className="fa-solid fa-user-tag"></i>
                   <input
                     type="text"
+                    name="middleName"
                     className="form-control"
                     value={middleName}
                     onChange={(e) => setMiddleName(e.target.value)}
@@ -240,12 +290,16 @@ export default function RegisterPage({
                   <i className="fa-solid fa-envelope"></i>
                   <input
                     type="email"
+                    name="email"
                     className={`form-control ${errors.email ? "error" : ""}`}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="email@example.com"
                   />
                 </div>
+                {errors.email && (
+                  <p className="error-message show">{errors.email}</p>
+                )}
               </div>
             </div>
             <div className="form-row two-cols">
@@ -303,6 +357,7 @@ export default function RegisterPage({
                   <i className="fa-solid fa-map"></i>
                   <select
                     className="form-control"
+                    name="district"
                     value={district}
                     onChange={handleDistrictChange}
                   >
@@ -314,6 +369,9 @@ export default function RegisterPage({
                     ))}
                   </select>
                 </div>
+                {errors.district && (
+                  <p className="error-message show">{errors.district}</p>
+                )}
               </div>
               <div className="form-group">
                 <label>Municipality *</label>
@@ -321,6 +379,7 @@ export default function RegisterPage({
                   <i className="fa-solid fa-city"></i>
                   <select
                     className="form-control"
+                    name="municipality"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     disabled={!district}
@@ -333,6 +392,9 @@ export default function RegisterPage({
                     ))}
                   </select>
                 </div>
+                {errors.city && (
+                  <p className="error-message show">{errors.city}</p>
+                )}
               </div>
             </div>
             {role === "citizen" && (
@@ -343,12 +405,18 @@ export default function RegisterPage({
                     <i className="fa-solid fa-house"></i>
                     <input
                       type="number"
-                      className="form-control"
+                      name="wardNumber"
+                      className={`form-control ${
+                        errors.wardNumber ? "error" : ""
+                      }`}
                       value={wardNumber}
                       onChange={(e) => setWardNumber(e.target.value)}
                       placeholder="1-35"
                     />
                   </div>
+                  {errors.wardNumber && (
+                    <p className="error-message show">{errors.wardNumber}</p>
+                  )}
                 </div>
               </div>
             )}
@@ -363,12 +431,20 @@ export default function RegisterPage({
                   <i className="fa-solid fa-id-card"></i>
                   <input
                     type="text"
-                    className="form-control"
+                    className={`form-control ${
+                      errors.citizenshipNumber ? "error" : ""
+                    }`}
                     value={citizenshipNumber}
                     onChange={(e) => setCitizenshipNumber(e.target.value)}
                     placeholder="Number"
+                    name="citizenshipNumber"
                   />
                 </div>
+                {errors.citizenshipNumber && (
+                  <p className="error-message show">
+                    {errors.citizenshipNumber}
+                  </p>
+                )}
               </div>
               <div className="form-group">
                 <label>Issue Date</label>
@@ -410,18 +486,34 @@ export default function RegisterPage({
                   <input
                     type="file"
                     className="file-input"
-                    onChange={(e) => setCitizenshipPhoto(e.target.files[0])}
+                    onChange={handleCitizenshipPhotoChange}
                     accept="image/*"
                   />
                   <div className="file-upload-icon">
-                    <i className="fa-solid fa-camera"></i>
-                    <span>
-                      {citizenshipPhoto
-                        ? citizenshipPhoto.name
-                        : "Upload Photo"}
-                    </span>
+                    {citizenshipPreview ? (
+                      <div className="preview-container">
+                        <img
+                          src={citizenshipPreview}
+                          alt="Preview"
+                          className="img-preview"
+                        />
+                        <span className="file-name">
+                          {citizenshipPhoto.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-camera"></i>
+                        <span>Upload Photo</span>
+                      </>
+                    )}
                   </div>
                 </div>
+                {errors.citizenshipPhoto && (
+                  <p className="error-message show">
+                    {errors.citizenshipPhoto}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -479,16 +571,30 @@ export default function RegisterPage({
                     <input
                       type="file"
                       className="file-input"
-                      onChange={(e) => setIdCardPhoto(e.target.files[0])}
+                      onChange={handleIdCardPhotoChange}
                       accept="image/*"
                     />
                     <div className="file-upload-icon">
-                      <i className="fa-solid fa-id-badge"></i>
-                      <span>
-                        {idCardPhoto ? idCardPhoto.name : "Upload ID"}
-                      </span>
+                      {idCardPreview ? (
+                        <div className="preview-container">
+                          <img
+                            src={idCardPreview}
+                            alt="Preview"
+                            className="img-preview"
+                          />
+                          <span className="file-name">{idCardPhoto.name}</span>
+                        </div>
+                      ) : (
+                        <>
+                          <i className="fa-solid fa-id-badge"></i>
+                          <span>Upload ID</span>
+                        </>
+                      )}
                     </div>
                   </div>
+                  {errors.idCardPhoto && (
+                    <p className="error-message show">{errors.idCardPhoto}</p>
+                  )}
                 </div>
               </div>
             </div>

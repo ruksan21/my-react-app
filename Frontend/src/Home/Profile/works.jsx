@@ -1,64 +1,96 @@
+import React, { useState, useEffect } from "react";
 import "./works.css";
 import CommentSection from "../Component/CommentSection";
 
-const mockWorks = [
-  {
-    id: 1,
-    title: "Road Repair Work",
-    subtitle: "Ward No. 1, Kathmandu",
-    description:
-      "Main road repair and improvement, including road cleaning and asphalt refinement.",
-    imageUrl:
-      "https://sewellbeard.com/wp-content/uploads/2021/02/us-72-west-road-project.jpeg",
-    startDate: "2022/08/17",
-    endDate: "2022/12/11",
-    budget: "Rs. 20,00,000",
-    beneficiaries: "5,000",
-    status: "completed",
-  },
-];
-
 const Works = () => {
-  const work = mockWorks[0];
+  const [works, setWorks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://127.0.0.1/my-react-app/Backend/api/get_works.php")
+      .then((res) => res.json())
+      .then((data) => {
+        setWorks(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching works:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return <div className="loading-state">Loading works...</div>;
+  }
+
+  if (works.length === 0) {
+    return <div className="no-works">No works found for this ward.</div>;
+  }
 
   return (
     <section className="works-section">
-      <div className="works-card">
-        <div className="works-card-header">
-          <div>
-            <p className="works-label">Works</p>
-            <h3>{work.title}</h3>
-            <p className="works-subtitle">{work.subtitle}</p>
+      {works.map((work) => (
+        <div
+          className="works-card"
+          key={work.id}
+          style={{ marginBottom: "30px" }}
+        >
+          <div className="works-card-header">
+            <div>
+              <p className="works-label">Works</p>
+              <h3>{work.title}</h3>
+              <p className="works-subtitle">
+                {work.location || work.subtitle || "Ward No. 1, Kathmandu"}
+              </p>
+            </div>
+            <span
+              className={`status-pill status-${(work.status || "pending")
+                .toLowerCase()
+                .replace("-", "")}`}
+            >
+              {work.status || "Pending"}
+            </span>
           </div>
-          <span className="status-pill">{work.status}</span>
+
+          <img
+            src={
+              work.image
+                ? `http://127.0.0.1/my-react-app/Backend/api/${work.image}`
+                : "https://sewellbeard.com/wp-content/uploads/2021/02/us-72-west-road-project.jpeg"
+            }
+            alt={work.title}
+            className="works-image"
+            onError={(e) => {
+              e.target.src =
+                "https://sewellbeard.com/wp-content/uploads/2021/02/us-72-west-road-project.jpeg";
+            }}
+          />
+
+          <div className="works-details">
+            <div>
+              <strong>Start Date</strong>
+              <p>{work.start_date || work.startDate || "N/A"}</p>
+            </div>
+            <div>
+              <strong>End Date</strong>
+              <p>{work.end_date || work.endDate || "N/A"}</p>
+            </div>
+            <div>
+              <strong>Budget</strong>
+              <p>{work.budget ? `Rs. ${work.budget}` : work.budget || "N/A"}</p>
+            </div>
+            <div>
+              <strong>Beneficiaries</strong>
+              <p>{work.beneficiaries || "N/A"}</p>
+            </div>
+          </div>
+
+          <p className="works-description">{work.description}</p>
+
+          {/* Integrated Comment Section */}
+          <CommentSection workId={work.id} />
         </div>
-
-        <img src={work.imageUrl} alt={work.title} className="works-image" />
-
-        <div className="works-details">
-          <div>
-            <strong>Start Date</strong>
-            <p>{work.startDate}</p>
-          </div>
-          <div>
-            <strong>End Date</strong>
-            <p>{work.endDate}</p>
-          </div>
-          <div>
-            <strong>Budget</strong>
-            <p>{work.budget}</p>
-          </div>
-          <div>
-            <strong>Beneficiaries</strong>
-            <p>{work.beneficiaries}</p>
-          </div>
-        </div>
-
-        <p className="works-description">{work.description}</p>
-      </div>
-
-      {/* Integrated Comment Section */}
-      <CommentSection workId={work.id} />
+      ))}
     </section>
   );
 };

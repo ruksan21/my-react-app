@@ -13,8 +13,18 @@ const CommentSection = ({ workId }) => {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    // Frontend-only: initialize with empty comments per workId
-    setComments([]);
+    if (workId) {
+      fetch(
+        `http://127.0.0.1/my-react-app/Backend/api/get_feedback.php?work_id=${workId}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setComments(data.comments || []);
+          }
+        })
+        .catch((err) => console.error("Error fetching comments:", err));
+    }
   }, [workId]);
 
   // Show notification
@@ -23,14 +33,12 @@ const CommentSection = ({ workId }) => {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  // Removed backend/localStorage fetch — comments live in memory for this session
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
 
     if (!user) {
-      showNotification('error', 'Please log in to submit a comment');
+      showNotification("error", "Please log in to submit a comment");
       return;
     }
 
@@ -42,36 +50,59 @@ const CommentSection = ({ workId }) => {
     if (comment.trim() === "") {
       newErrors.comment = "Please write a comment";
     }
-    if (comment.trim().length < 10) {
-      newErrors.comment = "Comment must be at least 10 characters";
+    if (comment.trim().length < 5) {
+      newErrors.comment = "Comment must be at least 5 characters";
     }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      showNotification('error', 'Please fix the errors before submitting');
+      showNotification("error", "Please fix the errors before submitting");
       return;
     }
 
     setLoading(true);
 
-    // Frontend-only submission: add to in-memory list
-    const newComment = {
-      id: Date.now(),
-      user_name: user.name || "Anonymous",
-      user_photo: user.photoUrl || "/default-avatar.png",
-      rating: rating,
-      comment: comment,
-      created_at: new Date().toISOString(),
-    };
+    try {
+      const response = await fetch(
+        "http://127.0.0.1/my-react-app/Backend/api/add_feedback.php",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            work_id: workId,
+            user_id: user.id || null,
+            user_name: user.name || "Anonymous",
+            rating: rating,
+            comment: comment,
+          }),
+        }
+      );
 
-    const updatedComments = [newComment, ...comments];
-    setComments(updatedComments);
+      const data = await response.json();
 
-    setRating(0);
-    setComment("");
-    setErrors({});
-    showNotification('success', '✓ Comment submitted (session-only)');
-    setLoading(false);
+      if (data.success) {
+        // Refresh comments list
+        const updatedRes = await fetch(
+          `http://127.0.0.1/my-react-app/Backend/api/get_feedback.php?work_id=${workId}`
+        );
+        const updatedData = await updatedRes.json();
+        if (updatedData.success) {
+          setComments(updatedData.comments || []);
+        }
+
+        setRating(0);
+        setComment("");
+        setErrors({});
+        showNotification("success", "✓ Feedback submitted successfully!");
+      } else {
+        showNotification("error", "Error: " + data.message);
+      }
+    } catch (err) {
+      console.error("Submission error:", err);
+      showNotification("error", "Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -114,7 +145,9 @@ const CommentSection = ({ workId }) => {
       {notification && (
         <div className={`notification-toast ${notification.type}`}>
           <span>{notification.message}</span>
-          <button onClick={() => setNotification(null)} className="close-toast">×</button>
+          <button onClick={() => setNotification(null)} className="close-toast">
+            ×
+          </button>
         </div>
       )}
 
@@ -135,6 +168,17 @@ const CommentSection = ({ workId }) => {
               Please log in first to save feedback.
             </p>
           </div>
+        ) : user.role !== "citizen" ? (
+          <div className="role-restricted-message">
+            <span className="info-icon">ℹ️</span>
+            <p>
+              Only registered <strong>Citizens</strong> can submit reviews and
+              ratings for development works.
+            </p>
+            <p className="sub-text">
+              As an {user.role}, you can view all community feedback below.
+            </p>
+          </div>
         ) : (
           <form className="comment-form" onSubmit={handleSubmit}>
             <div className="user-info">
@@ -147,14 +191,21 @@ const CommentSection = ({ workId }) => {
             </div>
 
             <div className="rating-input">
-              <label>Rating: {rating > 0 && <span className="rating-value">({rating}/5)</span>}</label>
+              <label>
+                Rating:{" "}
+                {rating > 0 && (
+                  <span className="rating-value">({rating}/5)</span>
+                )}
+              </label>
               {renderStars(rating, true)}
-              {errors.rating && <span className="error-message">{errors.rating}</span>}
+              {errors.rating && (
+                <span className="error-message">{errors.rating}</span>
+              )}
             </div>
 
             <div className="textarea-wrapper">
               <textarea
-                className={`comment-textarea ${errors.comment ? 'error' : ''}`}
+                className={`comment-textarea ${errors.comment ? "error" : ""}`}
                 placeholder="Write your comment (minimum 10 characters)..."
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
@@ -162,16 +213,20 @@ const CommentSection = ({ workId }) => {
                 maxLength="500"
               />
               <div className="textarea-footer">
-                {errors.comment && <span className="error-message">{errors.comment}</span>}
+                {errors.comment && (
+                  <span className="error-message">{errors.comment}</span>
+                )}
                 <span className="char-counter">{comment.length}/500</span>
               </div>
             </div>
 
             <button type="submit" className="submit-btn" disabled={loading}>
               {loading ? (
-                <><span className="spinner"></span> Submitting...</>
+                <>
+                  <span className="spinner"></span> Submitting...
+                </>
               ) : (
-                'Submit Comment'
+                "Submit Comment"
               )}
             </button>
           </form>

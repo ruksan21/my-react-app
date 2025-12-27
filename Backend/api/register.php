@@ -80,6 +80,7 @@ $query = "INSERT INTO users (
 if ($conn->query($query)) {
     echo json_encode(array("success" => true, "message" => "Registration successful!"));
 } else {
-    echo json_encode(array("success" => false, "message" => "Error: " . $conn->error));
+    // Return specific error to help debug
+    echo json_encode(array("success" => false, "message" => "Database Error: " . $conn->error));
 }
 ?>

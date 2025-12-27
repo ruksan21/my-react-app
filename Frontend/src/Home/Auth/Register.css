@@ -139,8 +139,34 @@
 .file-upload-icon {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 10;
   color: #475569;
+  width: 100%;
+}
+
+.preview-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 4px;
+}
+
+.img-preview {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.file-name {
+  font-size: 0.85rem;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 50px);
 }
 
 /* Button & Footer */
@@ -160,6 +186,28 @@
 .btn-register:hover {
   background: #1d4ed8;
   box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+}
+
+.form-footer {
+  text-align: center;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.form-footer p {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.form-footer a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.form-footer a:hover {
+  text-decoration: underline;
 }
 
 /* Mobile Responsive */
