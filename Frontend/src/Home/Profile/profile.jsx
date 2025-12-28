@@ -5,14 +5,15 @@ import jsPDF from "jspdf";
 import Dashboard from "../Pages/Dashboard";
 import Assets from "../Pages/Assets";
 import Activities from "../Pages/Activities";
+import { useWard } from "../Context/WardContext";
 
-// Data for the profile, which you can later fetch from a backend.
-const profileData = {
+// Default profile data (fallback if API fails)
+const defaultProfileData = {
   name: "Ram Bahadur Shrestha",
   role: "wardChairperson - Kathmandu Metropolitan City, wardNumber 1",
   phone: "9841234567",
   email: "ram.shrestha@ktm.gov.np",
-  imageUrl: "https://i.imgur.com/JQrOMa7.png", // Using a placeholder image URL
+  imageUrl: "https://i.imgur.com/JQrOMa7.png",
   rating: 4.2,
   reviews: 89,
   followers: 1250,
@@ -59,8 +60,53 @@ const Profile = () => {
   const [rating, setRating] = useState(0);
   const [reviews, setReviews] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [profileData, setProfileData] = useState(defaultProfileData);
+  const [personalAssets, setPersonalAssets] = useState([]);
+  const { ward } = useWard(); // Get selected ward from context
 
   useEffect(() => {
+    // Fetch chairperson profile data from ward database using selected ward
+    fetch(
+      `http://127.0.0.1/my-react-app/Backend/api/get_chairperson_profile.php?ward_id=${ward}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          const wardData = data.data;
+          // Update profile data with database values
+          setProfileData({
+            name: wardData.chairperson_name || "Ram Bahadur Shrestha",
+            role: `wardChairperson - ${wardData.district_name} Metropolitan City, wardNumber ${wardData.ward_number}`,
+            phone: wardData.chairperson_phone || "9841234567",
+            email: wardData.chairperson_email || "ram.shrestha@ktm.gov.np",
+            imageUrl: wardData.chairperson_photo
+              ? `http://127.0.0.1/my-react-app/Backend/api/uploads/${wardData.chairperson_photo}`
+              : "https://i.imgur.com/JQrOMa7.png",
+            rating: 4.2,
+            reviews: 89,
+            followers: 1250,
+            personalInfo: {
+              address: `Ward No. ${wardData.ward_number}, ${wardData.district_name}`,
+              education:
+                wardData.chairperson_education ||
+                "Master's Degree (Political Science)",
+              experience:
+                wardData.chairperson_experience || "15 years in local politics",
+              politicalParty:
+                wardData.chairperson_political_party || "Nepali Congress",
+              appointmentDate:
+                wardData.chairperson_appointment_date || "2022/08/31",
+            },
+            contactDetails: {
+              phone: wardData.chairperson_phone || "9841234567",
+              email: wardData.chairperson_email || "ram.shrestha@ktm.gov.np",
+              address: `Ward No. ${wardData.ward_number}, ${wardData.district_name}`,
+            },
+          });
+        }
+      })
+      .catch((err) => console.error("Error fetching profile:", err));
+
     // Fetch real stats from backend
     fetch("http://127.0.0.1/my-react-app/Backend/api/get_profile_stats.php")
       .then((res) => res.json())
@@ -72,7 +118,19 @@ const Profile = () => {
         }
       })
       .catch((err) => console.error("Error fetching stats:", err));
-  }, []);
+
+    // Fetch personal assets
+    fetch(
+      `http://127.0.0.1/my-react-app/Backend/api/manage_chairperson_assets.php?ward_id=${ward}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setPersonalAssets(data.data || []);
+        }
+      })
+      .catch((err) => console.error("Error fetching personal assets:", err));
+  }, [ward]); // Re-fetch when ward changes
 
   const handleFollow = () => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -251,6 +309,102 @@ const Profile = () => {
       return <Activities embedded={true} />;
     }
 
+    if (activeTab === "Personal Property") {
+      return (
+        <div className="info-section">
+          <h2>Chairperson's Property Declaration</h2>
+          {personalAssets.length === 0 ? (
+            <p>No property details declared.</p>
+          ) : (
+            <table
+              className="works-table"
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginTop: "10px",
+              }}
+            >
+              <thead>
+                <tr style={{ backgroundColor: "#f8f9fa", textAlign: "left" }}>
+                  <th
+                    style={{
+                      padding: "12px",
+                      borderBottom: "2px solid #dee2e6",
+                    }}
+                  >
+                    Asset Type
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px",
+                      borderBottom: "2px solid #dee2e6",
+                    }}
+                  >
+                    Details
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px",
+                      borderBottom: "2px solid #dee2e6",
+                    }}
+                  >
+                    Location
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px",
+                      borderBottom: "2px solid #dee2e6",
+                    }}
+                  >
+                    Ownership
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {personalAssets.map((asset) => (
+                  <tr
+                    key={asset.id}
+                    style={{ borderBottom: "1px solid #dee2e6" }}
+                  >
+                    <td
+                      style={{ padding: "12px", textTransform: "capitalize" }}
+                    >
+                      {asset.asset_type.replace("_", " ")}
+                    </td>
+                    <td style={{ padding: "12px" }}>
+                      <strong>{asset.asset_name}</strong>
+                      {asset.description && (
+                        <div style={{ fontSize: "0.9em", color: "#666" }}>
+                          {asset.description}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: "12px" }}>{asset.location || "-"}</td>
+                    <td
+                      style={{ padding: "12px", textTransform: "capitalize" }}
+                    >
+                      {asset.ownership_type}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <div
+            style={{
+              marginTop: "20px",
+              fontSize: "0.85rem",
+              color: "#666",
+              fontStyle: "italic",
+            }}
+          >
+            * This property details are declared by the chairperson as per
+            public transparency regulations.
+          </div>
+        </div>
+      );
+    }
+
     return (
       <p className="tab-placeholder">Content coming soon for {activeTab}.</p>
     );
@@ -291,17 +445,22 @@ const Profile = () => {
 
       <div className="profile-body">
         <div className="tabs">
-          {["Details", "Works", "Assets", "Activities", "Dashboard"].map(
-            (tab) => (
-              <button
-                key={tab}
-                className={`tab-item ${activeTab === tab ? "active" : ""}`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
-            )
-          )}
+          {[
+            "Details",
+            "Personal Property",
+            "Works",
+            "Assets",
+            "Activities",
+            "Dashboard",
+          ].map((tab) => (
+            <button
+              key={tab}
+              className={`tab-item ${activeTab === tab ? "active" : ""}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
         <div className="tab-content">{renderActivePanel()}</div>
