@@ -26,9 +26,12 @@ $query = "SELECT
     w.chairperson_political_party,
     w.chairperson_appointment_date,
     w.chairperson_bio,
-    d.name as district_name
+    w.chairperson_photo,
+    d.name as district_name,
+    u.id as officer_id
 FROM wards w
 INNER JOIN districts d ON w.district_id = d.id
+LEFT JOIN users u ON u.assigned_ward = w.id AND u.role = 'officer'
 WHERE w.id = $ward_id";
 
 $result = $conn->query($query);

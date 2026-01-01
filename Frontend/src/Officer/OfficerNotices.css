@@ -1,0 +1,161 @@
+/* Officer Notices Styles */
+
+.notices-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.notices-header h2.section-title {
+  margin-bottom: 0;
+}
+
+.create-notice-btn {
+  padding: 8px 16px;
+  background: #3182ce;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+  font-weight: 500;
+}
+
+.create-notice-btn:hover {
+  background: #2b6cb0;
+}
+
+/* Form Styles */
+.notice-form-container {
+  background: #f7fafc;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.notice-form-title {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #2d3748;
+  font-size: 1.1rem;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.1);
+}
+
+textarea.form-input {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.publish-btn {
+  padding: 8px 16px;
+  background: #48bb78;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.publish-btn:hover {
+  background: #38a169;
+}
+
+/* Notices List Styles */
+.notices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.notice-card {
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  transition: box-shadow 0.2s;
+}
+
+.notice-card:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.notice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 10px;
+}
+
+.notice-title {
+  margin: 0 0 8px 0;
+  color: #2d3748;
+  font-size: 1.1rem;
+}
+
+.notice-date {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #718096;
+}
+
+.notice-delete-btn {
+  padding: 6px 12px;
+  background: #fc8181;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.notice-delete-btn:hover {
+  background: #e53e3e;
+}
+
+.notice-content {
+  margin: 10px 0 0 0;
+  color: #4a5568;
+  line-height: 1.6;
+}
+
+.no-notices {
+  padding: 40px;
+  text-align: center;
+  color: #718096;
+  background: #f7fafc;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e0;
+}

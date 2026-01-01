@@ -4,13 +4,16 @@ import OfficerDashboard from "./OfficerDashboard";
 import OfficerWorks from "./OfficerWorks";
 import OfficerDepartments from "./OfficerDepartments";
 import OfficerBudget from "./OfficerBudget";
-import OfficerComplaints from "./OfficerComplaints";
 import OfficerNotices from "./OfficerNotices";
+import OfficerFollowers from "./OfficerFollowers";
+import OfficerProfile from "./OfficerProfile";
 
 const OfficerRoutes = () => {
   return (
     <Routes>
       <Route index element={<OfficerDashboard />} />
+      <Route path="profile" element={<OfficerProfile />} />
+      <Route path="followers" element={<OfficerFollowers />} />
       <Route path="works" element={<OfficerWorks />} />
       <Route path="budgets" element={<OfficerBudget />} />
       <Route path="departments" element={<OfficerDepartments />} />

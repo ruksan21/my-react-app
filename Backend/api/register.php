@@ -21,7 +21,7 @@ if (!file_exists($upload_dir)) {
 
 // Form bata aayeko common fields
 $role = $_POST['role'] ?? 'citizen';
-$first_name = $conn->real_escape_string($_POST['firstName']);
+$first_name = $conn->real_escape_string($_POST['firstName']); 
 $middle_name = $conn->real_escape_string($_POST['middleName'] ?? '');
 $last_name = $conn->real_escape_string($_POST['lastName']);
 $email = $conn->real_escape_string($_POST['email']);
@@ -43,21 +43,61 @@ $officer_id = $conn->real_escape_string($_POST['officerId'] ?? '');
 $department = $conn->real_escape_string($_POST['department'] ?? '');
 $assigned_ward = !empty($_POST['assignedWard']) ? intval($_POST['assignedWard']) : 'NULL';
 
+// Helper function for file upload
+function handleFileUpload($file, $prefix, $upload_dir) {
+    if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
+        return ["success" => false, "message" => "Upload failed or no file provided."];
+    }
+    
+    // Validate file type
+    $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime_type = $finfo->file($file['tmp_name']);
+    
+    if (!in_array($mime_type, $allowed_types)) {
+        return ["success" => false, "message" => "Invalid file type. Only JPG, PNG, GIF allow."];
+    }
+    
+    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $new_filename = $prefix . "_" . time() . "_" . uniqid() . "." . $extension;
+    
+    if (move_uploaded_file($file['tmp_name'], $upload_dir . $new_filename)) {
+        return ["success" => true, "filename" => $new_filename];
+    }
+    
+    return ["success" => false, "message" => "Failed to move uploaded file."];
+}
+
 // Photo upload logic for Citizenship
 $citizenship_photo = "";
-if (isset($_FILES['citizenshipPhoto'])) {
-    $c_file_name = "citizenship_" . time() . "_" . $_FILES['citizenshipPhoto']['name'];
-    if (move_uploaded_file($_FILES['citizenshipPhoto']['tmp_name'], $upload_dir . $c_file_name)) {
-        $citizenship_photo = $c_file_name;
+if (isset($_FILES['citizenshipPhoto']) && $_FILES['citizenshipPhoto']['error'] === UPLOAD_ERR_OK) {
+    $upload_result = handleFileUpload($_FILES['citizenshipPhoto'], "citizenship", $upload_dir);
+    if ($upload_result['success']) {
+        $citizenship_photo = $upload_result['filename'];
+    } else {
+        echo json_encode(["success" => false, "message" => "Citizenship Photo Error: " . $upload_result['message']]);
+        exit();
     }
+} else {
+    // Fail if photo is mandatory but missing (it is marked * in frontend)
+    echo json_encode(["success" => false, "message" => "Citizenship Photo is required."]);
+    exit();
 }
 
 // Photo upload logic for Officer ID Card
 $id_card_photo = "";
-if (isset($_FILES['idCardPhoto'])) {
-    $i_file_name = "id_card_" . time() . "_" . $_FILES['idCardPhoto']['name'];
-    if (move_uploaded_file($_FILES['idCardPhoto']['tmp_name'], $upload_dir . $i_file_name)) {
-        $id_card_photo = $i_file_name;
+if ($role === 'officer') {
+    if (isset($_FILES['idCardPhoto']) && $_FILES['idCardPhoto']['error'] === UPLOAD_ERR_OK) {
+        $upload_result = handleFileUpload($_FILES['idCardPhoto'], "id_card", $upload_dir);
+        if ($upload_result['success']) {
+            $id_card_photo = $upload_result['filename'];
+        } else {
+            echo json_encode(["success" => false, "message" => "ID Card Photo Error: " . $upload_result['message']]);
+            exit();
+        }
+    } else {
+         echo json_encode(["success" => false, "message" => "Officer ID Card Photo is required."]);
+         exit();
     }
 }
 

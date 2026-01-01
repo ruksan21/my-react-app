@@ -147,6 +147,11 @@ export default function RegisterPage({
   const handleCitizenshipPhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Limit to 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors({ ...errors, citizenshipPhoto: "File too large (Max 5MB)" });
+        return;
+      }
       setCitizenshipPhoto(file);
       setCitizenshipPreview(URL.createObjectURL(file));
       // Clear error once uploaded
@@ -482,12 +487,13 @@ export default function RegisterPage({
               </div>
               <div className="form-group">
                 <label>Citizenship Photo *</label>
-                <div className="file-upload-wrapper">
+                <label className="file-upload-wrapper">
                   <input
                     type="file"
                     className="file-input"
                     onChange={handleCitizenshipPhotoChange}
                     accept="image/*"
+                    hidden
                   />
                   <div className="file-upload-icon">
                     {citizenshipPreview ? (
@@ -504,11 +510,11 @@ export default function RegisterPage({
                     ) : (
                       <>
                         <i className="fa-solid fa-camera"></i>
-                        <span>Upload Photo</span>
+                        <span>Click to Upload</span>
                       </>
                     )}
                   </div>
-                </div>
+                </label>
                 {errors.citizenshipPhoto && (
                   <p className="error-message show">
                     {errors.citizenshipPhoto}
@@ -567,12 +573,13 @@ export default function RegisterPage({
                 </div>
                 <div className="form-group">
                   <label>ID Card Photo *</label>
-                  <div className="file-upload-wrapper">
+                  <label className="file-upload-wrapper">
                     <input
                       type="file"
                       className="file-input"
                       onChange={handleIdCardPhotoChange}
                       accept="image/*"
+                      hidden
                     />
                     <div className="file-upload-icon">
                       {idCardPreview ? (
@@ -587,11 +594,11 @@ export default function RegisterPage({
                       ) : (
                         <>
                           <i className="fa-solid fa-id-badge"></i>
-                          <span>Upload ID</span>
+                          <span>Click to Upload ID</span>
                         </>
                       )}
                     </div>
-                  </div>
+                  </label>
                   {errors.idCardPhoto && (
                     <p className="error-message show">{errors.idCardPhoto}</p>
                   )}

@@ -114,34 +114,43 @@
 }
 
 /* File Upload (Identity Verification) */
+/* File Upload (Identity Verification) */
 .file-upload-wrapper {
   position: relative;
-  border: 2px dashed rgba(37, 99, 235, 0.2);
+  border: 2px dashed #3b82f6;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.5);
-  height: 48px;
+  background: rgba(255, 255, 255, 0.8);
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 5px; /* Spacing from label */
+}
+
+.file-upload-wrapper:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .file-input {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 10;
+  display: none !important; /* Hide standard input */
 }
 
+/* Ensure the icon/text inside is centered and looks good */
 .file-upload-icon {
   display: flex;
   align-items: center;
-  gap: 10;
+  gap: 10px;
   color: #475569;
+  font-weight: 500;
+  font-size: 0.9rem;
   width: 100%;
+  justify-content: center;
 }
 
 .preview-container {

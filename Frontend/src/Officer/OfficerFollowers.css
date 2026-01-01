@@ -1,0 +1,88 @@
+/* Officer Followers Styles */
+.followers-container {
+  padding: 20px 0;
+}
+
+.followers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.follower-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.follower-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.follower-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #edf2f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #4a5568;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.follower-info {
+  flex: 1;
+}
+
+.follower-name {
+  margin: 0 0 4px 0;
+  color: #2d3748;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.follower-location {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #718096;
+}
+
+.follower-email {
+  margin: 4px 0 0 0;
+  font-size: 0.8rem;
+  color: #3182ce;
+  word-break: break-all;
+}
+
+.followers-no-data {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e0;
+}
+
+.followers-no-data-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.followers-no-data h3 {
+  color: #2d3748;
+  margin-bottom: 10px;
+}
+
+.followers-no-data p {
+  color: #718096;
+}

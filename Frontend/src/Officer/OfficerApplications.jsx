@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import OfficerLayout from "./OfficerLayout";
+import "./OfficerApplications.css";
 
 const OfficerApplications = () => {
   const [applications, setApplications] = useState([
@@ -44,82 +45,40 @@ const OfficerApplications = () => {
     <OfficerLayout title="Applications">
       <div className="recent-activity">
         <h2 className="section-title">Incoming Applications</h2>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            textAlign: "left",
-          }}
-        >
+        <table className="applications-table">
           <thead>
-            <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-              <th style={{ padding: "12px", color: "#718096" }}>Applicant</th>
-              <th style={{ padding: "12px", color: "#718096" }}>Type</th>
-              <th style={{ padding: "12px", color: "#718096" }}>Date</th>
-              <th style={{ padding: "12px", color: "#718096" }}>Status</th>
-              <th style={{ padding: "12px", color: "#718096" }}>Actions</th>
+            <tr>
+              <th>Applicant</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {applications.map((app) => (
-              <tr key={app.id} style={{ borderBottom: "1px solid #edf2f7" }}>
-                <td style={{ padding: "12px", fontWeight: "500" }}>
-                  {app.applicant}
-                </td>
-                <td style={{ padding: "12px" }}>{app.type}</td>
-                <td style={{ padding: "12px" }}>{app.date}</td>
-                <td style={{ padding: "12px" }}>
-                  <span
-                    style={{
-                      padding: "4px 8px",
-                      borderRadius: "12px",
-                      background:
-                        app.status === "Approved"
-                          ? "#c6f6d5"
-                          : app.status === "Rejected"
-                          ? "#fed7d7"
-                          : "#feebc8",
-                      color:
-                        app.status === "Approved"
-                          ? "#22543d"
-                          : app.status === "Rejected"
-                          ? "#822727"
-                          : "#744210",
-                      fontSize: "0.8rem",
-                    }}
-                  >
+              <tr key={app.id}>
+                <td className="applicant-name">{app.applicant}</td>
+                <td>{app.type}</td>
+                <td>{app.date}</td>
+                <td>
+                  <span className={`status-badge ${app.status.toLowerCase()}`}>
                     {app.status}
                   </span>
                 </td>
-                <td style={{ padding: "12px" }}>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <td>
+                  <div className="actions-cell">
                     {app.status === "Pending" && (
                       <>
                         <button
                           onClick={() => handleStatusChange(app.id, "Approved")}
-                          style={{
-                            padding: "6px 12px",
-                            background: "#48bb78",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "0.85rem",
-                          }}
+                          className="action-btn approve"
                         >
                           Approve
                         </button>
                         <button
                           onClick={() => handleStatusChange(app.id, "Rejected")}
-                          style={{
-                            padding: "6px 12px",
-                            background: "#fc8181",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "0.85rem",
-                          }}
+                          className="action-btn reject"
                         >
                           Reject
                         </button>
@@ -129,21 +88,13 @@ const OfficerApplications = () => {
                     {/* Delete is available for any application */}
                     <button
                       onClick={() => handleDelete(app.id)}
-                      style={{
-                        padding: "6px 12px",
-                        background: "#e53e3e",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        fontSize: "0.85rem",
-                      }}
+                      className="action-btn delete"
                     >
                       Delete
                     </button>
 
                     {app.status !== "Pending" && (
-                      <span style={{ color: "#a0aec0", fontSize: "0.9rem" }}>
+                      <span className="status-text">
                         {/* keep visual hint that no more status actions available */}
                         Status: {app.status}
                       </span>

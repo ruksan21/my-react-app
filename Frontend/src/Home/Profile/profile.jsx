@@ -107,6 +107,7 @@ const Profile = () => {
               email: wardData.chairperson_email || "ram.shrestha@ktm.gov.np",
               address: `Ward No. ${wardData.ward_number}, ${wardData.district_name}`,
             },
+            officerId: wardData.officer_id,
           });
         }
       })
@@ -145,6 +146,11 @@ const Profile = () => {
       return;
     }
 
+    if (!profileData.officerId) {
+      alert("No officer accounts connected to this ward.");
+      return;
+    }
+
     // Call backend API to persistence follow action
     fetch("http://127.0.0.1/my-react-app/Backend/api/toggle_follow.php", {
       method: "POST",
@@ -152,7 +158,7 @@ const Profile = () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        officer_id: ward || 1,
+        officer_id: profileData.officerId,
         follower_id: user.id,
       }),
     })

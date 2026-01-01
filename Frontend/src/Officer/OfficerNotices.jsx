@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import OfficerLayout from "./OfficerLayout";
+import "./OfficerNotices.css";
 
 const OfficerNotices = () => {
   const [notices, setNotices] = useState([
@@ -50,30 +51,11 @@ const OfficerNotices = () => {
   return (
     <OfficerLayout title="Notices">
       <div className="recent-activity">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "20px",
-          }}
-        >
-          <h2 className="section-title" style={{ marginBottom: 0 }}>
-            Ward Notices
-          </h2>
+        <div className="notices-header">
+          <h2 className="section-title">Ward Notices</h2>
           <button
             onClick={() => setShowForm(!showForm)}
-            style={{
-              padding: "8px 16px",
-              background: "#3182ce",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
+            className="create-notice-btn"
           >
             <span>{showForm ? "✕" : "+"}</span>{" "}
             {showForm ? "Cancel" : "Create Notice"}
@@ -81,155 +63,62 @@ const OfficerNotices = () => {
         </div>
 
         {showForm && (
-          <div
-            style={{
-              background: "#f7fafc",
-              padding: "20px",
-              borderRadius: "8px",
-              marginBottom: "20px",
-              border: "1px solid #e2e8f0",
-            }}
-          >
-            <h3
-              style={{ marginTop: 0, marginBottom: "15px", color: "#2d3748" }}
-            >
-              New Notice
-            </h3>
+          <div className="notice-form-container">
+            <h3 className="notice-form-title">New Notice</h3>
             <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: "15px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "5px",
-                    color: "#4a5568",
-                    fontWeight: "500",
-                  }}
-                >
-                  Title *
-                </label>
+              <div className="form-group">
+                <label className="form-label">Title *</label>
                 <input
                   type="text"
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
                   required
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid #cbd5e0",
-                    borderRadius: "4px",
-                    fontSize: "1rem",
-                  }}
+                  className="form-input"
                   placeholder="Enter notice title"
                 />
               </div>
-              <div style={{ marginBottom: "15px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "5px",
-                    color: "#4a5568",
-                    fontWeight: "500",
-                  }}
-                >
-                  Content *
-                </label>
+              <div className="form-group">
+                <label className="form-label">Content *</label>
                 <textarea
                   name="content"
                   value={formData.content}
                   onChange={handleInputChange}
                   required
                   rows="4"
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid #cbd5e0",
-                    borderRadius: "4px",
-                    fontSize: "1rem",
-                    resize: "vertical",
-                  }}
+                  className="form-input"
                   placeholder="Enter notice content"
                 />
               </div>
-              <button
-                type="submit"
-                style={{
-                  padding: "8px 16px",
-                  background: "#48bb78",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "0.95rem",
-                }}
-              >
+              <button type="submit" className="publish-btn">
                 Publish Notice
               </button>
             </form>
           </div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+        <div className="notices-list">
           {notices.map((notice) => (
-            <div
-              key={notice.id}
-              style={{
-                padding: "20px",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-                background: "#ffffff",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "start",
-                  marginBottom: "10px",
-                }}
-              >
+            <div key={notice.id} className="notice-card">
+              <div className="notice-header">
                 <div>
-                  <h3 style={{ margin: "0 0 8px 0", color: "#2d3748" }}>
-                    {notice.title}
-                  </h3>
-                  <p
-                    style={{ margin: 0, fontSize: "0.85rem", color: "#718096" }}
-                  >
-                    📅 Published on {notice.date}
-                  </p>
+                  <h3 className="notice-title">{notice.title}</h3>
+                  <p className="notice-date">📅 Published on {notice.date}</p>
                 </div>
                 <button
                   onClick={() => handleDelete(notice.id)}
-                  style={{
-                    padding: "6px 12px",
-                    background: "#fc8181",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    fontSize: "0.85rem",
-                  }}
+                  className="notice-delete-btn"
                 >
                   Delete
                 </button>
               </div>
-              <p
-                style={{
-                  margin: "10px 0 0 0",
-                  color: "#4a5568",
-                  lineHeight: "1.6",
-                }}
-              >
-                {notice.content}
-              </p>
+              <p className="notice-content">{notice.content}</p>
             </div>
           ))}
         </div>
 
         {notices.length === 0 && (
-          <div
-            style={{ padding: "40px", textAlign: "center", color: "#718096" }}
-          >
+          <div className="no-notices">
             No notices published yet. Click "Create Notice" to add one.
           </div>
         )}
