@@ -9,32 +9,44 @@ export function WardProvider({ children }) {
     "Kathmandu Metropolitan City"
   );
   const [ward, setWard] = useState(1);
+  const [stats, setStats] = useState({
+    followers: 0,
+    rating: 0,
+    reviews: 0,
+    totalWorks: 0,
+    completedWorks: 0,
+    isFollowing: false,
+  });
 
-  // यो useEffect ले पेज लोड हुने बित्तिकै डाटा तान्छ
-  // अहिलेको लागि Backend API नभएकोले यो code comment गरेका छौँ।
-  // पछि Backend रेडी भएपछि यसलाई uncomment गर्नुहोला।
-
-  /*
-  useEffect(() => {
-    // Backend API लाई बोलाउने
-    fetch("http://localhost/your-backend-api/get-ward-info.php") 
-      .then((response) => response.json()) // डाटालाई JSON मा बदल्ने
+  const refreshStats = (wardId, followerId) => {
+    const followerParam = followerId ? `&follower_id=${followerId}` : "";
+    fetch(
+      `http://127.0.0.1/my-react-app/Backend/api/get_profile_stats.php?ward_id=${wardId}${followerParam}`
+    )
+      .then((res) => res.json())
       .then((data) => {
-        // Backend बाट आएको डाटा यहाँ set गर्ने
-        setMunicipality(data.municipality);
-        setWard(data.ward);
+        if (data.success) {
+          setStats({
+            followers: data.followers || 0,
+            rating: data.rating || 0,
+            reviews: data.reviews || 0,
+            totalWorks: data.totalWorks || 0,
+            completedWorks: data.completedWorks || 0,
+            isFollowing: data.isFollowing || false,
+          });
+        }
       })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-      });
-  }, []); 
-  */
+      .catch((err) => console.error("Error fetching global stats:", err));
+  };
 
   const value = {
     municipality,
     ward,
+    stats,
     setMunicipality,
     setWard,
+    setStats,
+    refreshStats,
   };
 
   return <WardContext.Provider value={value}>{children}</WardContext.Provider>;

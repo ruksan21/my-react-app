@@ -50,6 +50,7 @@ const AlertCentre = () => {
         );
       }
     } catch (err) {
+      console.error("Failed to update alert status:", err);
       alert("Failed to update alert status.");
     }
   };
@@ -67,6 +68,7 @@ const AlertCentre = () => {
         setAlerts((prev) => prev.filter((alert) => alert.id !== id));
       }
     } catch (err) {
+      console.error("Failed to delete alert:", err);
       alert("Failed to delete alert.");
     }
   };
@@ -84,6 +86,7 @@ const AlertCentre = () => {
         setAlerts([]);
       }
     } catch (err) {
+      console.error("Failed to clear alerts:", err);
       alert("Failed to clear alerts.");
     }
   };

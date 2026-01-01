@@ -1,69 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from "react";
+import { useWard } from "../Context/WardContext";
 
 // Working, backend-ready Status component.
-const Status = ({ endpoint = '/api/status', initialData }) => {
-    const [data, setData] = useState(
-        initialData || {
-            totalWorks: 3,
-            completedWorks: 1,
-            averageRating: 4.2,
-            followers: 1250,
-        }
-    );
-    const [error, setError] = useState(null);
+const Status = () => {
+  const { stats, ward, refreshStats } = useWard();
 
-    useEffect(() => {
-        if (!endpoint) return; // allow disabling fetch in dev
-        let cancelled = false;
-        (async () => {
-            try {
-                const res = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
-                if (!res.ok) throw new Error('Failed to load status');
-                const json = await res.json();
-                if (!cancelled && json) {
-                    setData((prev) => ({
-                        totalWorks: json.totalWorks ?? prev.totalWorks,
-                        completedWorks: json.completedWorks ?? prev.completedWorks,
-                        averageRating: json.averageRating ?? prev.averageRating,
-                        followers: json.followers ?? prev.followers,
-                    }));
-                }
-            } catch (e) {
-                if (!cancelled) setError(e.message);
-            }
-        })();
-        return () => { cancelled = true; };
-    }, [endpoint]);
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const followerId = user ? user.id : null;
+    refreshStats(ward || 1, followerId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ward]);
 
-    return (
-        <section className="stats-section">
-            <div className="stat-card">
-                <div className="icon">💼</div>
-                <h3>{data.totalWorks}</h3>
-                <p>Total Works</p>
-            </div>
-            <div className="stat-card">
-                <div className="icon">✅</div>
-                <h3>{data.completedWorks}</h3>
-                <p>Completed Works</p>
-            </div>
-            <div className="stat-card">
-                <div className="icon">⭐</div>
-                <h3>{data.averageRating}</h3>
-                <p>Average Rating</p>
-            </div>
-            <div className="stat-card">
-                <div className="icon">👥</div>
-                <h3>{data.followers}</h3>
-                <p>Followers</p>
-            </div>
-            {error && (
-                <div className="status-error" style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#b00' }}>
-                    {error}
-                </div>
-            )}
-        </section>
-    );
+  return (
+    <section className="stats-section">
+      <div className="stat-card">
+        <div className="icon">💼</div>
+        <h3>{stats.totalWorks}</h3>
+        <p>Total Works</p>
+      </div>
+      <div className="stat-card">
+        <div className="icon">✅</div>
+        <h3>{stats.completedWorks}</h3>
+        <p>Completed Works</p>
+      </div>
+      <div className="stat-card">
+        <div className="icon">⭐</div>
+        <h3>{stats.rating}</h3>
+        <p>Average Rating</p>
+      </div>
+      <div className="stat-card">
+        <div className="icon">👥</div>
+        <h3>{stats.followers}</h3>
+        <p>Followers</p>
+      </div>
+    </section>
+  );
 };
 
 export default Status;

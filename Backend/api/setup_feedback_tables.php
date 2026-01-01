@@ -21,6 +21,8 @@ if ($conn->query($sql) === TRUE) {
         `officer_id` INT NOT NULL,
         `follower_id` INT NOT NULL,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (`officer_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+        FOREIGN KEY (`follower_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
         UNIQUE KEY `unique_follow` (`officer_id`, `follower_id`)
     );";
     

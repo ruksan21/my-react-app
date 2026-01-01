@@ -56,13 +56,18 @@ const StarRating = ({ rating, reviews }) => {
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("Details");
-  const [followers, setFollowers] = useState(0);
-  const [rating, setRating] = useState(0);
-  const [reviews, setReviews] = useState(0);
+  const { ward, stats, refreshStats } = useWard(); // Get global stats and refresh function
   const [isFollowing, setIsFollowing] = useState(false);
   const [profileData, setProfileData] = useState(defaultProfileData);
   const [personalAssets, setPersonalAssets] = useState([]);
-  const { ward } = useWard(); // Get selected ward from context
+
+  useEffect(() => {
+    // Initial fetch of isFollowing state for this specific user
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user) {
+      setIsFollowing(stats.isFollowing);
+    }
+  }, [stats.isFollowing]);
 
   useEffect(() => {
     // Fetch chairperson profile data from ward database using selected ward
@@ -107,17 +112,11 @@ const Profile = () => {
       })
       .catch((err) => console.error("Error fetching profile:", err));
 
-    // Fetch real stats from backend
-    fetch("http://127.0.0.1/my-react-app/Backend/api/get_profile_stats.php")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setFollowers(data.followers);
-          setRating(data.rating);
-          setReviews(data.reviews);
-        }
-      })
-      .catch((err) => console.error("Error fetching stats:", err));
+    // No need to fetch stats here anymore, WardContext/Status.jsx handles initial load
+    // But we trigger a refresh in case ward changed
+    const user = JSON.parse(localStorage.getItem("user"));
+    const followerId = user ? user.id : null;
+    refreshStats(ward || 1, followerId);
 
     // Fetch personal assets
     fetch(
@@ -130,14 +129,14 @@ const Profile = () => {
         }
       })
       .catch((err) => console.error("Error fetching personal assets:", err));
-  }, [ward]); // Re-fetch when ward changes
+  }, [ward, refreshStats]); // Re-fetch when ward or refreshStats changes
 
   const handleFollow = () => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
     const user = JSON.parse(localStorage.getItem("user"));
 
     if (!isLoggedIn || !user) {
-      console.log("Please login to follow!");
+      alert("Please login to follow!");
       return;
     }
 
@@ -146,13 +145,27 @@ const Profile = () => {
       return;
     }
 
-    if (isFollowing) {
-      setFollowers((prev) => prev - 1);
-      setIsFollowing(false);
-    } else {
-      setFollowers((prev) => prev + 1);
-      setIsFollowing(true);
-    }
+    // Call backend API to persistence follow action
+    fetch("http://127.0.0.1/my-react-app/Backend/api/toggle_follow.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        officer_id: ward || 1,
+        follower_id: user.id,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          // Trigger global stats refresh!
+          refreshStats(ward || 1, user.id);
+        } else {
+          alert(data.message || "Failed to update follow status.");
+        }
+      })
+      .catch((err) => console.error("Error toggling follow:", err));
   };
 
   const handleDownloadPDF = () => {
@@ -236,13 +249,9 @@ const Profile = () => {
     yPos += 10;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(
-      `Rating: ${profileData.rating} (${profileData.reviews} reviews)`,
-      20,
-      yPos
-    );
+    doc.text(`Rating: ${stats.rating} (${stats.reviews} reviews)`, 20, yPos);
     yPos += 8;
-    doc.text(`Followers: ${followers}`, 20, yPos);
+    doc.text(`Followers: ${stats.followers}`, 20, yPos);
 
     // Save the PDF
     doc.save(`${profileData.name.replace(/\s+/g, "_")}_Profile.pdf`);
@@ -430,9 +439,9 @@ const Profile = () => {
           </div>
         </div>
         <div className="profile-header-right">
-          <StarRating rating={rating} reviews={reviews} />
+          <StarRating rating={stats.rating} reviews={stats.reviews} />
           <div className="followers-section">
-            <span>&#128100; {followers} followers</span>
+            <span>&#128100; {stats.followers} followers</span>
             <button
               className={`follow-button ${isFollowing ? "following" : ""}`}
               onClick={handleFollow}
