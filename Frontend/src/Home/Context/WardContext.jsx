@@ -9,6 +9,7 @@ export function WardProvider({ children }) {
     "Kathmandu Metropolitan City"
   );
   const [ward, setWard] = useState(1);
+  const [wardId, setWardId] = useState(1); // Track database ID
   const [stats, setStats] = useState({
     followers: 0,
     rating: 0,
@@ -18,10 +19,11 @@ export function WardProvider({ children }) {
     isFollowing: false,
   });
 
-  const refreshStats = (wardId, followerId) => {
+  const refreshStats = (currentWardId, followerId) => {
+    // We use the ID for fetching stats
     const followerParam = followerId ? `&follower_id=${followerId}` : "";
     fetch(
-      `http://127.0.0.1/my-react-app/Backend/api/get_profile_stats.php?ward_id=${wardId}${followerParam}`
+      `http://127.0.0.1/my-react-app/Backend/api/get_profile_stats.php?ward_id=${currentWardId}${followerParam}`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -42,9 +44,11 @@ export function WardProvider({ children }) {
   const value = {
     municipality,
     ward,
+    wardId, // Expose ID
     stats,
     setMunicipality,
     setWard,
+    setWardId, // Expose setter
     setStats,
     refreshStats,
   };

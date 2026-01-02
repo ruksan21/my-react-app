@@ -56,7 +56,7 @@ const StarRating = ({ rating, reviews }) => {
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("Details");
-  const { ward, stats, refreshStats } = useWard(); // Get global stats and refresh function
+  const { ward, wardId, stats, refreshStats } = useWard(); // Get global stats and refresh function
   const [isFollowing, setIsFollowing] = useState(false);
   const [profileData, setProfileData] = useState(defaultProfileData);
   const [personalAssets, setPersonalAssets] = useState([]);
@@ -70,9 +70,9 @@ const Profile = () => {
   }, [stats.isFollowing]);
 
   useEffect(() => {
-    // Fetch chairperson profile data from ward database using selected ward
+    // Fetch chairperson profile data from ward database using selected ward ID
     fetch(
-      `http://127.0.0.1/my-react-app/Backend/api/get_chairperson_profile.php?ward_id=${ward}`
+      `http://127.0.0.1/my-react-app/Backend/api/get_chairperson_profile.php?ward_id=${wardId}`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -81,7 +81,9 @@ const Profile = () => {
           // Update profile data with database values
           setProfileData({
             name: wardData.chairperson_name || "Ram Bahadur Shrestha",
-            role: `wardChairperson - ${wardData.district_name} Metropolitan City, wardNumber ${wardData.ward_number}`,
+            role: `wardChairperson - ${
+              wardData.municipality || wardData.district_name
+            } , Ward No. ${wardData.ward_number}`,
             phone: wardData.chairperson_phone || "9841234567",
             email: wardData.chairperson_email || "ram.shrestha@ktm.gov.np",
             imageUrl: wardData.chairperson_photo
@@ -91,7 +93,9 @@ const Profile = () => {
             reviews: 89,
             followers: 1250,
             personalInfo: {
-              address: `Ward No. ${wardData.ward_number}, ${wardData.district_name}`,
+              address: `Ward No. ${wardData.ward_number}, ${
+                wardData.municipality || wardData.district_name
+              }`,
               education:
                 wardData.chairperson_education ||
                 "Master's Degree (Political Science)",
@@ -105,23 +109,25 @@ const Profile = () => {
             contactDetails: {
               phone: wardData.chairperson_phone || "9841234567",
               email: wardData.chairperson_email || "ram.shrestha@ktm.gov.np",
-              address: `Ward No. ${wardData.ward_number}, ${wardData.district_name}`,
+              address: `Ward No. ${wardData.ward_number}, ${
+                wardData.municipality || wardData.district_name
+              }`,
             },
             officerId: wardData.officer_id,
+            wardId: wardData.ward_id,
           });
         }
       })
       .catch((err) => console.error("Error fetching profile:", err));
 
-    // No need to fetch stats here anymore, WardContext/Status.jsx handles initial load
-    // But we trigger a refresh in case ward changed
+    // Refresh stats using ID
     const user = JSON.parse(localStorage.getItem("user"));
     const followerId = user ? user.id : null;
-    refreshStats(ward || 1, followerId);
+    refreshStats(wardId || 1, followerId);
 
     // Fetch personal assets
     fetch(
-      `http://127.0.0.1/my-react-app/Backend/api/manage_chairperson_assets.php?ward_id=${ward}`
+      `http://127.0.0.1/my-react-app/Backend/api/manage_chairperson_assets.php?ward_id=${wardId}`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -130,7 +136,7 @@ const Profile = () => {
         }
       })
       .catch((err) => console.error("Error fetching personal assets:", err));
-  }, [ward, refreshStats]); // Re-fetch when ward or refreshStats changes
+  }, [wardId, refreshStats]); // Re-fetch when wardId or refreshStats changes
 
   const handleFollow = () => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -311,7 +317,7 @@ const Profile = () => {
     }
 
     if (activeTab === "Works") {
-      return <Works />;
+      return <Works wardId={profileData.wardId} />;
     }
     if (activeTab === "Dashboard") {
       return <Dashboard embedded={true} />;

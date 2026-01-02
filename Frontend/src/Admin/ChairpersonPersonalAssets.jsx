@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import "./ChairpersonPersonalAssets.css";
 
 const ChairpersonPersonalAssets = ({ wardId }) => {
   const API_URL = "http://localhost/my-react-app/Backend/api";
@@ -18,6 +19,7 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
     if (wardId) {
       fetchPersonalAssets();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wardId]);
 
   const fetchPersonalAssets = async () => {
@@ -65,6 +67,7 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
         alert("Failed to add personal asset: " + data.message);
       }
     } catch (err) {
+      console.error(err);
       alert("Error adding personal asset.");
     }
   };
@@ -87,51 +90,44 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
         alert("Failed to delete personal asset: " + data.message);
       }
     } catch (err) {
+      console.error(err);
       alert("Error deleting personal asset.");
     }
   };
 
+  // Calculate total value
+  const totalValue = personalAssets.reduce(
+    (acc, curr) => acc + (parseFloat(curr.value) || 0),
+    0
+  );
+
   return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "16px",
-        }}
-      >
-        <h3 style={{ fontSize: "1rem", fontWeight: 600, margin: 0 }}>
-          Chairperson's Personal Property
-        </h3>
-        <button
-          className="action-btn approve"
-          onClick={() => setIsAdding(true)}
-          style={{ fontSize: "0.9rem" }}
-        >
+    <div className="assets-container">
+      <div className="assets-header">
+        <h3 className="assets-title">Chairperson's Personal Property</h3>
+        <button className="asset-btn-add" onClick={() => setIsAdding(true)}>
           + Add Personal Asset
         </button>
       </div>
 
+      <div className="assets-summary-card">
+        <div>
+          <span className="summary-label">Total Asset Value</span>
+          <div className="summary-value">NPR {totalValue.toLocaleString()}</div>
+        </div>
+        <div>
+          <span className="summary-label">Total Items</span>
+          <div className="summary-value" style={{ fontSize: "1rem" }}>
+            {personalAssets.length}
+          </div>
+        </div>
+      </div>
+
       {/* Add Personal Asset Form */}
       {isAdding && (
-        <form
-          onSubmit={handleAdd}
-          style={{
-            marginBottom: "20px",
-            padding: "16px",
-            backgroundColor: "var(--bg-secondary)",
-            borderRadius: "8px",
-          }}
-        >
-          <h4 style={{ marginTop: 0 }}>Add Personal Asset</h4>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "12px",
-            }}
-          >
+        <form onSubmit={handleAdd} className="asset-form-card">
+          <h4 className="form-title-small">Add Personal Asset</h4>
+          <div className="asset-form-grid">
             <div>
               <label className="stat-label">Asset Type *</label>
               <select
@@ -143,13 +139,8 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
                     asset_type: e.target.value,
                   })
                 }
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--border-color)",
-                  marginTop: "4px",
-                }}
+                className="asset-input"
+                style={{ backgroundColor: "white" }}
               >
                 <option value="land">Land</option>
                 <option value="building">Building (House)</option>
@@ -173,13 +164,7 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
                   })
                 }
                 placeholder="e.g., House in Kathmandu"
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--border-color)",
-                  marginTop: "4px",
-                }}
+                className="asset-input"
               />
             </div>
             <div>
@@ -194,13 +179,7 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
                   })
                 }
                 placeholder="e.g., 25000000"
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--border-color)",
-                  marginTop: "4px",
-                }}
+                className="asset-input"
               />
             </div>
             <div>
@@ -215,13 +194,7 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
                   })
                 }
                 placeholder="e.g., Thamel, Kathmandu"
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--border-color)",
-                  marginTop: "4px",
-                }}
+                className="asset-input"
               />
             </div>
             <div>
@@ -235,13 +208,7 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
                     acquired_date: e.target.value,
                   })
                 }
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--border-color)",
-                  marginTop: "4px",
-                }}
+                className="asset-input"
               />
             </div>
             <div>
@@ -254,13 +221,8 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
                     ownership_type: e.target.value,
                   })
                 }
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--border-color)",
-                  marginTop: "4px",
-                }}
+                className="asset-input"
+                style={{ backgroundColor: "white" }}
               >
                 <option value="self">Self</option>
                 <option value="spouse">Spouse</option>
@@ -279,85 +241,84 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
                   })
                 }
                 placeholder="Additional details about the asset"
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--border-color)",
-                  marginTop: "4px",
-                  fontFamily: "inherit",
-                }}
+                className="asset-input"
+                style={{ fontFamily: "inherit" }}
               />
             </div>
-          </div>
-          <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-            <button
-              type="submit"
-              className="action-btn approve"
-              style={{ fontSize: "0.9rem" }}
-            >
-              Add Personal Asset
-            </button>
-            <button
-              type="button"
-              className="action-btn"
-              onClick={() => setIsAdding(false)}
+            <div
               style={{
-                backgroundColor: "var(--text-muted)",
-                fontSize: "0.9rem",
+                gridColumn: "1 / -1",
+                display: "flex",
+                gap: "8px",
+                marginTop: "8px",
               }}
             >
-              Cancel
-            </button>
+              <button type="submit" className="asset-btn-add">
+                Add Asset
+              </button>
+              <button
+                type="button"
+                className="asset-btn-add"
+                onClick={() => setIsAdding(false)}
+                style={{
+                  backgroundColor: "#e2e8f0",
+                  color: "#475569",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </form>
       )}
 
       {personalAssets.length === 0 ? (
-        <p style={{ color: "var(--text-muted)" }}>
+        <p className="no-assets-msg">
           No personal assets declared for this chairperson.
         </p>
       ) : (
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th>Asset Name</th>
-              <th>Location/Details</th>
-              <th>Value (NPR)</th>
-              <th>Ownership</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {personalAssets.map((asset) => (
-              <tr key={asset.id}>
-                <td style={{ textTransform: "capitalize" }}>
-                  {asset.asset_type.replace("_", " ")}
-                </td>
-                <td>{asset.asset_name}</td>
-                <td>{asset.location || "N/A"}</td>
-                <td>
-                  {asset.value
-                    ? `NPR ${parseFloat(asset.value).toLocaleString()}`
-                    : "N/A"}
-                </td>
-                <td style={{ textTransform: "capitalize" }}>
-                  {asset.ownership_type}
-                </td>
-                <td>
-                  <button
-                    className="action-btn delete"
-                    onClick={() => handleDelete(asset.id)}
-                    style={{ fontSize: "0.85rem", padding: "6px 12px" }}
-                  >
-                    Delete
-                  </button>
-                </td>
+        <div className="assets-table-wrapper">
+          <table className="assets-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Asset Name</th>
+                <th>Location/Details</th>
+                <th>Value (NPR)</th>
+                <th>Ownership</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {personalAssets.map((asset) => (
+                <tr key={asset.id}>
+                  <td style={{ textTransform: "capitalize" }}>
+                    {asset.asset_type.replace("_", " ")}
+                  </td>
+                  <td>{asset.asset_name}</td>
+                  <td>{asset.location || "N/A"}</td>
+                  <td>
+                    {asset.value
+                      ? `NPR ${parseFloat(asset.value).toLocaleString()}`
+                      : "N/A"}
+                  </td>
+                  <td style={{ textTransform: "capitalize" }}>
+                    {asset.ownership_type}
+                  </td>
+                  <td>
+                    <button
+                      className="asset-action-btn asset-delete-btn"
+                      onClick={() => handleDelete(asset.id)}
+                      title="Delete Asset"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

@@ -1,0 +1,37 @@
+/* Reports.css */
+
+.reports-container-center {
+  padding: 32px;
+  text-align: center;
+}
+
+.reports-placeholder-text {
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.reports-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-report-download {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: white;
+  background-color: var(--admin-accent);
+  transition: opacity 0.2s;
+}
+
+.btn-report-download:hover {
+  opacity: 0.9;
+}
+
+.btn-report-secondary {
+  background-color: var(--admin-sidebar-bg);
+}

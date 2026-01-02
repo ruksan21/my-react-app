@@ -1,50 +1,99 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import OfficerLayout from "./OfficerLayout";
 import "./OfficerNotices.css";
+import { useAuth } from "../Home/Context/AuthContext";
 
 const OfficerNotices = () => {
-  const [notices, setNotices] = useState([
-    {
-      id: 1,
-      title: "Ward Meeting Announcement",
-      content: "Monthly ward meeting scheduled for November 25th at 2 PM",
-      date: "2023-11-10",
-      active: true,
-    },
-    {
-      id: 2,
-      title: "Tax Collection Notice",
-      content: "Property tax collection will begin from December 1st",
-      date: "2023-11-08",
-      active: true,
-    },
-  ]);
-
+  const { user } = useAuth();
+  const [notices, setNotices] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ title: "", content: "" });
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch notices from backend
+  useEffect(() => {
+    if (user?.assigned_ward) {
+      fetchNotices();
+    }
+  }, [user]);
+
+  const fetchNotices = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `http://127.0.0.1/my-react-app/Backend/api/manage_notices.php?ward_id=${user.assigned_ward}`
+      );
+      const result = await response.json();
+
+      if (result.success) {
+        setNotices(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching notices:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newNotice = {
-      id: notices.length + 1,
-      title: formData.title,
-      content: formData.content,
-      date: new Date().toISOString().split("T")[0],
-      active: true,
-    };
-    setNotices([newNotice, ...notices]);
-    setFormData({ title: "", content: "" });
-    setShowForm(false);
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1/my-react-app/Backend/api/manage_notices.php",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ward_id: user.assigned_ward,
+            officer_id: user.id,
+            title: formData.title,
+            content: formData.content,
+          }),
+        }
+      );
+
+      const result = await response.json();
+      if (result.success) {
+        setFormData({ title: "", content: "" });
+        setShowForm(false);
+        fetchNotices(); // Reload notices
+      } else {
+        alert("Error: " + result.message);
+      }
+    } catch (error) {
+      console.error("Error creating notice:", error);
+      alert("Failed to create notice");
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this notice?")) {
-      setNotices(notices.filter((notice) => notice.id !== id));
+      try {
+        const response = await fetch(
+          "http://127.0.0.1/my-react-app/Backend/api/manage_notices.php",
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          }
+        );
+
+        const result = await response.json();
+        if (result.success) {
+          fetchNotices(); // Reload notices
+        } else {
+          alert("Error: " + result.message);
+        }
+      } catch (error) {
+        console.error("Error deleting notice:", error);
+        alert("Failed to delete notice");
+      }
     }
   };
 
@@ -97,27 +146,33 @@ const OfficerNotices = () => {
           </div>
         )}
 
-        <div className="notices-list">
-          {notices.map((notice) => (
-            <div key={notice.id} className="notice-card">
-              <div className="notice-header">
-                <div>
-                  <h3 className="notice-title">{notice.title}</h3>
-                  <p className="notice-date">📅 Published on {notice.date}</p>
+        {isLoading ? (
+          <div className="no-notices">Loading notices...</div>
+        ) : (
+          <div className="notices-list">
+            {notices.map((notice) => (
+              <div key={notice.id} className="notice-card">
+                <div className="notice-header">
+                  <div>
+                    <h3 className="notice-title">{notice.title}</h3>
+                    <p className="notice-date">
+                      📅 Published on {notice.published_date}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(notice.id)}
+                    className="notice-delete-btn"
+                  >
+                    Delete
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDelete(notice.id)}
-                  className="notice-delete-btn"
-                >
-                  Delete
-                </button>
+                <p className="notice-content">{notice.content}</p>
               </div>
-              <p className="notice-content">{notice.content}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {notices.length === 0 && (
+        {!isLoading && notices.length === 0 && (
           <div className="no-notices">
             No notices published yet. Click "Create Notice" to add one.
           </div>

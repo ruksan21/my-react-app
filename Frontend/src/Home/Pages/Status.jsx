@@ -3,14 +3,14 @@ import { useWard } from "../Context/WardContext";
 
 // Working, backend-ready Status component.
 const Status = () => {
-  const { stats, ward, refreshStats } = useWard();
+  const { stats, wardId, refreshStats } = useWard();
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     const followerId = user ? user.id : null;
-    refreshStats(ward || 1, followerId);
+    refreshStats(wardId || 1, followerId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ward]);
+  }, [wardId]);
 
   return (
     <section className="stats-section">

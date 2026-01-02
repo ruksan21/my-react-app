@@ -63,23 +63,44 @@ const WorkCard = ({ work }) => {
   );
 };
 
-export default function Works({ embedded = false }) {
+export default function Works({ embedded = false, wardId }) {
   const { municipality, ward } = useWard();
   const [works, setWorks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1/my-react-app/Backend/api/get_works.php")
+    setIsLoading(true);
+    let url = "http://127.0.0.1/my-react-app/Backend/api/get_works.php";
+
+    // Construct query parameters
+    const params = new URLSearchParams();
+
+    if (wardId) {
+      // If specific ward ID provided (e.g. Profile page), use strict ID filter
+      params.append("ward_id", wardId);
+    } else {
+      // Otherwise use Global Context filters
+      if (ward) params.append("ward_number", ward);
+      if (municipality) params.append("municipality", municipality);
+    }
+
+    const queryString = params.toString();
+    if (queryString) {
+      url += "?" + queryString;
+    }
+
+    fetch(url)
       .then((res) => res.json())
       .then((data) => {
-        setWorks(data);
+        setWorks(Array.isArray(data) ? data : []);
         setIsLoading(false);
       })
       .catch((err) => {
         console.error("Error fetching works:", err);
+        setWorks([]); // Ensure works is array on error
         setIsLoading(false);
       });
-  }, []);
+  }, [ward, municipality, wardId]); // Re-fetch when dependencies change
 
   return (
     <>

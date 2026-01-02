@@ -88,8 +88,6 @@ const ProfileSection = () => {
       */
 
       // Mock implementation
-      console.log("Saving profile:", formData);
-
       // Update user context with new data
       updateUser(formData);
 

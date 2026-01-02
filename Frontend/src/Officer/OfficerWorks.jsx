@@ -80,15 +80,23 @@ export default function OfficerWorks() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchWorks();
-  }, []);
+    if (user?.assigned_ward) {
+      fetchWorks();
+    }
+  }, [user]);
 
   const fetchWorks = () => {
     setIsLoading(true);
-    fetch("http://127.0.0.1/my-react-app/Backend/api/get_works.php")
+    // Explicitly fetching for the assigned ward to ensure we get relevant data
+    // and to verify connection is working for this specific ward context
+    fetch(
+      `http://127.0.0.1/my-react-app/Backend/api/get_works.php?ward_id=${user.assigned_ward}`
+    )
       .then((res) => res.json())
       .then((data) => {
-        setWorks(data);
+        // Ensure data is an array
+        const worksData = Array.isArray(data) ? data : [];
+        setWorks(worksData);
         setIsLoading(false);
       })
       .catch((err) => {

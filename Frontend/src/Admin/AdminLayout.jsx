@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./Admin.css";
+import "./AdminLayout.css";
 import { useAuth } from "../Home/Context/AuthContext";
 
 const AdminLayout = ({ children, title }) => {
@@ -14,6 +15,7 @@ const AdminLayout = ({ children, title }) => {
   };
 
   const navItems = [
+    { path: "/", label: "Go to Home", icon: "🏠" },
     { path: "/admin", label: "Dashboard", icon: "📊" },
     { path: "/admin/users", label: "User Management", icon: "👥" },
     { path: "/admin/alerts", label: "Alert Centre", icon: "🔔" },

@@ -18,24 +18,42 @@ if (!isset($data->action)) {
     exit();
 }
 
-$action = $data->action;
+if ($data->action === 'create') {
+    $type = $conn->real_escape_string($data->type);
+    $title = $conn->real_escape_string($data->title);
+    $message = $conn->real_escape_string($data->message);
+    
+    $query = "INSERT INTO system_alerts (type, title, message, status) VALUES ('$type', '$title', '$message', 'unread')";
+    if ($conn->query($query)) {
+        echo json_encode(array("success" => true, "message" => "Alert created."));
+    } else {
+        echo json_encode(array("success" => false, "message" => "Error: " . $conn->error));
+    }
 
-if ($action === 'mark_read') {
+} elseif ($data->action === 'mark_read') {
     $id = intval($data->id);
     $query = "UPDATE system_alerts SET status = 'read' WHERE id = $id";
-} elseif ($action === 'delete') {
+    if ($conn->query($query)) {
+        echo json_encode(array("success" => true));
+    } else {
+        echo json_encode(array("success" => false));
+    }
+
+} elseif ($data->action === 'delete') {
     $id = intval($data->id);
     $query = "DELETE FROM system_alerts WHERE id = $id";
-} elseif ($action === 'clear_all') {
-    $query = "DELETE FROM system_alerts";
-} else {
-    echo json_encode(array("success" => false, "message" => "Invalid action."));
-    exit();
-}
+    if ($conn->query($query)) {
+        echo json_encode(array("success" => true));
+    } else {
+        echo json_encode(array("success" => false));
+    }
 
-if ($conn->query($query)) {
-    echo json_encode(array("success" => true, "message" => "Operation successful."));
-} else {
-    echo json_encode(array("success" => false, "message" => "Database error: " . $conn->error));
+} elseif ($data->action === 'clear_all') {
+    $query = "DELETE FROM system_alerts"; // Or UPDATE status = 'read'
+    if ($conn->query($query)) {
+        echo json_encode(array("success" => true));
+    } else {
+        echo json_encode(array("success" => false));
+    }
 }
 ?>

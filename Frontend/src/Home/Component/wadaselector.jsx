@@ -1,40 +1,39 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useWard } from "../Context/WardContext";
+import { useAuth } from "../Context/AuthContext";
 import "./wadaselector.css";
 
-// Mock data from API (example)
-const mockMunicipalities = [
-  {
-    name: "Kathmandu Metropolitan City",
-    totalWards: 32,
-  },
-  {
-    name: "Lalitpur Metropolitan City",
-    totalWards: 29,
-  },
-  {
-    name: "Bhaktapur Municipality",
-    totalWards: 10,
-  },
-  {
-    name: "Kirtipur Municipality",
-    totalWards: 10,
-  },
-  { name: "Tokha Municipality", totalWards: 11 },
-  {
-    name: "Chandragiri Municipality",
-    totalWards: 15,
-  },
-];
-
 const WardSelector = ({ onWardSelect }) => {
-  const { municipality, ward, setMunicipality, setWard } = useWard();
+  const { municipality, ward, setMunicipality, setWard, setWardId } = useWard();
+  const { wards: allWards } = useAuth(); // Get real wards from DB
   const [isOpen, setIsOpen] = useState(false);
-  const [municipalities, setMunicipalities] = useState([]);
   const [selectedMunicipality, setSelectedMunicipality] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 480);
+
+  // Group wards by Municipality
+  const municipalities = useMemo(() => {
+    if (!allWards) return [];
+
+    const groups = {};
+    allWards.forEach((w) => {
+      const muniName = w.municipality || "Unknown Municipality";
+      if (!groups[muniName]) {
+        groups[muniName] = { name: muniName, wards: [] };
+      }
+      // Store both number and ID
+      groups[muniName].wards.push({ number: w.number, id: w.id });
+    });
+
+    // Convert to array and sorting
+    return Object.values(groups)
+      .map((g) => ({
+        ...g,
+        wards: g.wards.sort((a, b) => a.number - b.number),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allWards]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 480);
@@ -43,54 +42,50 @@ const WardSelector = ({ onWardSelect }) => {
   }, []);
 
   useEffect(() => {
-    // Future API call will be here
-    setMunicipalities(mockMunicipalities);
     // Initialize from context
     if (municipality) {
-      const muniObj = mockMunicipalities.find((m) => m.name === municipality);
+      const muniObj = municipalities.find((m) => m.name === municipality);
       if (muniObj) setSelectedMunicipality(muniObj);
     }
     if (ward) setSelectedWard(ward);
-  }, [municipality, ward]);
+  }, [municipality, ward, municipalities]);
 
-  const filteredMunicipalities = municipalities.filter((municipality) => {
-    return municipality.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredMunicipalities = municipalities.filter((m) => {
+    return m.name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   const toggleDropdown = () => setIsOpen(!isOpen);
 
-  const selectMunicipality = (municipality) => {
-    setSelectedMunicipality(municipality);
-    setMunicipality(municipality.name);
+  const selectMunicipality = (muni) => {
+    setSelectedMunicipality(muni);
     setSearchTerm("");
   };
 
-  const selectWard = (wardNumber) => {
-    setSelectedWard(wardNumber);
+  const selectWard = (wardObj) => {
+    // wardObj is { number, id }
+    setSelectedWard(wardObj.number);
     if (selectedMunicipality) {
-      setWard(wardNumber);
+      setWard(wardObj.number);
+      setWardId(wardObj.id); // Set the actual DB ID
       setMunicipality(selectedMunicipality.name);
-      onWardSelect && onWardSelect(selectedMunicipality.name, wardNumber);
+      onWardSelect && onWardSelect(selectedMunicipality.name, wardObj.number);
     }
     setIsOpen(false);
   };
 
-  const handleBack = () => {
-    setSelectedMunicipality(null);
-    setSelectedWard(null);
-  };
-
-  // Text to display on button
+  // Helper to get display text for the button
   const getDisplayText = () => {
-    if (selectedMunicipality && selectedWard) {
-      return isMobile
-        ? `Ward ${selectedWard}`
-        : `${selectedMunicipality.name} - Ward ${selectedWard}`;
-    }
     if (municipality && ward) {
-      return isMobile ? `Ward ${ward}` : `${municipality} - Ward ${ward}`;
+      return `${municipality}, Ward ${ward}`;
+    } else if (municipality) {
+      return `${municipality}`;
     }
     return "Select Ward";
+  };
+
+  const handleBack = () => {
+    setSelectedMunicipality(null);
+    setSearchTerm("");
   };
 
   const displayText = getDisplayText();
@@ -130,18 +125,27 @@ const WardSelector = ({ onWardSelect }) => {
                   />
                 </div>
                 <ul className="municipality-list">
-                  {filteredMunicipalities.map((muni) => (
+                  {filteredMunicipalities.length === 0 ? (
                     <li
-                      key={muni.name}
                       className="municipality-list-item"
-                      onClick={() => selectMunicipality(muni)}
+                      style={{ justifyContent: "center", color: "#888" }}
                     >
-                      <span className="municipality-name">{muni.name}</span>
-                      <span className="ward-count">
-                        {muni.totalWards} Wards
-                      </span>
+                      No Municipalities Found
                     </li>
-                  ))}
+                  ) : (
+                    filteredMunicipalities.map((muni) => (
+                      <li
+                        key={muni.name}
+                        className="municipality-list-item"
+                        onClick={() => selectMunicipality(muni)}
+                      >
+                        <span className="municipality-name">{muni.name}</span>
+                        <span className="ward-count">
+                          {muni.wards.length} Wards
+                        </span>
+                      </li>
+                    ))
+                  )}
                 </ul>
               </>
             ) : (
@@ -153,16 +157,15 @@ const WardSelector = ({ onWardSelect }) => {
                   {selectedMunicipality.name}
                 </h4>
                 <div className="ward-grid">
-                  {Array.from(
-                    { length: selectedMunicipality.totalWards },
-                    (_, i) => i + 1
-                  ).map((wardNum) => (
+                  {selectedMunicipality.wards.map((wardObj) => (
                     <button
-                      key={wardNum}
-                      className="ward-grid-item"
-                      onClick={() => selectWard(wardNum)}
+                      key={wardObj.id}
+                      className={`ward-grid-item ${
+                        selectedWard === wardObj.number ? "selected" : ""
+                      }`}
+                      onClick={() => selectWard(wardObj)}
                     >
-                      {wardNum}
+                      {wardObj.number}
                     </button>
                   ))}
                 </div>

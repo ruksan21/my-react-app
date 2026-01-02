@@ -15,74 +15,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'db_connect.php';
 
-// Check if this is a photo upload request
-if (isset($_FILES['chairperson_photo'])) {
-    $ward_id = intval($_POST['id']);
-    $file = $_FILES['chairperson_photo'];
-    
-    // Validate file
-    $allowed_types = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (!in_array($file['type'], $allowed_types)) {
-        echo json_encode(array("success" => false, "message" => "Invalid file type. Only JPG and PNG allowed."));
-        exit();
-    }
-    
-    // Create uploads directory if it doesn't exist
-    $upload_dir = "uploads/";
-    if (!file_exists($upload_dir)) {
-        mkdir($upload_dir, 0777, true);
-    }
-    
-    // Generate unique filename
-    $file_extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $new_filename = "chairperson_" . $ward_id . "_" . time() . "." . $file_extension;
-    $upload_path = $upload_dir . $new_filename;
-    
-    // Move uploaded file
-    if (move_uploaded_file($file['tmp_name'], $upload_path)) {
-        // Update database
-        $query = "UPDATE wards SET chairperson_photo = '$new_filename' WHERE id = $ward_id";
-        if ($conn->query($query)) {
-            echo json_encode(array(
-                "success" => true,
-                "message" => "Photo uploaded successfully.",
-                "filename" => $new_filename
-            ));
-        } else {
-            echo json_encode(array("success" => false, "message" => "Database error: " . $conn->error));
-        }
-    } else {
-        echo json_encode(array("success" => false, "message" => "Failed to upload file."));
-    }
-    exit();
+// Use $_POST for FormData, or json_decode for JSON (fallback)
+if (!empty($_POST)) {
+    $ward_id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+    $raw_data = $_POST;
+} else {
+    $data = json_decode(file_get_contents("php://input"));
+    $ward_id = isset($data->id) ? intval($data->id) : 0;
+    $raw_data = (array)$data;
 }
 
-// Regular ward update (JSON data)
-$data = json_decode(file_get_contents("php://input"));
-
-if (!isset($data->id)) {
+if (!$ward_id) {
     echo json_encode(array("success" => false, "message" => "Ward ID required."));
     exit();
 }
 
-$ward_id = intval($data->id);
-
-// Build update query dynamically based on provided fields
 $updates = array();
 
-if (isset($data->location)) $updates[] = "location = '" . $conn->real_escape_string($data->location) . "'";
-if (isset($data->contact_phone)) $updates[] = "contact_phone = '" . $conn->real_escape_string($data->contact_phone) . "'";
-if (isset($data->contact_email)) $updates[] = "contact_email = '" . $conn->real_escape_string($data->contact_email) . "'";
+// Define allowed fields for update
+$allowed_fields = [
+    'location', 'google_map_link', 'municipality', 'contact_phone', 'telephone', 'contact_email',
+    'chairperson_name', 'chairperson_phone', 'chairperson_email', 'chairperson_education',
+    'chairperson_experience', 'chairperson_political_party', 'chairperson_appointment_date', 'chairperson_bio'
+];
 
-// Chairperson fields
-if (isset($data->chairperson_name)) $updates[] = "chairperson_name = '" . $conn->real_escape_string($data->chairperson_name) . "'";
-if (isset($data->chairperson_phone)) $updates[] = "chairperson_phone = '" . $conn->real_escape_string($data->chairperson_phone) . "'";
-if (isset($data->chairperson_email)) $updates[] = "chairperson_email = '" . $conn->real_escape_string($data->chairperson_email) . "'";
-if (isset($data->chairperson_education)) $updates[] = "chairperson_education = '" . $conn->real_escape_string($data->chairperson_education) . "'";
-if (isset($data->chairperson_experience)) $updates[] = "chairperson_experience = '" . $conn->real_escape_string($data->chairperson_experience) . "'";
-if (isset($data->chairperson_political_party)) $updates[] = "chairperson_political_party = '" . $conn->real_escape_string($data->chairperson_political_party) . "'";
-if (isset($data->chairperson_appointment_date)) $updates[] = "chairperson_appointment_date = '" . $conn->real_escape_string($data->chairperson_appointment_date) . "'";
-if (isset($data->chairperson_bio)) $updates[] = "chairperson_bio = '" . $conn->real_escape_string($data->chairperson_bio) . "'";
+foreach ($allowed_fields as $field) {
+    if (isset($raw_data[$field])) {
+        $val = $raw_data[$field];
+        if ($field === 'chairperson_appointment_date' && empty($val)) {
+            $updates[] = "$field = NULL";
+        } else {
+            $updates[] = "$field = '" . $conn->real_escape_string($val) . "'";
+        }
+    }
+}
+
+// Handle Photo Upload if present
+if (isset($_FILES['chairperson_photo']) && $_FILES['chairperson_photo']['error'] === UPLOAD_ERR_OK) {
+    $file = $_FILES['chairperson_photo'];
+    $upload_dir = "uploads/";
+    if (!file_exists($upload_dir)) mkdir($upload_dir, 0777, true);
+    
+    $file_extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $new_filename = "chairperson_" . $ward_id . "_" . time() . "." . $file_extension;
+    
+    if (move_uploaded_file($file['tmp_name'], $upload_dir . $new_filename)) {
+        $updates[] = "chairperson_photo = '$new_filename'";
+    }
+}
 
 if (empty($updates)) {
     echo json_encode(array("success" => false, "message" => "No fields to update."));
@@ -92,14 +72,14 @@ if (empty($updates)) {
 $query = "UPDATE wards SET " . implode(", ", $updates) . " WHERE id = $ward_id";
 
 if ($conn->query($query)) {
-    echo json_encode(array(
-        "success" => true,
-        "message" => "Ward updated successfully."
-    ));
+    // Create System Alert
+    $alert_title = "Ward Updated";
+    $alert_message = "Details for Ward ID " . $ward_id . " have been updated.";
+    $alert_query = "INSERT INTO system_alerts (type, title, message, status) VALUES ('info', '$alert_title', '$alert_message', 'unread')";
+    $conn->query($alert_query);
+
+    echo json_encode(array("success" => true, "message" => "Ward updated successfully."));
 } else {
-    echo json_encode(array(
-        "success" => false,
-        "message" => "Database error: " . $conn->error
-    ));
+    echo json_encode(array("success" => false, "message" => "Database error: " . $conn->error));
 }
 ?>

@@ -15,14 +15,14 @@ const OfficerLayout = ({ children, title }) => {
   };
 
   const navItems = [
+    { path: "/", label: "Go to Home", icon: "🏠" },
     { path: "/officer", label: "Ward Overview", icon: "📊" },
-    { path: "/officer/followers", label: "Followers", icon: "👥" },
     { path: "/officer/works", label: "Development Works", icon: "🏗️" },
     { path: "/officer/budgets", label: "Budgets", icon: "💰" },
     { path: "/officer/departments", label: "Departments", icon: "🏢" },
+    { path: "/officer/assets", label: "Ward Assets", icon: "📦" },
     { path: "/officer/complaints", label: "Complaints", icon: "📢" },
     { path: "/officer/notices", label: "Notices", icon: "📌" },
-    { path: "/officer/profile", label: "My Profile", icon: "⚙️" },
   ];
 
   return (
@@ -31,7 +31,9 @@ const OfficerLayout = ({ children, title }) => {
         <div className="admin-logo">
           <span>👮</span> Officer Panel
         </div>
-        <div className="ward-info">Ward No. {user?.ward || "1"}</div>
+        <div className="ward-info">
+          Ward No. {user?.assigned_ward || user?.ward || "1"}
+        </div>
         <nav className="admin-nav">
           {navItems.map((item) => (
             <Link

@@ -160,7 +160,14 @@ export default function Contact() {
 
         // Optional: server may return { success: true, id: NEW_ID }
         setFormStatus({ type: "success", message: "Message sent." });
-        setFormData({ fullName: "", email: "", phone: "", subject: "", message: "", priority: "Medium" });
+        setFormData({
+          fullName: "",
+          email: "",
+          phone: "",
+          subject: "",
+          message: "",
+          priority: "Medium",
+        });
         setTimeout(() => setFormStatus(null), 3000);
       } catch {
         // If API not available, still keep frontend behavior but show warning.
@@ -479,34 +486,34 @@ export default function Contact() {
           <div className="social-media-section">
             <h2>Follow Us on Social Media</h2>
             <div className="social-buttons">
-              <a 
-                href={socialMedia.facebook} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={socialMedia.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="social-btn facebook"
               >
                 <i className="fa-brands fa-facebook-f"></i> Facebook
               </a>
-              <a 
-                href={socialMedia.instagram} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={socialMedia.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="social-btn instagram"
               >
                 <i className="fa-brands fa-instagram"></i> Instagram
               </a>
-              <a 
-                href={socialMedia.twitter} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={socialMedia.twitter}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="social-btn x-twitter"
               >
                 <i className="fa-brands fa-x-twitter"></i> X (Twitter)
               </a>
-              <a 
-                href={socialMedia.whatsapp} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={socialMedia.whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="social-btn whatsapp"
               >
                 <i className="fa-brands fa-whatsapp"></i> WhatsApp

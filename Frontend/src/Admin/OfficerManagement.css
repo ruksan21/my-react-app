@@ -1,0 +1,139 @@
+/* OfficerManagement.css */
+
+.officer-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.officer-modal-content {
+  width: 800px;
+  display: block;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.officer-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.officer-modal-title {
+  margin: 0;
+}
+
+.officer-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.officer-form-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.form-section {
+  /* Inherited or specific styles if needed */
+}
+
+.form-section-header {
+  font-size: 1rem;
+  color: var(--admin-accent);
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.three-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.two-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.municipality-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.municipality-select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background-color: #fff;
+  color: #1e293b;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.assigned-ward-select {
+  font-weight: bold;
+  border-color: var(--admin-accent);
+}
+
+.password-section {
+  margin-top: 12px;
+}
+
+.file-input-wrapper {
+  width: 100%;
+  padding: 8px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.btn-cancel {
+  background-color: var(--text-muted);
+  color: white;
+  padding: 10px 20px;
+}
+
+.btn-create {
+  padding: 10px 30px;
+  font-size: 1rem;
+}
+
+.pending-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px; /* Adjust as needed */
+}
+
+.pending-count {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.officer-name-cell {
+  font-weight: 500;
+}

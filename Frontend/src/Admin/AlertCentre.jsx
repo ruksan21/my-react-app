@@ -19,7 +19,9 @@ const AlertCentre = () => {
       setError(null);
     } catch (err) {
       console.error("Failed to fetch alerts:", err);
-      setError("Failed to load alerts from server.");
+      // Fallback to empty alerts instead of showing big red error
+      setAlerts([]);
+      setError(null);
     } finally {
       setIsLoading(false);
     }

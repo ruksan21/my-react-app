@@ -6,7 +6,7 @@ require_once 'db_connect.php';
 $first_name = "Super";
 $last_name = "Admin";
 $email = "admin@example.com";
-$password_plain = "Admin@123";
+$password_plain = "admin123";
 
 // Password lai PHP ko default hashing (Bcrypt) use garera hash gareko
 $password_hashed = password_hash($password_plain, PASSWORD_DEFAULT);

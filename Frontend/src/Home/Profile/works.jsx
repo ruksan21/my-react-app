@@ -6,12 +6,12 @@ import { useWard } from "../Context/WardContext";
 const Works = () => {
   const [works, setWorks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { ward } = useWard();
+  const { wardId } = useWard();
 
   useEffect(() => {
     setLoading(true);
     fetch(
-      `http://127.0.0.1/my-react-app/Backend/api/get_works.php?ward_id=${ward}`
+      `http://127.0.0.1/my-react-app/Backend/api/get_works.php?ward_id=${wardId}`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -22,7 +22,7 @@ const Works = () => {
         console.error("Error fetching works:", err);
         setLoading(false);
       });
-  }, [ward]);
+  }, [wardId]);
 
   if (loading) {
     return <div className="loading-state">Loading works...</div>;

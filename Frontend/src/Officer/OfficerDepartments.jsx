@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import OfficerLayout from "./OfficerLayout";
 import "./OfficerDepartments.css";
+import { useAuth } from "../Home/Context/AuthContext";
 
 const DepartmentCard = ({ department, onEdit, onDelete }) => {
   return (
@@ -33,7 +34,7 @@ const DepartmentCard = ({ department, onEdit, onDelete }) => {
       <div className="dept-info">
         <div className="dept-info-item">
           <span className="info-icon">👤</span>
-          <span>{department.headName}</span>
+          <span>{department.headName || department.head_name}</span>
         </div>
         <div className="dept-info-item">
           <span className="info-icon">📞</span>
@@ -49,40 +50,34 @@ const DepartmentCard = ({ department, onEdit, onDelete }) => {
 };
 
 export default function OfficerDepartments() {
-  const [departments, setDepartments] = useState([
-    {
-      id: 1,
-      name: "Administration Department",
-      headName: "Mr. Ram Bahadur Shrestha",
-      phone: "01-4234567",
-      email: "admin@wardportal.gov.np",
-      icon: "🏢",
-    },
-    {
-      id: 2,
-      name: "Planning & Development Department",
-      headName: "Mrs. Sita Devi Poudel",
-      phone: "01-4234568",
-      email: "planning@wardportal.gov.np",
-      icon: "🏗️",
-    },
-    {
-      id: 3,
-      name: "Social Development Department",
-      headName: "Mr. Hari Prasad Gurung",
-      phone: "01-4234569",
-      email: "social@wardportal.gov.np",
-      icon: "👥",
-    },
-    {
-      id: 4,
-      name: "Financial Administration Department",
-      headName: "Mrs. Geeta Kumari Tamang",
-      phone: "01-4234570",
-      email: "finance@wardportal.gov.np",
-      icon: "💰",
-    },
-  ]);
+  const { user } = useAuth();
+  const [departments, setDepartments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch departments from backend
+  useEffect(() => {
+    if (user?.assigned_ward) {
+      fetchDepartments();
+    }
+  }, [user]);
+
+  const fetchDepartments = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `http://127.0.0.1/my-react-app/Backend/api/manage_departments.php?ward_id=${user.assigned_ward}`
+      );
+      const result = await response.json();
+
+      if (result.success) {
+        setDepartments(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDept, setEditingDept] = useState(null);
@@ -127,28 +122,59 @@ export default function OfficerDepartments() {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newDept = {
-      id: editingDept ? editingDept.id : Date.now(),
-      ...formData,
-    };
+    try {
+      const method = editingDept ? "PUT" : "POST";
+      const body = editingDept
+        ? { id: editingDept.id, ...formData }
+        : { ward_id: user.assigned_ward, officer_id: user.id, ...formData };
 
-    if (editingDept) {
-      setDepartments(
-        departments.map((d) => (d.id === editingDept.id ? newDept : d))
+      const response = await fetch(
+        "http://127.0.0.1/my-react-app/Backend/api/manage_departments.php",
+        {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
       );
-    } else {
-      setDepartments([...departments, newDept]);
-    }
 
-    handleCloseForm();
+      const result = await response.json();
+      if (result.success) {
+        handleCloseForm();
+        fetchDepartments(); // Reload departments
+      } else {
+        alert("Error: " + result.message);
+      }
+    } catch (error) {
+      console.error("Error saving department:", error);
+      alert("Failed to save department");
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this department?")) {
-      setDepartments(departments.filter((d) => d.id !== id));
+      try {
+        const response = await fetch(
+          "http://127.0.0.1/my-react-app/Backend/api/manage_departments.php",
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          }
+        );
+
+        const result = await response.json();
+        if (result.success) {
+          fetchDepartments(); // Reload departments
+        } else {
+          alert("Error: " + result.message);
+        }
+      } catch (error) {
+        console.error("Error deleting department:", error);
+        alert("Failed to delete department");
+      }
     }
   };
 
@@ -287,7 +313,11 @@ export default function OfficerDepartments() {
 
       {/* Departments Grid */}
       <div className="departments-grid">
-        {departments.length === 0 ? (
+        {isLoading ? (
+          <div className="empty-state">
+            <p>Loading departments...</p>
+          </div>
+        ) : departments.length === 0 ? (
           <div className="empty-state">
             <p>
               No departments added yet. Click "Add Department" to get started.

@@ -18,6 +18,56 @@ export const AuthProvider = ({ children }) => {
   const [pendingOfficers, setPendingOfficers] = useState([]);
   const [wards, setWards] = useState([]);
 
+  // Data Fetching Functions
+  const fetchAllUsers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/get_users.php`);
+      const data = await response.json();
+      if (data.success) {
+        setAllUsers(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
+  const fetchPendingOfficers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/get_pending_officers.php`);
+      const data = await response.json();
+      if (data.success) {
+        setPendingOfficers(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching pending officers:", error);
+    }
+  };
+
+  const refreshWards = async () => {
+    try {
+      const response = await fetch(`${API_URL}/get_wards.php`);
+      const data = await response.json();
+      if (data.success) {
+        const formattedWards = data.data.map((ward) => ({
+          id: ward.id,
+          number: ward.ward_number,
+          name: `Ward ${ward.ward_number}`,
+          municipality: ward.municipality || ward.district_name,
+          location: ward.location,
+          contact: ward.contact_phone,
+          chairperson: {
+            name: ward.chairperson_name || "Not Assigned",
+            image: null,
+            message: "",
+          },
+        }));
+        setWards(formattedWards);
+      }
+    } catch (error) {
+      console.error("Error fetching wards:", error);
+    }
+  };
+
   // Load initial data
   useEffect(() => {
     // 1. Load Current User
@@ -29,7 +79,6 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setIsLoggedIn(true);
 
-      // Load activities for current user
       const storedActivities = localStorage.getItem(
         `activities_${userData.id || "default"}`
       );
@@ -38,68 +87,10 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // 2. Load "Backend" Data (All Users & Pending Officers)
-    const storedAllUsers = localStorage.getItem("allUsers");
-    if (storedAllUsers) {
-      setAllUsers(JSON.parse(storedAllUsers));
-    } else {
-      // Seed initial data if empty
-      const initialUsers = [
-        {
-          id: 1,
-          name: "Admin User",
-          email: "admin@example.com",
-          role: "admin",
-          status: "active",
-        },
-        {
-          id: 2,
-          name: "Ram Bahadur",
-          email: "ram@example.com",
-          role: "user",
-          status: "active",
-        },
-      ];
-      setAllUsers(initialUsers);
-      localStorage.setItem("allUsers", JSON.stringify(initialUsers));
-    }
-
-    // 2. Load Pending Officers from Backend
-    const fetchPendingOfficers = async () => {
-      try {
-        const response = await fetch(`${API_URL}/get_pending_officers.php`);
-        const data = await response.json();
-        if (data.success) {
-          setPendingOfficers(data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching pending officers:", error);
-      }
-    };
+    // 2. Load "Backend" Data
+    fetchAllUsers();
     fetchPendingOfficers();
-
-    // 3. Load Wards Data (Mock for now)
-    const storedWards = localStorage.getItem("wards");
-    if (storedWards) {
-      setWards(JSON.parse(storedWards));
-    } else {
-      // Seed initial Ward data
-      const initialWards = Array.from({ length: 32 }, (_, i) => ({
-        id: i + 1,
-        number: i + 1,
-        name: `Ward ${i + 1}`,
-        location: "Kathmandu",
-        contact: `01-443322${i}`,
-        chairperson: {
-          name: "Not Assigned",
-          bio: "",
-          image: null,
-          message: "",
-        },
-      }));
-      setWards(initialWards);
-      localStorage.setItem("wards", JSON.stringify(initialWards));
-    }
+    refreshWards();
 
     setLoading(false);
   }, []);
@@ -215,6 +206,24 @@ export const AuthProvider = ({ children }) => {
     return { success: true, message: "Officer created successfully." };
   };
 
+  // Create Backend System Alert
+  const createSystemAlert = async (type, title, message) => {
+    try {
+      await fetch(`${API_URL}/manage_alerts.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create",
+          type,
+          title,
+          message,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to create system alert:", err);
+    }
+  };
+
   const approveOfficer = async (officerId) => {
     try {
       const response = await fetch(`${API_URL}/update_officer_status.php`, {
@@ -226,6 +235,11 @@ export const AuthProvider = ({ children }) => {
       if (data.success) {
         setPendingOfficers(pendingOfficers.filter((o) => o.id !== officerId));
         addNotification("success", "Officer approved successfully.");
+        createSystemAlert(
+          "success",
+          "Officer Approved",
+          `An officer (ID: ${officerId}) has been approved and activated.`
+        );
       } else {
         addNotification("error", data.message);
       }
@@ -245,6 +259,11 @@ export const AuthProvider = ({ children }) => {
       if (data.success) {
         setPendingOfficers(pendingOfficers.filter((o) => o.id !== officerId));
         addNotification("info", "Officer application rejected.");
+        createSystemAlert(
+          "warning",
+          "Officer Rejected",
+          `An officer application (ID: ${officerId}) was rejected.`
+        );
       } else {
         addNotification("error", data.message);
       }
@@ -253,11 +272,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const deleteUser = (userId) => {
-    const updatedUsers = allUsers.filter((u) => u.id !== userId);
-    setAllUsers(updatedUsers);
-    localStorage.setItem("allUsers", JSON.stringify(updatedUsers));
-    addNotification("success", "User deleted successfully.");
+  const deleteUser = async (userId) => {
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      try {
+        const response = await fetch(`${API_URL}/delete_user.php`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: userId }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          setAllUsers(allUsers.filter((u) => u.id !== userId));
+          addNotification("success", "User deleted successfully.");
+          createSystemAlert(
+            "info",
+            "User Deleted",
+            `A user (ID: ${userId}) has been deleted from the system.`
+          );
+        } else {
+          addNotification("error", data.message);
+        }
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        addNotification("error", "Failed to delete user.");
+      }
+    }
   };
 
   // Ward Management
@@ -283,8 +322,6 @@ export const AuthProvider = ({ children }) => {
       revenue: 4500000, // Mock
     };
   };
-
-  // --- Utility Functions ---
 
   const addNotification = (type, message) => {
     const notification = {
@@ -336,10 +373,12 @@ export const AuthProvider = ({ children }) => {
     deleteUser,
     createOfficer,
     updateWard,
+    refreshWards, // Exposed function
     getSystemStats,
     addNotification,
     removeNotification,
     logActivity,
+    createSystemAlert,
     hasRole,
     hasPermission,
   };

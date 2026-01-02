@@ -14,7 +14,9 @@ require_once 'db_connect.php';
 $ward_id = isset($_GET['ward_id']) ? intval($_GET['ward_id']) : 1;
 
 $query = "SELECT 
+    w.id as ward_id,
     w.ward_number,
+    w.municipality,
     w.location,
     w.contact_phone as ward_phone,
     w.contact_email as ward_email,

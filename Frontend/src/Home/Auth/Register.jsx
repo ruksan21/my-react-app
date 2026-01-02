@@ -316,7 +316,12 @@ export default function RegisterPage({
                     type="tel"
                     className="form-control"
                     value={contactNumber}
-                    onChange={(e) => setContactNumber(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "" || /^[0-9]+$/.test(val)) {
+                        setContactNumber(val);
+                      }
+                    }}
                     placeholder="98XXXXXXXX"
                   />
                 </div>
@@ -347,6 +352,7 @@ export default function RegisterPage({
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
               </div>
