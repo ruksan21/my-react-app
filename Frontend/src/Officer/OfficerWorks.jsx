@@ -3,6 +3,7 @@ import OfficerLayout from "./OfficerLayout";
 import "../Home/Pages/Works.css";
 import "./OfficerWorks.css";
 import { useAuth } from "../Home/Context/AuthContext";
+import { API_ENDPOINTS, API_BASE_URL } from "../config/api";
 
 const WorkCard = ({ work, onEdit, onDelete }) => {
   return (
@@ -34,7 +35,7 @@ const WorkCard = ({ work, onEdit, onDelete }) => {
         <img
           src={
             work.image
-              ? `http://127.0.0.1/my-react-app/Backend/api/${work.image}`
+              ? `${API_BASE_URL}/${work.image}`
               : "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=800&q=80"
           }
           alt={work.title}
@@ -87,11 +88,8 @@ export default function OfficerWorks() {
 
   const fetchWorks = () => {
     setIsLoading(true);
-    // Explicitly fetching for the assigned ward to ensure we get relevant data
-    // and to verify connection is working for this specific ward context
-    fetch(
-      `http://127.0.0.1/my-react-app/Backend/api/get_works.php?ward_id=${user.assigned_ward}`
-    )
+    const url = `${API_ENDPOINTS.works.getAll}?ward_id=${user.assigned_ward}`;
+    fetch(url)
       .then((res) => res.json())
       .then((data) => {
         // Ensure data is an array
@@ -190,13 +188,10 @@ export default function OfficerWorks() {
     }
 
     try {
-      const response = await fetch(
-        "http://127.0.0.1/my-react-app/Backend/api/add_work.php",
-        {
-          method: "POST",
-          body: formDataToSend,
-        }
-      );
+      const response = await fetch(API_ENDPOINTS.works.add, {
+        method: "POST",
+        body: formDataToSend,
+      });
 
       const data = await response.json();
       if (data.status === "success") {

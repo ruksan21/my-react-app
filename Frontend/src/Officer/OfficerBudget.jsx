@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./Budget.css";
 import OfficerLayout from "./OfficerLayout";
 import { useAuth } from "../Home/Context/AuthContext";
+import { API_ENDPOINTS } from "../config/api";
 
 export default function OfficerBudget() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ export default function OfficerBudget() {
   const fetchBudgetData = async () => {
     try {
       const response = await fetch(
-        `http://127.0.0.1/my-react-app/Backend/api/manage_budgets.php?ward_id=${user.assigned_ward}`
+        `${API_ENDPOINTS.assets.manageBudgets}?ward_id=${user.assigned_ward}`
       );
       const result = await response.json();
 
@@ -93,7 +94,7 @@ export default function OfficerBudget() {
   const saveBudgetData = async () => {
     try {
       const response = await fetch(
-        "http://127.0.0.1/my-react-app/Backend/api/manage_budgets.php",
+        API_ENDPOINTS.assets.manageBudgets,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import OfficerLayout from "./OfficerLayout";
 import "./OfficerComplaints.css";
+import { API_ENDPOINTS } from "../config/api";
 
 const OfficerComplaints = () => {
   const [complaints, setComplaints] = useState([]);
@@ -17,7 +18,7 @@ const OfficerComplaints = () => {
     (async () => {
       try {
         await fetch(
-          "http://localhost/my-react-app/Backend/api/update_complaint_status.php",
+          API_ENDPOINTS.communication.updateComplaintStatus,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -35,7 +36,7 @@ const OfficerComplaints = () => {
     (async () => {
       try {
         const res = await fetch(
-          "http://localhost/my-react-app/Backend/api/get_complaints.php"
+          API_ENDPOINTS.communication.getComplaints
         );
         if (!res.ok) return;
         const data = await res.json();

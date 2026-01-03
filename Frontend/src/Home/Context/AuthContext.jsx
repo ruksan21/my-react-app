@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { API_ENDPOINTS } from "../../config/api";
 
 // Create Auth Context
 const AuthContext = createContext(null);
@@ -11,7 +12,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [activities, setActivities] = useState([]);
-  const API_URL = "http://localhost/my-react-app/Backend/api";
 
   // Admin/Backend Simulation State
   const [allUsers, setAllUsers] = useState([]);
@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
   // Data Fetching Functions
   const fetchAllUsers = async () => {
     try {
-      const response = await fetch(`${API_URL}/get_users.php`);
+      const response = await fetch(API_ENDPOINTS.users.getAll);
       const data = await response.json();
       if (data.success) {
         setAllUsers(data.data);
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchPendingOfficers = async () => {
     try {
-      const response = await fetch(`${API_URL}/get_pending_officers.php`);
+      const response = await fetch(API_ENDPOINTS.users.getPendingOfficers);
       const data = await response.json();
       if (data.success) {
         setPendingOfficers(data.data);
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshWards = async () => {
     try {
-      const response = await fetch(`${API_URL}/get_wards.php`);
+      const response = await fetch(API_ENDPOINTS.wards.getAll);
       const data = await response.json();
       if (data.success) {
         const formattedWards = data.data.map((ward) => ({
@@ -209,7 +209,7 @@ export const AuthProvider = ({ children }) => {
   // Create Backend System Alert
   const createSystemAlert = async (type, title, message) => {
     try {
-      await fetch(`${API_URL}/manage_alerts.php`, {
+      await fetch(API_ENDPOINTS.alerts.manageAlerts, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -226,7 +226,7 @@ export const AuthProvider = ({ children }) => {
 
   const approveOfficer = async (officerId) => {
     try {
-      const response = await fetch(`${API_URL}/update_officer_status.php`, {
+      const response = await fetch(API_ENDPOINTS.users.updateOfficerStatus, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: officerId, status: "active" }),
@@ -250,7 +250,7 @@ export const AuthProvider = ({ children }) => {
 
   const rejectOfficer = async (officerId) => {
     try {
-      const response = await fetch(`${API_URL}/update_officer_status.php`, {
+      const response = await fetch(API_ENDPOINTS.users.updateOfficerStatus, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: officerId, status: "rejected" }),
@@ -275,7 +275,7 @@ export const AuthProvider = ({ children }) => {
   const deleteUser = async (userId) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
-        const response = await fetch(`${API_URL}/delete_user.php`, {
+        const response = await fetch(API_ENDPOINTS.users.delete, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: userId }),

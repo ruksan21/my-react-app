@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import OfficerLayout from "./OfficerLayout";
 import "./OfficerDepartments.css";
 import { useAuth } from "../Home/Context/AuthContext";
+import { API_ENDPOINTS } from "../config/api";
 
 const DepartmentCard = ({ department, onEdit, onDelete }) => {
   return (
@@ -65,7 +66,7 @@ export default function OfficerDepartments() {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `http://127.0.0.1/my-react-app/Backend/api/manage_departments.php?ward_id=${user.assigned_ward}`
+        `${API_ENDPOINTS.alerts.manageDepartments}?ward_id=${user.assigned_ward}`
       );
       const result = await response.json();
 
@@ -132,7 +133,7 @@ export default function OfficerDepartments() {
         : { ward_id: user.assigned_ward, officer_id: user.id, ...formData };
 
       const response = await fetch(
-        "http://127.0.0.1/my-react-app/Backend/api/manage_departments.php",
+        API_ENDPOINTS.alerts.manageDepartments,
         {
           method,
           headers: { "Content-Type": "application/json" },
@@ -157,7 +158,7 @@ export default function OfficerDepartments() {
     if (window.confirm("Are you sure you want to delete this department?")) {
       try {
         const response = await fetch(
-          "http://127.0.0.1/my-react-app/Backend/api/manage_departments.php",
+          API_ENDPOINTS.alerts.manageDepartments,
           {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { API_ENDPOINTS } from "../config/api";
 import "./ChairpersonPersonalAssets.css";
 
 const ChairpersonPersonalAssets = ({ wardId }) => {
-  const API_URL = "http://localhost/my-react-app/Backend/api";
   const [personalAssets, setPersonalAssets] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,7 +25,7 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
   const fetchPersonalAssets = async () => {
     try {
       const res = await fetch(
-        `${API_URL}/manage_chairperson_assets.php?ward_id=${wardId}`
+        `${API_ENDPOINTS.assets.manageChairpersonAssets}?ward_id=${wardId}`
       );
       const data = await res.json();
       if (data.success) {
@@ -41,7 +41,7 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
     if (!wardId) return;
 
     try {
-      const res = await fetch(`${API_URL}/manage_chairperson_assets.php`, {
+      const res = await fetch(API_ENDPOINTS.assets.manageChairpersonAssets, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -77,7 +77,7 @@ const ChairpersonPersonalAssets = ({ wardId }) => {
       return;
 
     try {
-      const res = await fetch(`${API_URL}/manage_chairperson_assets.php`, {
+      const res = await fetch(API_ENDPOINTS.assets.manageChairpersonAssets, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: assetId }),

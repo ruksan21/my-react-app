@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../Nav/Navbar";
 import { useWard } from "../Context/WardContext";
 import "./Works.css";
+import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 
 const WorkCard = ({ work }) => {
   return (
@@ -23,7 +24,7 @@ const WorkCard = ({ work }) => {
         <img
           src={
             work.image
-              ? `http://127.0.0.1/my-react-app/Backend/api/${work.image}`
+              ? `${API_BASE_URL}/${work.image}`
               : "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=800&q=80"
           }
           alt={work.title}
@@ -70,7 +71,7 @@ export default function Works({ embedded = false, wardId }) {
 
   useEffect(() => {
     setIsLoading(true);
-    let url = "http://127.0.0.1/my-react-app/Backend/api/get_works.php";
+    let url = API_ENDPOINTS.works.getAll;
 
     // Construct query parameters
     const params = new URLSearchParams();

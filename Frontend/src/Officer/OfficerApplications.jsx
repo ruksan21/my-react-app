@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import OfficerLayout from "./OfficerLayout";
 import "./OfficerApplications.css";
 import { useAuth } from "../Home/Context/AuthContext";
+import { API_ENDPOINTS } from "../config/api";
 
 const OfficerApplications = () => {
   const { pendingOfficers, approveOfficer, rejectOfficer, deleteUser } =
@@ -29,7 +30,7 @@ const OfficerApplications = () => {
       // We can reuse update_user.php since officers are users
       try {
         const response = await fetch(
-          "http://localhost/my-react-app/Backend/api/update_user.php",
+          API_ENDPOINTS.users.update,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

@@ -3,11 +3,11 @@ import React, { useState, useEffect } from "react";
 import AdminLayout from "./AdminLayout";
 import ChairpersonPersonalAssets from "./ChairpersonPersonalAssets";
 import { useAuth } from "../Home/Context/AuthContext";
+import { API_ENDPOINTS } from "../config/api";
 import "./WardManagement.css";
 
 const WardManagement = () => {
   const { refreshWards } = useAuth();
-  const API_URL = "http://localhost/my-react-app/Backend/api";
 
   // State for District Management
   const [isAddingDistrict, setIsAddingDistrict] = useState(false);
@@ -52,7 +52,7 @@ const WardManagement = () => {
 
   const fetchDistricts = async () => {
     try {
-      const res = await fetch(`${API_URL}/get_districts.php`);
+      const res = await fetch(API_ENDPOINTS.districts.getAll);
       const data = await res.json();
       if (data.success) setDistricts(data.data);
     } catch (err) {
@@ -65,8 +65,8 @@ const WardManagement = () => {
     try {
       const url =
         selectedDistrict === "all"
-          ? `${API_URL}/get_wards.php`
-          : `${API_URL}/get_wards.php?district_id=${selectedDistrict}`;
+          ? API_ENDPOINTS.wards.getAll
+          : `${API_ENDPOINTS.wards.getAll}?district_id=${selectedDistrict}`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) setWards(data.data);
@@ -90,7 +90,7 @@ const WardManagement = () => {
     if (!newDistrictName.trim()) return;
 
     try {
-      const res = await fetch(`${API_URL}/add_district.php`, {
+      const res = await fetch(API_ENDPOINTS.districts.add, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newDistrictName }),
@@ -183,8 +183,8 @@ const WardManagement = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     const saveUrl = isAdding
-      ? `${API_URL}/add_ward.php`
-      : `${API_URL}/update_ward.php`;
+      ? API_ENDPOINTS.wards.add
+      : API_ENDPOINTS.wards.update;
 
     const submitData = new FormData();
     Object.keys(formData).forEach((key) => {
@@ -224,7 +224,7 @@ const WardManagement = () => {
   const handleDeleteWard = async (id) => {
     if (!window.confirm("Are you sure you want to delete this ward?")) return;
     try {
-      const res = await fetch(`${API_URL}/delete_ward.php`, {
+      const res = await fetch(API_ENDPOINTS.wards.delete, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),

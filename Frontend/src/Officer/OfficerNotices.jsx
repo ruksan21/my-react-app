@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import OfficerLayout from "./OfficerLayout";
 import "./OfficerNotices.css";
 import { useAuth } from "../Home/Context/AuthContext";
+import { API_ENDPOINTS } from "../config/api";
 
 const OfficerNotices = () => {
   const { user } = useAuth();
@@ -21,7 +22,7 @@ const OfficerNotices = () => {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `http://127.0.0.1/my-react-app/Backend/api/manage_notices.php?ward_id=${user.assigned_ward}`
+        `${API_ENDPOINTS.alerts.manageNotices}?ward_id=${user.assigned_ward}`
       );
       const result = await response.json();
 
@@ -45,7 +46,7 @@ const OfficerNotices = () => {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1/my-react-app/Backend/api/manage_notices.php",
+        API_ENDPOINTS.alerts.manageNotices,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -76,7 +77,7 @@ const OfficerNotices = () => {
     if (window.confirm("Are you sure you want to delete this notice?")) {
       try {
         const response = await fetch(
-          "http://127.0.0.1/my-react-app/Backend/api/manage_notices.php",
+          API_ENDPOINTS.alerts.manageNotices,
           {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },

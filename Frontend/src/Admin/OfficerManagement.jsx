@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import AdminLayout from "./AdminLayout";
 import { useAuth } from "../Home/Context/AuthContext";
+import { API_ENDPOINTS } from "../config/api";
 import {
   getProvinces,
   getDistricts,
@@ -10,7 +11,6 @@ import "./OfficerManagement.css";
 
 const OfficerManagement = () => {
   const { pendingOfficers, approveOfficer, rejectOfficer } = useAuth();
-  const API_URL = "http://localhost/my-react-app/Backend/api";
 
   // Create Officer State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -138,7 +138,7 @@ const OfficerManagement = () => {
     if (photoFiles.idCard) data.append("idCardPhoto", photoFiles.idCard);
 
     try {
-      const res = await fetch(`${API_URL}/add_officer.php`, {
+      const res = await fetch(API_ENDPOINTS.officers.add, {
         method: "POST",
         body: data,
       });

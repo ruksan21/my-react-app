@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./works.css";
 import CommentSection from "../Component/CommentSection";
 import { useWard } from "../Context/WardContext";
+import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 
 const Works = () => {
   const [works, setWorks] = useState([]);
@@ -11,7 +12,7 @@ const Works = () => {
   useEffect(() => {
     setLoading(true);
     fetch(
-      `http://127.0.0.1/my-react-app/Backend/api/get_works.php?ward_id=${wardId}`
+      `${API_ENDPOINTS.works.getAll}?ward_id=${wardId}`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -60,7 +61,7 @@ const Works = () => {
           <img
             src={
               work.image
-                ? `http://127.0.0.1/my-react-app/Backend/api/${work.image}`
+                ? `${API_BASE_URL}/${work.image}`
                 : "https://sewellbeard.com/wp-content/uploads/2021/02/us-72-west-road-project.jpeg"
             }
             alt={work.title}

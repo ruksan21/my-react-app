@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Register.css";
+import { API_ENDPOINTS } from "../../config/api";
 
 export default function RegisterPage({
   initialRole = "citizen",
   hideRoleSelector = false,
 }) {
   const navigate = useNavigate();
-  const API_URL = "http://localhost/my-react-app/Backend/api";
 
   const [role, setRole] = useState(
     initialRole === "officer" ? "officer" : "citizen"
@@ -125,7 +125,7 @@ export default function RegisterPage({
         formData.append("idCardPhoto", idCardPhoto);
       }
 
-      const res = await fetch(`${API_URL}/register.php`, {
+      const res = await fetch(API_ENDPOINTS.auth.register, {
         method: "POST",
         body: formData,
       });

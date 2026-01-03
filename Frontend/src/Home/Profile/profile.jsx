@@ -6,6 +6,7 @@ import Dashboard from "../Pages/Dashboard";
 import Assets from "../Pages/Assets";
 import Activities from "../Pages/Activities";
 import { useWard } from "../Context/WardContext";
+import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 
 // Default profile data (fallback if API fails)
 const defaultProfileData = {
@@ -72,7 +73,7 @@ const Profile = () => {
   useEffect(() => {
     // Fetch chairperson profile data from ward database using selected ward ID
     fetch(
-      `http://127.0.0.1/my-react-app/Backend/api/get_chairperson_profile.php?ward_id=${wardId}`
+      `${API_ENDPOINTS.officers.getChairpersonProfile}?ward_id=${wardId}`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -87,7 +88,7 @@ const Profile = () => {
             phone: wardData.chairperson_phone || "9841234567",
             email: wardData.chairperson_email || "ram.shrestha@ktm.gov.np",
             imageUrl: wardData.chairperson_photo
-              ? `http://127.0.0.1/my-react-app/Backend/api/uploads/${wardData.chairperson_photo}`
+              ? `${API_BASE_URL}/uploads/${wardData.chairperson_photo}`
               : "https://i.imgur.com/JQrOMa7.png",
             rating: 4.2,
             reviews: 89,
@@ -127,7 +128,7 @@ const Profile = () => {
 
     // Fetch personal assets
     fetch(
-      `http://127.0.0.1/my-react-app/Backend/api/manage_chairperson_assets.php?ward_id=${wardId}`
+      `${API_ENDPOINTS.assets.manageChairpersonAssets}?ward_id=${wardId}`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -158,7 +159,7 @@ const Profile = () => {
     }
 
     // Call backend API to persistence follow action
-    fetch("http://127.0.0.1/my-react-app/Backend/api/toggle_follow.php", {
+    fetch(API_ENDPOINTS.officers.toggleFollow, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

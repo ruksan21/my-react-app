@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import OfficerLayout from "./OfficerLayout";
 import "./OfficerProfile.css";
+import { API_ENDPOINTS, API_BASE_URL } from "../config/api";
 
 const OfficerProfile = () => {
   const [formData, setFormData] = useState({
@@ -21,7 +22,7 @@ const OfficerProfile = () => {
   useEffect(() => {
     // Fetch current data
     fetch(
-      `http://127.0.0.1/my-react-app/Backend/api/get_chairperson_profile.php?ward_id=${wardId}`
+      `${API_ENDPOINTS.officers.getChairpersonProfile}?ward_id=${wardId}`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -36,7 +37,7 @@ const OfficerProfile = () => {
           });
           if (d.chairperson_photo) {
             setCurrentPhoto(
-              `http://127.0.0.1/my-react-app/Backend/api/uploads/${d.chairperson_photo}`
+              `${API_BASE_URL}/uploads/${d.chairperson_photo}`
             );
           }
         }
@@ -72,7 +73,7 @@ const OfficerProfile = () => {
 
     try {
       const res = await fetch(
-        "http://127.0.0.1/my-react-app/Backend/api/update_chairperson_profile.php",
+        API_ENDPOINTS.officers.updateChairpersonProfile,
         {
           method: "POST",
           body: data,

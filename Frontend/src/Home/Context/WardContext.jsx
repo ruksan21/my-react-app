@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 // import axios from 'axios'; // पछि axios प्रयोग गर्दा सजिलो हुन्छ
+import { API_ENDPOINTS } from "../../config/api";
 
 const WardContext = createContext(null);
 
@@ -23,7 +24,7 @@ export function WardProvider({ children }) {
     // We use the ID for fetching stats
     const followerParam = followerId ? `&follower_id=${followerId}` : "";
     fetch(
-      `http://127.0.0.1/my-react-app/Backend/api/get_profile_stats.php?ward_id=${currentWardId}${followerParam}`
+      `${API_ENDPOINTS.stats.getProfileStats}?ward_id=${currentWardId}${followerParam}`
     )
       .then((res) => res.json())
       .then((data) => {

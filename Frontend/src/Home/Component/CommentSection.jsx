@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../Context/AuthContext";
+import { API_ENDPOINTS } from "../../config/api";
 import "./CommentSection.css";
 
 const CommentSection = ({ workId }) => {
@@ -14,9 +15,7 @@ const CommentSection = ({ workId }) => {
 
   useEffect(() => {
     if (workId) {
-      fetch(
-        `http://127.0.0.1/my-react-app/Backend/api/get_feedback.php?work_id=${workId}`
-      )
+      fetch(`${API_ENDPOINTS.communication.getFeedback}?work_id=${workId}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
@@ -63,27 +62,24 @@ const CommentSection = ({ workId }) => {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://127.0.0.1/my-react-app/Backend/api/add_feedback.php",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            work_id: workId,
-            user_id: user.id || null,
-            user_name: user.name || "Anonymous",
-            rating: rating,
-            comment: comment,
-          }),
-        }
-      );
+      const response = await fetch(API_ENDPOINTS.communication.addFeedback, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          work_id: workId,
+          user_id: user.id || null,
+          user_name: user.name || "Anonymous",
+          rating: rating,
+          comment: comment,
+        }),
+      });
 
       const data = await response.json();
 
       if (data.success) {
         // Refresh comments list
         const updatedRes = await fetch(
-          `http://127.0.0.1/my-react-app/Backend/api/get_feedback.php?work_id=${workId}`
+          `${API_ENDPOINTS.communication.getFeedback}?work_id=${workId}`
         );
         const updatedData = await updatedRes.json();
         if (updatedData.success) {

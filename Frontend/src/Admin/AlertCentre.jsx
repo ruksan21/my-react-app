@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AdminLayout from "./AdminLayout";
+import { API_ENDPOINTS } from "../config/api";
 import "./AlertCentre.css";
 
 const AlertCentre = () => {
@@ -8,12 +9,10 @@ const AlertCentre = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_URL = "http://localhost/my-react-app/Backend/api";
-
   const fetchAlerts = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`${API_URL}/get_alerts.php`);
+      const res = await fetch(API_ENDPOINTS.alerts.getAlerts);
       const data = await res.json();
       setAlerts(data);
       setError(null);
@@ -38,7 +37,7 @@ const AlertCentre = () => {
 
   const handleMarkAsRead = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/manage_alerts.php`, {
+      const res = await fetch(API_ENDPOINTS.alerts.manageAlerts, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "mark_read", id }),
@@ -60,7 +59,7 @@ const AlertCentre = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this alert?")) return;
     try {
-      const res = await fetch(`${API_URL}/manage_alerts.php`, {
+      const res = await fetch(API_ENDPOINTS.alerts.manageAlerts, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", id }),
@@ -78,7 +77,7 @@ const AlertCentre = () => {
   const handleClearAll = async () => {
     if (!window.confirm("Clear all alerts permanently?")) return;
     try {
-      const res = await fetch(`${API_URL}/manage_alerts.php`, {
+      const res = await fetch(API_ENDPOINTS.alerts.manageAlerts, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "clear_all" }),

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/AuthContext";
 import "./Login.css";
+import { API_ENDPOINTS } from "../../config/api";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -11,7 +12,6 @@ export default function LoginPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const API_URL = "http://localhost/my-react-app/Backend/api"; // Change to your PHP backend URL
 
   const resetErrors = () => setErrors({ email: "", password: "" });
 
@@ -41,7 +41,7 @@ export default function LoginPage() {
 
     try {
       // Call login API
-      const response = await fetch(`${API_URL}/login.php`, {
+      const response = await fetch(API_ENDPOINTS.auth.login, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

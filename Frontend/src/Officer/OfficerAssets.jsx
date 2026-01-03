@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import OfficerLayout from "./OfficerLayout";
 import { useAuth } from "../Home/Context/AuthContext";
+import { API_ENDPOINTS, API_BASE_URL } from "../config/api";
 
 const OfficerAssets = () => {
   const { user } = useAuth();
-  const API_URL = "http://localhost/my-react-app/Backend/api";
   const wardId = user?.assigned_ward || user?.ward || 1;
 
   const [assets, setAssets] = useState([]);
@@ -30,7 +30,7 @@ const OfficerAssets = () => {
     setIsLoading(true);
     try {
       const res = await fetch(
-        `${API_URL}/manage_ward_assets.php?ward_id=${wardId}`
+        `${API_ENDPOINTS.assets.manageWardAssets}?ward_id=${wardId}`
       );
       const data = await res.json();
       if (data.success) {
@@ -56,7 +56,7 @@ const OfficerAssets = () => {
       : { ...formData, ward_id: wardId };
 
     try {
-      const res = await fetch(`${API_URL}/manage_ward_assets.php`, {
+      const res = await fetch(`${API_ENDPOINTS.assets.manageWardAssets}`, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -99,7 +99,7 @@ const OfficerAssets = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this asset?")) return;
     try {
-      const res = await fetch(`${API_URL}/manage_ward_assets.php`, {
+      const res = await fetch(`${API_ENDPOINTS.assets.manageWardAssets}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),

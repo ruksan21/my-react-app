@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import OfficerLayout from "./OfficerLayout";
 import "./OfficerFollowers.css";
+import { API_ENDPOINTS } from "../config/api";
 
 const OfficerFollowers = () => {
   const [followers, setFollowers] = useState([]);
@@ -10,7 +11,7 @@ const OfficerFollowers = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (user && user.id) {
       fetch(
-        `http://127.0.0.1/my-react-app/Backend/api/get_officer_followers.php?officer_id=${user.id}`
+        `${API_ENDPOINTS.officers.getFollowers}?officer_id=${user.id}`
       )
         .then((res) => res.json())
         .then((data) => {
