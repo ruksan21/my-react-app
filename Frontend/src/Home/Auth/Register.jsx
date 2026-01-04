@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Register.css";
-import { API_ENDPOINTS } from "../../config/api";
+import {
+  getProvinces,
+  getDistricts,
+  getMunicipalities,
+  getMunicipalityInfo,
+} from "../../data/nepal_locations";
+import API_ENDPOINTS from "../../config/api";
 
 export default function RegisterPage({
   initialRole = "citizen",
@@ -24,7 +30,9 @@ export default function RegisterPage({
   const [gender, setGender] = useState("");
   const [district, setDistrict] = useState("");
   const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
   const [wardNumber, setWardNumber] = useState("");
+  const [availableWardNumbers, setAvailableWardNumbers] = useState([]);
 
   const [citizenshipNumber, setCitizenshipNumber] = useState("");
   const [citizenshipIssueDate, setCitizenshipIssueDate] = useState("");
@@ -45,25 +53,34 @@ export default function RegisterPage({
   const [citizenshipPreview, setCitizenshipPreview] = useState(null);
   const [idCardPreview, setIdCardPreview] = useState(null);
 
-  const districtMunicipalityData = {
-    Kathmandu: [
-      { id: 1, name: "Kathmandu Metropolitan City" },
-      { id: 2, name: "Lalitpur Metropolitan City" },
-      { id: 3, name: "Bhaktapur Municipality" },
-    ],
-    Kaski: [{ id: 6, name: "Pokhara Metropolitan City" }],
-    Morang: [{ id: 8, name: "Biratnagar Metropolitan City" }],
-    Chitwan: [{ id: 10, name: "Bharatpur Metropolitan City" }],
+  const handleProvinceChange = (e) => {
+    setProvince(e.target.value);
+    setDistrict("");
+    setCity("");
+    setWardNumber("");
+    setAvailableWardNumbers([]);
   };
-
-  const districts = Object.keys(districtMunicipalityData);
-  const getFilteredMunicipalities = () =>
-    district ? districtMunicipalityData[district] || [] : [];
 
   const handleDistrictChange = (e) => {
     setDistrict(e.target.value);
     setCity("");
     setWardNumber("");
+    setAvailableWardNumbers([]);
+  };
+
+  const handleMunicipalityChange = (e) => {
+    const muniName = e.target.value;
+    setCity(muniName);
+    setWardNumber("");
+
+    if (muniName && district) {
+      const muniInfo = getMunicipalityInfo(district, muniName);
+      const count = muniInfo ? muniInfo.wards : 0;
+      const wards = Array.from({ length: count }, (_, i) => i + 1);
+      setAvailableWardNumbers(wards);
+    } else {
+      setAvailableWardNumbers([]);
+    }
   };
 
   const validate = () => {
@@ -74,11 +91,26 @@ export default function RegisterPage({
     if (!emailRegex.test(email)) newErrors.email = "Invalid email";
     if (password.length < 8) newErrors.password = "Min 8 characters";
     if (password !== confirmPassword) newErrors.confirmPassword = "Mismatch";
-    if (!district) newErrors.district = "Required";
-    if (!city) newErrors.city = "Required";
-    if (role === "citizen" && !wardNumber) newErrors.wardNumber = "Required";
+    if (!province) newErrors.province = "Province required";
+    if (!district) newErrors.district = "District required";
+    if (!city) newErrors.city = "Municipality required";
+    if (!wardNumber) newErrors.wardNumber = "Ward required";
+    if (!contactNumber.trim()) newErrors.contactNumber = "Required";
+    if (!dob) newErrors.dob = "Required";
+    if (!gender) newErrors.gender = "Required";
     if (!citizenshipNumber) newErrors.citizenshipNumber = "Required";
+    if (!citizenshipIssueDate) newErrors.citizenshipIssueDate = "Required";
+    if (!citizenshipIssueDistrict)
+      newErrors.citizenshipIssueDistrict = "Required";
     if (!citizenshipPhoto) newErrors.citizenshipPhoto = "Upload required";
+
+    if (role === "officer") {
+      if (!officerId.trim()) newErrors.officerId = "Required";
+      if (!department) newErrors.department = "Required";
+      if (!assignedWard) newErrors.assignedWard = "Required";
+      if (!idCardPhoto) newErrors.idCardPhoto = "Upload required";
+    }
+
     if (!termsAccepted) newErrors.terms = "Accept terms required";
 
     setErrors(newErrors);
@@ -110,6 +142,7 @@ export default function RegisterPage({
       formData.append("contactNumber", contactNumber);
       formData.append("dob", dob);
       formData.append("gender", gender);
+      formData.append("province", province);
       formData.append("district", district);
       formData.append("city", city);
       formData.append("wardNumber", wardNumber);
@@ -309,12 +342,14 @@ export default function RegisterPage({
             </div>
             <div className="form-row two-cols">
               <div className="form-group">
-                <label>Phone Number</label>
+                <label>Phone Number *</label>
                 <div className="input-wrapper">
                   <i className="fa-solid fa-phone"></i>
                   <input
                     type="tel"
-                    className="form-control"
+                    className={`form-control ${
+                      errors.contactNumber ? "error" : ""
+                    }`}
                     value={contactNumber}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -325,27 +360,33 @@ export default function RegisterPage({
                     placeholder="98XXXXXXXX"
                   />
                 </div>
+                {errors.contactNumber && (
+                  <p className="error-message show">{errors.contactNumber}</p>
+                )}
               </div>
               <div className="form-group">
-                <label>Date of Birth</label>
+                <label>Date of Birth *</label>
                 <div className="input-wrapper">
                   <i className="fa-solid fa-calendar"></i>
                   <input
                     type="date"
-                    className="form-control"
+                    className={`form-control ${errors.dob ? "error" : ""}`}
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
                   />
                 </div>
+                {errors.dob && (
+                  <p className="error-message show">{errors.dob}</p>
+                )}
               </div>
             </div>
             <div className="form-row two-cols">
               <div className="form-group">
-                <label>Gender</label>
+                <label>Gender *</label>
                 <div className="input-wrapper">
                   <i className="fa-solid fa-venus-mars"></i>
                   <select
-                    className="form-control"
+                    className={`form-control ${errors.gender ? "error" : ""}`}
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
                   >
@@ -355,29 +396,60 @@ export default function RegisterPage({
                     <option value="other">Other</option>
                   </select>
                 </div>
+                {errors.gender && (
+                  <p className="error-message show">{errors.gender}</p>
+                )}
               </div>
             </div>
           </div>
 
           <div className="form-section">
             <h2 className="section-title">Address & Location</h2>
+
+            <div className="form-row">
+              <div className="form-group field-full">
+                <label>Province *</label>
+                <div className="input-wrapper">
+                  <i className="fa-solid fa-map"></i>
+                  <select
+                    className={`form-control ${errors.province ? "error" : ""}`}
+                    name="province"
+                    value={province}
+                    onChange={handleProvinceChange}
+                  >
+                    <option value="">Select Province</option>
+                    {getProvinces().map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {errors.province && (
+                  <p className="error-message show">{errors.province}</p>
+                )}
+              </div>
+            </div>
+
             <div className="form-row two-cols">
               <div className="form-group">
                 <label>District *</label>
                 <div className="input-wrapper">
-                  <i className="fa-solid fa-map"></i>
+                  <i className="fa-solid fa-map-pin"></i>
                   <select
-                    className="form-control"
+                    className={`form-control ${errors.district ? "error" : ""}`}
                     name="district"
                     value={district}
                     onChange={handleDistrictChange}
+                    disabled={!province}
                   >
                     <option value="">Select District</option>
-                    {districts.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
+                    {province &&
+                      getDistricts(province).map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 {errors.district && (
@@ -389,18 +461,19 @@ export default function RegisterPage({
                 <div className="input-wrapper">
                   <i className="fa-solid fa-city"></i>
                   <select
-                    className="form-control"
+                    className={`form-control ${errors.city ? "error" : ""}`}
                     name="municipality"
                     value={city}
-                    onChange={(e) => setCity(e.target.value)}
+                    onChange={handleMunicipalityChange}
                     disabled={!district}
                   >
                     <option value="">Select Municipality</option>
-                    {getFilteredMunicipalities().map((m) => (
-                      <option key={m.id} value={m.name}>
-                        {m.name}
-                      </option>
-                    ))}
+                    {district &&
+                      getMunicipalities(province, district).map((m) => (
+                        <option key={m.name} value={m.name}>
+                          {m.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 {errors.city && (
@@ -408,29 +481,34 @@ export default function RegisterPage({
                 )}
               </div>
             </div>
-            {role === "citizen" && (
-              <div className="form-row two-cols">
-                <div className="form-group">
-                  <label>Ward No *</label>
-                  <div className="input-wrapper">
-                    <i className="fa-solid fa-house"></i>
-                    <input
-                      type="number"
-                      name="wardNumber"
-                      className={`form-control ${
-                        errors.wardNumber ? "error" : ""
-                      }`}
-                      value={wardNumber}
-                      onChange={(e) => setWardNumber(e.target.value)}
-                      placeholder="1-35"
-                    />
-                  </div>
-                  {errors.wardNumber && (
-                    <p className="error-message show">{errors.wardNumber}</p>
-                  )}
+
+            <div className="form-row two-cols">
+              <div className="form-group">
+                <label>Ward No *</label>
+                <div className="input-wrapper">
+                  <i className="fa-solid fa-house"></i>
+                  <select
+                    className={`form-control ${
+                      errors.wardNumber ? "error" : ""
+                    }`}
+                    name="wardNumber"
+                    value={wardNumber}
+                    onChange={(e) => setWardNumber(e.target.value)}
+                    disabled={!city}
+                  >
+                    <option value="">Select Ward</option>
+                    {availableWardNumbers.map((num) => (
+                      <option key={num} value={num}>
+                        Ward {num}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+                {errors.wardNumber && (
+                  <p className="error-message show">{errors.wardNumber}</p>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           <div className="form-section">
@@ -458,38 +536,56 @@ export default function RegisterPage({
                 )}
               </div>
               <div className="form-group">
-                <label>Issue Date</label>
+                <label>Issue Date *</label>
                 <div className="input-wrapper">
                   <i className="fa-solid fa-calendar-check"></i>
                   <input
                     type="date"
-                    className="form-control"
+                    className={`form-control ${
+                      errors.citizenshipIssueDate ? "error" : ""
+                    }`}
                     value={citizenshipIssueDate}
                     onChange={(e) => setCitizenshipIssueDate(e.target.value)}
                   />
                 </div>
+                {errors.citizenshipIssueDate && (
+                  <p className="error-message show">
+                    {errors.citizenshipIssueDate}
+                  </p>
+                )}
               </div>
             </div>
             <div className="form-row two-cols">
               <div className="form-group">
-                <label>Issue District</label>
+                <label>Issue District *</label>
                 <div className="input-wrapper">
                   <i className="fa-solid fa-map-pin"></i>
                   <select
-                    className="form-control"
+                    className={`form-control ${
+                      errors.citizenshipIssueDistrict ? "error" : ""
+                    }`}
                     value={citizenshipIssueDistrict}
                     onChange={(e) =>
                       setCitizenshipIssueDistrict(e.target.value)
                     }
                   >
                     <option value="">Select District</option>
-                    {districts.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
+                    {getProvinces()
+                      .map((p) => getDistricts(p))
+                      .flat()
+                      .sort()
+                      .map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
                   </select>
                 </div>
+                {errors.citizenshipIssueDistrict && (
+                  <p className="error-message show">
+                    {errors.citizenshipIssueDistrict}
+                  </p>
+                )}
               </div>
               <div className="form-group">
                 <label>Citizenship Photo *</label>
@@ -548,11 +644,13 @@ export default function RegisterPage({
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>Department</label>
+                  <label>Department *</label>
                   <div className="input-wrapper">
                     <i className="fa-solid fa-briefcase"></i>
                     <select
-                      className="form-control"
+                      className={`form-control ${
+                        errors.department ? "error" : ""
+                      }`}
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
                     >
@@ -561,21 +659,29 @@ export default function RegisterPage({
                       <option value="Admin">Admin</option>
                     </select>
                   </div>
+                  {errors.department && (
+                    <p className="error-message show">{errors.department}</p>
+                  )}
                 </div>
               </div>
               <div className="form-row two-cols">
                 <div className="form-group">
-                  <label>Assigned Ward</label>
+                  <label>Assigned Ward *</label>
                   <div className="input-wrapper">
                     <i className="fa-solid fa-map-pin"></i>
                     <input
                       type="number"
-                      className="form-control"
+                      className={`form-control ${
+                        errors.assignedWard ? "error" : ""
+                      }`}
                       value={assignedWard}
                       onChange={(e) => setAssignedWard(e.target.value)}
                       placeholder="1-35"
                     />
                   </div>
+                  {errors.assignedWard && (
+                    <p className="error-message show">{errors.assignedWard}</p>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>ID Card Photo *</label>

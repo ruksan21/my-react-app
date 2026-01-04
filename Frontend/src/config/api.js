@@ -31,6 +31,7 @@ export const API_ENDPOINTS = {
     add: `${BASE_URL}/wards/add_ward.php`,
     update: `${BASE_URL}/wards/update_ward.php`,
     delete: `${BASE_URL}/wards/delete_ward.php`,
+    autoGenerate: `${BASE_URL}/wards/auto_generate_wards.php`,
     verifyAccess: `${BASE_URL}/wards/verify_ward_access.php`,
   },
 

@@ -1,9 +1,13 @@
 /* Main Container - RESPONSIVE */
 .ward-selector-container {
   position: relative;
-  width: 100%;
-  max-width: 380px;
+  width: 380px; /* Increased to 400px to accommodate full names like Kathmandu Metropolitan City */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-sizing: border-box;
+}
+
+.ward-selector-container * {
+  box-sizing: border-box;
 }
 
 /* Main Button */
@@ -11,7 +15,7 @@
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 12px 12px;
+  padding: 12px 16px;
   background-color: #1d4ed8;
   color: white;
   border: none;
@@ -19,6 +23,12 @@
   font-size: 16px;
   cursor: pointer;
   text-align: left;
+  transition: background-color 0.2s;
+  height: 44px; /* Consistent height */
+}
+
+.ward-selector-button:hover {
+  background-color: #1e40af;
 }
 
 .ward-selector-button .icon-map-pin {
@@ -41,11 +51,22 @@
   font-style: normal;
   transition: transform 0.2s ease-in-out;
   flex-shrink: 0;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .ward-selector-button .arrow-icon.up {
   transform: rotate(180deg);
+}
+
+/* Overlay backdrop */
+.ward-selector-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
 }
 
 /* Dropdown Menu */
@@ -55,48 +76,51 @@
   left: 0;
   width: 100%;
   background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   padding: 20px;
   z-index: 1001;
-  box-sizing: border-box;
 }
 
 .dropdown-title {
-  font-size: 17px;
-  color: #003091;
-  margin: 0 0 14px 0;
-  font-weight: 500;
+  font-size: 18px;
+  color: #1e40af;
+  margin: 0 0 16px 0;
+  font-weight: 600;
 }
 
 /* Search Box */
 .search-box {
   position: relative;
   margin-bottom: 16px;
+  width: 100%;
 }
 
 .search-box .icon-search {
   position: absolute;
-  left: 14px;
+  left: 16px; /* Slightly more space from edge */
   top: 50%;
   transform: translateY(-50%);
-  color: #6b7280;
+  color: #9ca3af;
   font-style: normal;
+  font-size: 16px;
+  pointer-events: none;
 }
 
 .search-input {
-  width: 100%;
-  padding: 12px 16px 12px 44px;
-  border: 1px solid #c2c2c2;
+  width: 100% !important;
+  padding: 12px 16px 12px 52px; /* Increased to 52px for clear icon separation */
+  border: 2px solid #e5e7eb;
   border-radius: 10px;
-  font-size: 16px;
-  box-sizing: border-box;
+  font-size: 15px;
+  transition: all 0.2s;
+  display: block;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(104, 137, 209, 0.2);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* Municipality List */
@@ -104,38 +128,44 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 220px;
+  max-height: 280px;
   overflow-y: auto;
-  padding-right: 8px;
+  padding-right: 4px; /* Reduced to avoid extra width issues */
 }
 
 .municipality-list-item {
-  padding: 14px 10px;
+  padding: 14px 12px;
   cursor: pointer;
   border-radius: 8px;
+  transition: background-color 0.15s;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.municipality-list-item:last-child {
+  border-bottom: none;
 }
 
 .municipality-list-item:hover {
-  background-color: #f3f4f6;
+  background-color: #f9fafb;
 }
 
 .municipality-name {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 500;
   color: #111827;
   display: block;
+  margin-bottom: 2px;
 }
 
 .ward-count {
-  font-size: 14px;
+  font-size: 13px;
   color: #6b7280;
   display: block;
-  margin-top: 3px;
 }
 
 /* Custom Scrollbar */
 .municipality-list::-webkit-scrollbar {
-  width: 8px;
+  width: 5px;
 }
 
 .municipality-list::-webkit-scrollbar-track {
@@ -143,67 +173,90 @@
 }
 
 .municipality-list::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 20px;
-  border: 2px solid white;
+  background-color: #d1d5db;
+  border-radius: 10px;
 }
 
 /* Ward Selection View */
 .ward-grid-view {
-  padding: 8px;
+  padding: 4px;
+  width: 100%;
 }
 
 .back-button {
   background: none;
   border: none;
-  color: #316ae7;
+  color: #2563eb;
   cursor: pointer;
-  font-size: 16px;
-  margin-bottom: 14px;
+  font-size: 15px;
+  margin-bottom: 12px;
   font-weight: 500;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.back-button:hover {
+  color: #1d4ed8;
 }
 
 .selected-municipality-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   text-align: center;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
+  color: #111827;
 }
 
 .ward-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-  gap: 10px;
-  max-height: 240px;
+  gap: 8px;
+  max-height: 280px;
   overflow-y: auto;
 }
 
 .ward-grid-item {
-  padding: 10px;
-  border: 1px solid #b5bbc7;
-  border-radius: 10px;
+  padding: 12px 6px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
   text-align: center;
   cursor: pointer;
-  font-size: 15px;
-  background-color: #e3e8ec;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: white;
+  transition: all 0.2s;
 }
 
 .ward-grid-item:hover {
-  background-color: #e0e7ff;
-  border-color: #a5b4fc;
+  background-color: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.ward-grid-item.selected {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+  color: white;
+}
+
+/* Hide close button on desktop */
+.close-dropdown-mobile {
+  display: none;
 }
 
 /* Mobile Adjustments */
 @media (max-width: 480px) {
   .ward-selector-container {
-    max-width: 160px; /* Restrict width to allow fitting in navbar */
+    max-width: 150px;
     min-width: 0;
   }
 
   .ward-selector-button {
-    padding: 8px 8px;
+    padding: 6px 10px;
     font-size: 12px;
     height: 36px;
+    border-radius: 6px;
   }
 
   .ward-selector-button .icon-map-pin {
@@ -213,244 +266,74 @@
 
   .ward-selector-button .arrow-icon {
     margin-left: 4px;
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .ward-selector-dropdown {
     position: fixed;
-    top: 70px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90vw;
-    max-height: 70vh;
-    overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-    min-width: 0;
+    top: 60px; /* Aligned with typical navbar height */
+    left: 10px !important;
+    right: 10px !important;
+    width: calc(100% - 20px) !important;
+    transform: none !important;
+    max-height: 80vh;
+    padding: 16px;
+    border-radius: 16px;
   }
 
-  .ward-selector-button .arrow-icon {
-    margin-left: 8px;
-    font-style: normal;
-    transition: transform 0.2s ease-in-out;
-    flex-shrink: 0;
-    font-size: 14px;
-  }
-
-  .ward-selector-button .arrow-icon.up {
-    transform: rotate(180deg);
-  }
-
-  /* Dropdown Menu */
-  .ward-selector-dropdown {
+  .close-dropdown-mobile {
+    display: flex;
     position: absolute;
-    top: calc(100% + 10px);
-    left: 0;
-    width: 100%;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    padding: 20px;
-    z-index: 1001;
-    box-sizing: border-box;
+    top: 12px;
+    right: 12px;
+    background: #f3f4f6;
+    border: none;
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+    z-index: 10;
   }
 
   .dropdown-title {
-    font-size: 17px;
-    color: #003091;
-    margin: 0 0 14px 0;
-    font-weight: 500;
+    font-size: 16px;
+    margin-bottom: 20px;
+    padding-right: 30px;
   }
 
-  /* Search Box */
   .search-box {
-    position: relative;
-    margin-bottom: 16px;
-  }
-
-  .search-box .icon-search {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6b7280;
-    font-style: normal;
+    margin-bottom: 12px;
   }
 
   .search-input {
-    width: 100%;
-    padding: 12px 16px 12px 44px;
-    border: 1px solid #c2c2c2;
-    border-radius: 10px;
-    font-size: 16px;
-    box-sizing: border-box;
+    padding: 10px 12px 10px 38px;
+    font-size: 14px;
   }
 
-  .search-input:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(104, 137, 209, 0.2);
+  .search-box .icon-search {
+    left: 12px;
+    font-size: 14px;
   }
 
-  /* Municipality List */
   .municipality-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 220px;
-    overflow-y: auto;
-    padding-right: 8px;
+    max-height: 300px;
   }
 
   .municipality-list-item {
-    padding: 14px 10px;
-    cursor: pointer;
-    border-radius: 8px;
-  }
-
-  .municipality-list-item:hover {
-    background-color: #f3f4f6;
-  }
-
-  .municipality-name {
-    font-size: 17px;
-    font-weight: 500;
-    color: #111827;
-    display: block;
-  }
-
-  .ward-count {
-    font-size: 14px;
-    color: #6b7280;
-    display: block;
-    margin-top: 3px;
-  }
-
-  /* Custom Scrollbar */
-  .municipality-list::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .municipality-list::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .municipality-list::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
-    border-radius: 20px;
-    border: 2px solid white;
-  }
-
-  /* Ward Selection View */
-  .ward-grid-view {
-    padding: 8px;
-  }
-
-  .back-button {
-    background: none;
-    border: none;
-    color: #316ae7;
-    cursor: pointer;
-    font-size: 16px;
-    margin-bottom: 14px;
-    font-weight: 500;
-  }
-
-  .selected-municipality-title {
-    font-size: 18px;
-    font-weight: 600;
-    text-align: center;
-    margin-bottom: 18px;
+    padding: 12px 10px;
   }
 
   .ward-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-    gap: 10px;
-    max-height: 240px;
-    overflow-y: auto;
+    grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+    gap: 6px;
   }
 
   .ward-grid-item {
-    padding: 10px;
-    border: 1px solid #b5bbc7;
-    border-radius: 10px;
-    text-align: center;
-    cursor: pointer;
-    font-size: 15px;
-    background-color: #e3e8ec;
-  }
-
-  .ward-grid-item:hover {
-    background-color: #e0e7ff;
-    border-color: #a5b4fc;
-  }
-
-  /* Mobile Adjustments */
-  @media (max-width: 480px) {
-    .ward-selector-container {
-      max-width: 160px; /* Restrict width to allow fitting in navbar */
-      min-width: 0;
-    }
-
-    .ward-selector-button {
-      padding: 8px 8px;
-      font-size: 12px;
-      height: 36px;
-    }
-
-    .ward-selector-button .icon-map-pin {
-      margin-right: 4px;
-      font-size: 12px;
-    }
-
-    .ward-selector-button .arrow-icon {
-      margin-left: 4px;
-      font-size: 12px;
-    }
-
-    .ward-selector-dropdown {
-      position: fixed;
-      top: 70px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90vw;
-      max-height: 70vh;
-      overflow-y: auto;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-      border: 1px solid #e5e7eb;
-      padding: 15px;
-      z-index: 1001;
-    }
-
-    .close-dropdown-mobile {
-      display: block;
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #f3f4f6;
-      border: none;
-      font-size: 18px;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #374151;
-    }
-
-    .ward-grid {
-      grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-      gap: 8px;
-    }
-  }
-
-  /* Hide close button on desktop */
-  .close-dropdown-mobile {
-    display: none;
+    padding: 10px 4px;
+    font-size: 13px;
   }
 }

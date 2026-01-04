@@ -32,7 +32,20 @@ const OfficerLayout = ({ children, title }) => {
           <span>👮</span> Officer Panel
         </div>
         <div className="ward-info">
-          Ward No. {user?.assigned_ward || user?.ward || "1"}
+          <div className="location-label">📍 Assigned Location</div>
+          <div className="location-detail">
+            {user?.province || "Bagmati Province"}
+          </div>
+          <div className="location-detail">{user?.district || "Kathmandu"}</div>
+          <div
+            className="location-detail"
+            style={{ fontWeight: 600, color: "#3b82f6" }}
+          >
+            {user?.city || "Kathmandu Metropolitan City"}
+          </div>
+          <div className="location-ward">
+            Ward No. {user?.assigned_ward || user?.ward || "1"}
+          </div>
         </div>
         <nav className="admin-nav">
           {navItems.map((item) => (

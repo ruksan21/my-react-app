@@ -374,6 +374,7 @@ export const AuthProvider = ({ children }) => {
     createOfficer,
     updateWard,
     refreshWards, // Exposed function
+    fetchPendingOfficers, // Exposed function
     getSystemStats,
     addNotification,
     removeNotification,

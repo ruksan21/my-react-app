@@ -34,17 +34,13 @@ $dob = ($_POST['dob'] ?? '') ? $conn->real_escape_string($_POST['dob']) : null;
 $gender = $conn->real_escape_string($_POST['gender'] ?? '');
 $district = $conn->real_escape_string($_POST['district'] ?? '');
 $city = $conn->real_escape_string($_POST['city'] ?? '');
+$province = $conn->real_escape_string($_POST['province'] ?? '');
 $ward_number = (isset($_POST['wardNumber']) && $_POST['wardNumber'] !== '') ? intval($_POST['wardNumber']) : 'NULL';
 
 // Citizenship details
 $citizenship_number = $conn->real_escape_string($_POST['citizenshipNumber'] ?? '');
 $citizenship_issue_date = ($_POST['citizenshipIssueDate'] ?? '') ? $conn->real_escape_string($_POST['citizenshipIssueDate']) : null;
 $citizenship_issue_district = $conn->real_escape_string($_POST['citizenshipIssueDistrict'] ?? '');
-
-// Officer-specific fields
-$officer_id = $conn->real_escape_string($_POST['officerId'] ?? '');
-$department = $conn->real_escape_string($_POST['department'] ?? '');
-$assigned_ward = (isset($_POST['assignedWard']) && $_POST['assignedWard'] !== '') ? intval($_POST['assignedWard']) : 'NULL';
 
 // Helper function for file upload
 function handleFileUpload($file, $prefix, $upload_dir) {
@@ -78,6 +74,14 @@ function handleFileUpload($file, $prefix, $upload_dir) {
     return ["success" => false, "message" => "Failed to move uploaded file."];
 }
 
+// Validation for Common Fields
+if (!$first_name || !$last_name || !$email || !$password_plain || !$contact_number || !$dob || !$gender || 
+    !$province || !$district || !$city || $ward_number === 'NULL' || !$citizenship_number || 
+    !$citizenship_issue_date || !$citizenship_issue_district) {
+    echo json_encode(["success" => false, "message" => "All address and personal fields are mandatory except middle name."]);
+    exit();
+}
+
 // Photo upload logic for Citizenship
 $citizenship_photo = "";
 if (isset($_FILES['citizenshipPhoto']) && $_FILES['citizenshipPhoto']['error'] === UPLOAD_ERR_OK) {
@@ -89,18 +93,22 @@ if (isset($_FILES['citizenshipPhoto']) && $_FILES['citizenshipPhoto']['error'] =
         exit();
     }
 } else {
-    // Fail if photo is mandatory but missing (it is marked * in frontend)
-    if (!$first_name || !$last_name || !$email || !$password_plain || !$citizenship_number) {
-        echo json_encode(["success" => false, "message" => "All mandatory fields are required."]);
-        exit();
-    }
     echo json_encode(["success" => false, "message" => "Citizenship Photo is required."]);
     exit();
 }
 
-// Photo upload logic for Officer ID Card
+// Officer-specific logic
+$officer_id = $conn->real_escape_string($_POST['officerId'] ?? '');
+$department = $conn->real_escape_string($_POST['department'] ?? '');
+$assigned_ward = (isset($_POST['assignedWard']) && $_POST['assignedWard'] !== '') ? intval($_POST['assignedWard']) : 'NULL';
 $id_card_photo = "";
+
 if ($role === 'officer') {
+    if (!$officer_id || !$department || $assigned_ward === 'NULL') {
+        echo json_encode(["success" => false, "message" => "Officer ID, Department, and Assigned Ward are required."]);
+        exit();
+    }
+    
     if (isset($_FILES['idCardPhoto']) && $_FILES['idCardPhoto']['error'] === UPLOAD_ERR_OK) {
         $upload_result = handleFileUpload($_FILES['idCardPhoto'], "id_card", $upload_dir);
         if ($upload_result['success']) {
@@ -122,11 +130,11 @@ $issue_date_val = $citizenship_issue_date ? "'$citizenship_issue_date'" : "NULL"
 // Database ma user ko sabai info insert gareko
 $query = "INSERT INTO users (
     first_name, middle_name, last_name, email, password, contact_number, dob, gender, 
-    district, city, ward_number, citizenship_number, citizenship_issue_date, citizenship_issue_district, 
+    province, district, city, ward_number, citizenship_number, citizenship_issue_date, citizenship_issue_district, 
     citizenship_photo, role, officer_id, department, assigned_ward, id_card_photo, status
 ) VALUES (
     '$first_name', '$middle_name', '$last_name', '$email', '$password', '$contact_number', $dob_val, '$gender', 
-    '$district', '$city', $ward_number, '$citizenship_number', $issue_date_val, '$citizenship_issue_district', 
+    '$province', '$district', '$city', $ward_number, '$citizenship_number', $issue_date_val, '$citizenship_issue_district', 
     '$citizenship_photo', '$role', '$officer_id', '$department', $assigned_ward, '$id_card_photo', 
     " . ($role === 'officer' ? "'pending'" : "'active'") . "
 )";

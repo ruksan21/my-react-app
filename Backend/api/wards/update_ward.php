@@ -42,6 +42,15 @@ $allowed_fields = [
 foreach ($allowed_fields as $field) {
     if (isset($raw_data[$field])) {
         $val = $raw_data[$field];
+        
+        // Validate phone numbers if field is a phone field
+        if (in_array($field, ['contact_phone', 'telephone', 'chairperson_phone'])) {
+            if (!empty($val) && !preg_match('/^[0-9+ \-]+$/', $val)) {
+                echo json_encode(array("success" => false, "message" => "Phone/Telephone fields must contain only numbers."));
+                exit();
+            }
+        }
+
         if ($field === 'chairperson_appointment_date' && empty($val)) {
             $updates[] = "$field = NULL";
         } else {

@@ -10,7 +10,12 @@ import {
 import "./OfficerManagement.css";
 
 const OfficerManagement = () => {
-  const { pendingOfficers, approveOfficer, rejectOfficer } = useAuth();
+  const {
+    pendingOfficers,
+    approveOfficer,
+    rejectOfficer,
+    fetchPendingOfficers,
+  } = useAuth();
 
   // Create Officer State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -157,15 +162,23 @@ const OfficerManagement = () => {
     }
   };
 
-  const handleApprove = (id) => {
+  const handleApprove = async (id) => {
     if (window.confirm("Are you sure you want to approve this officer?")) {
-      approveOfficer(id);
+      await approveOfficer(id);
+      // Refresh the pending officers list to show updates
+      if (fetchPendingOfficers) {
+        fetchPendingOfficers();
+      }
     }
   };
 
-  const handleReject = (id) => {
+  const handleReject = async (id) => {
     if (window.confirm("Are you sure you want to reject this application?")) {
-      rejectOfficer(id);
+      await rejectOfficer(id);
+      // Refresh the pending officers list to show updates
+      if (fetchPendingOfficers) {
+        fetchPendingOfficers();
+      }
     }
   };
 

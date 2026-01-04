@@ -10,20 +10,36 @@ const WardSelector = ({ onWardSelect }) => {
   const [selectedMunicipality, setSelectedMunicipality] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 480);
 
-  // Group wards by Municipality
+  // Helper function to convert to title case
+  const toTitleCase = (str) => {
+    if (!str) return str;
+    return str
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  // Group wards by Municipality (case-insensitive to prevent duplicates)
   const municipalities = useMemo(() => {
     if (!allWards) return [];
 
     const groups = {};
     allWards.forEach((w) => {
-      const muniName = w.municipality || "Unknown Municipality";
-      if (!groups[muniName]) {
-        groups[muniName] = { name: muniName, wards: [] };
+      const rawMuniName = w.municipality || "Unknown Municipality";
+      const muniName = rawMuniName.trim();
+      // Use lowercase as key to group case-insensitive
+      const muniKey = muniName.toLowerCase();
+
+      if (!groups[muniKey]) {
+        groups[muniKey] = {
+          name: toTitleCase(muniName), // Normalize to title case
+          wards: [],
+        };
       }
       // Store both number and ID
-      groups[muniName].wards.push({ number: w.number, id: w.id });
+      groups[muniKey].wards.push({ number: w.number, id: w.id });
     });
 
     // Convert to array and sorting
@@ -34,12 +50,6 @@ const WardSelector = ({ onWardSelect }) => {
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [allWards]);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 480);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   useEffect(() => {
     // Initialize from context

@@ -4,6 +4,11 @@ import AdminLayout from "./AdminLayout";
 import ChairpersonPersonalAssets from "./ChairpersonPersonalAssets";
 import { useAuth } from "../Home/Context/AuthContext";
 import { API_ENDPOINTS } from "../config/api";
+import {
+  getProvinces,
+  getDistricts,
+  getMunicipalities,
+} from "../data/nepal_locations";
 import "./WardManagement.css";
 
 const WardManagement = () => {
@@ -44,11 +49,19 @@ const WardManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [profilePhotoFile, setProfilePhotoFile] = useState(null);
 
+  // Cascading Selection State for Form
+  const [formProvince, setFormProvince] = useState("");
+  const [formDistrictName, setFormDistrictName] = useState("");
+  const [availableWardNumbers, setAvailableWardNumbers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [wardToDelete, setWardToDelete] = useState(null);
+
   useEffect(() => {
     fetchDistricts();
     fetchWards();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDistrict]);
+  }, []); // Only fetch once on mount now, filtering is frontend-based
 
   const fetchDistricts = async () => {
     try {
@@ -63,10 +76,7 @@ const WardManagement = () => {
   const fetchWards = async () => {
     setIsLoading(true);
     try {
-      const url =
-        selectedDistrict === "all"
-          ? API_ENDPOINTS.wards.getAll
-          : `${API_ENDPOINTS.wards.getAll}?district_id=${selectedDistrict}`;
+      const url = API_ENDPOINTS.wards.getAll; // Fetch all wards for frontend filtering
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) setWards(data.data);
@@ -79,10 +89,6 @@ const WardManagement = () => {
 
   const handleDistrictChange = (e) => {
     setSelectedDistrict(e.target.value);
-  };
-
-  const handleFormDistrictChange = (e) => {
-    setFormData({ ...formData, district_id: e.target.value });
   };
 
   const handleAddDistrict = async (e) => {
@@ -109,6 +115,13 @@ const WardManagement = () => {
     }
   };
 
+  const handleNumericInput = (e, field) => {
+    const val = e.target.value;
+    if (val === "" || /^[0-9]+$/.test(val)) {
+      setFormData({ ...formData, [field]: val });
+    }
+  };
+
   const handleAddWardClick = () => {
     setFormData({
       ward_number: "",
@@ -128,15 +141,9 @@ const WardManagement = () => {
       chairperson_appointment_date: "",
       chairperson_bio: "",
     });
+    setFormProvince("");
+    setFormDistrictName("");
     setIsAdding(true);
-  };
-
-  // Helper for numeric input
-  const handleNumericInput = (e, field) => {
-    const val = e.target.value;
-    if (val === "" || /^[0-9]+$/.test(val)) {
-      setFormData({ ...formData, [field]: val });
-    }
   };
 
   const handleEditClick = (ward) => {
@@ -159,6 +166,17 @@ const WardManagement = () => {
       chairperson_appointment_date: ward.chairperson_appointment_date || "",
       chairperson_bio: ward.chairperson_bio || "",
     });
+
+    // Try to find province and district from metadata to pre-populate dropdowns
+    const districtName = ward.district_name || "";
+    setFormDistrictName(districtName);
+
+    // Find province for this district
+    const province = getProvinces().find((p) =>
+      getDistricts(p).includes(districtName)
+    );
+    setFormProvince(province || "");
+
     setIsEditing(true);
     setIsAdding(false);
     setIsViewingProfile(false);
@@ -178,10 +196,19 @@ const WardManagement = () => {
     setIsViewingProfile(false);
     setSelectedWard(null);
     setProfilePhotoFile(null);
+    setFormProvince("");
+    setFormDistrictName("");
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
+
+    // Validation (Only Ward Number is strictly required from metadata)
+    if (!formData.ward_number) {
+      alert("Please select a valid Ward Number.");
+      return;
+    }
+
     const saveUrl = isAdding
       ? API_ENDPOINTS.wards.add
       : API_ENDPOINTS.wards.update;
@@ -190,6 +217,11 @@ const WardManagement = () => {
     Object.keys(formData).forEach((key) => {
       submitData.append(key, formData[key]);
     });
+
+    // Explicitly pass district_name for auto-registration
+    if (formDistrictName) {
+      submitData.append("district_name", formDistrictName);
+    }
 
     if (!isAdding && selectedWard) {
       submitData.append("id", selectedWard.id);
@@ -221,16 +253,23 @@ const WardManagement = () => {
     }
   };
 
-  const handleDeleteWard = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this ward?")) return;
+  const confirmDelete = (ward) => {
+    setWardToDelete(ward);
+    setIsDeleting(true);
+  };
+
+  const handleDeleteWard = async () => {
+    if (!wardToDelete) return;
     try {
       const res = await fetch(API_ENDPOINTS.wards.delete, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id: wardToDelete.id }),
       });
       const data = await res.json();
       if (data.success) {
+        setIsDeleting(false);
+        setWardToDelete(null);
         fetchWards();
         refreshWards();
       } else {
@@ -240,6 +279,62 @@ const WardManagement = () => {
       console.error("Delete error:", err);
     }
   };
+
+  // Logic to handle available wards when municipality changes
+  useEffect(() => {
+    if (formProvince && formDistrictName && formData.municipality) {
+      const munis = getMunicipalities(formProvince, formDistrictName);
+      const selectedMuni = munis.find((m) => m.name === formData.municipality);
+      if (selectedMuni) {
+        const nums = Array.from(
+          { length: selectedMuni.wards },
+          (_, i) => i + 1
+        );
+        setAvailableWardNumbers(nums);
+      } else {
+        setAvailableWardNumbers([]);
+      }
+    } else {
+      setAvailableWardNumbers([]);
+    }
+  }, [formProvince, formDistrictName, formData.municipality]);
+
+  // Derived state for districts that actually have wards registered
+  const registeredDistricts = React.useMemo(() => {
+    const districtsWithWards = new Set();
+    wards.forEach((w) => {
+      if (w.district_id) districtsWithWards.add(parseInt(w.district_id));
+    });
+
+    return districts
+      .filter((d) => districtsWithWards.has(parseInt(d.id)))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [wards, districts]);
+
+  // Combined Filtering Logic
+  const filteredWards = wards.filter((ward) => {
+    // 1. District Filter
+    if (
+      selectedDistrict !== "all" &&
+      parseInt(ward.district_id) !== parseInt(selectedDistrict)
+    ) {
+      return false;
+    }
+
+    // 2. Search Term Filter
+    const searchLow = searchTerm.toLowerCase();
+    const wardNoMatch = ward.ward_number.toString().includes(searchTerm);
+    const muniMatch =
+      ward.municipality && ward.municipality.toLowerCase().includes(searchLow);
+    const districtMatch =
+      ward.district_name &&
+      ward.district_name.toLowerCase().includes(searchLow);
+    const chairMatch =
+      ward.chairperson_name &&
+      ward.chairperson_name.toLowerCase().includes(searchLow);
+
+    return wardNoMatch || muniMatch || districtMatch || chairMatch;
+  });
 
   // RENDER Start
   return (
@@ -288,22 +383,25 @@ const WardManagement = () => {
                   className="district-select"
                 >
                   <option value="all">All Districts</option>
-                  {districts.map((d) => (
+                  {registeredDistricts.map((d) => (
                     <option key={d.id} value={d.id}>
-                      {d.name}
+                      {d.name.charAt(0).toUpperCase() + d.name.slice(1)}
                     </option>
                   ))}
                 </select>
-                <button
-                  onClick={() => setIsAddingDistrict(true)}
-                  className="btn-icon-add"
-                  title="Add New District"
-                >
-                  +
-                </button>
+                <div className="search-box-container">
+                  <input
+                    type="text"
+                    placeholder="Search Municipality, Chair or Ward..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="ward-search-input"
+                  />
+                  <i className="search-icon">🔍</i>
+                </div>
               </div>
 
-              <span className="total-count">Total: {wards.length}</span>
+              <span className="total-count">Total: {filteredWards.length}</span>
               <button
                 className="action-btn approve"
                 onClick={handleAddWardClick}
@@ -329,7 +427,7 @@ const WardManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {wards.map((ward) => (
+                {filteredWards.map((ward) => (
                   <tr key={ward.id}>
                     <td className="ward-number-cell">
                       Ward {ward.ward_number}
@@ -386,7 +484,7 @@ const WardManagement = () => {
                         </button>
                         <button
                           className="action-btn delete btn-delete-ward"
-                          onClick={() => handleDeleteWard(ward.id)}
+                          onClick={() => confirmDelete(ward)}
                         >
                           Delete
                         </button>
@@ -396,6 +494,43 @@ const WardManagement = () => {
                 ))}
               </tbody>
             </table>
+          )}
+
+          {/* Custom Delete Modal */}
+          {isDeleting && (
+            <div className="ward-modal-overlay delete-modal-overlay">
+              <div className="delete-modal-content">
+                <div className="delete-warning-icon">⚠️</div>
+                <h3 className="delete-modal-title">Confirm Deletion</h3>
+                <p className="delete-modal-text">
+                  Are you sure you want to delete{" "}
+                  <strong>Ward {wardToDelete?.ward_number}</strong> of{" "}
+                  <strong>{wardToDelete?.municipality}</strong>?
+                </p>
+                <p className="delete-modal-subtext">
+                  This action cannot be undone and all associated data will be
+                  removed.
+                </p>
+
+                <div className="delete-modal-actions">
+                  <button
+                    className="btn-cancel-small"
+                    onClick={() => {
+                      setIsDeleting(false);
+                      setWardToDelete(null);
+                    }}
+                  >
+                    Keep Ward
+                  </button>
+                  <button
+                    className="action-btn delete btn-confirm-delete"
+                    onClick={handleDeleteWard}
+                  >
+                    Confirm Delete
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       ) : isViewingProfile ? (
@@ -445,321 +580,398 @@ const WardManagement = () => {
         </div>
       ) : (
         /* Edit/Add View */
-        <div className="stat-card ward-form-container">
-          <div className="ward-form-header">
-            <h2 className="section-title">
-              {isAdding
-                ? "Add New Ward"
-                : `Edit Ward ${selectedWard?.ward_number} - ${selectedWard?.district_name}`}
-            </h2>
-            <button onClick={resetFormAndClose} className="btn-close-icon">
-              ✕
-            </button>
-          </div>
-
-          {!isAdding && (
-            <div className="ward-tabs">
+        <div className="ward-modern-form-wrapper">
+          <div className="ward-form-modern-card">
+            <div className="ward-form-header-premium">
+              <div className="header-title-group">
+                <h2 className="modern-section-title">
+                  {isAdding ? "Create New Ward" : "Update Ward Information"}
+                </h2>
+                <p className="modern-section-subtitle">
+                  {isAdding
+                    ? "Register a new ward office and chairperson details"
+                    : `Modifying Ward ${selectedWard?.ward_number} in ${selectedWard?.district_name}`}
+                </p>
+              </div>
               <button
-                onClick={() => setActiveTab("details")}
-                className={`tab-btn ${activeTab === "details" ? "active" : ""}`}
+                onClick={resetFormAndClose}
+                className="btn-modern-close"
+                title="Close"
               >
-                Ward Details
-              </button>
-              <button
-                onClick={() => setActiveTab("personal_assets")}
-                className={`tab-btn ${
-                  activeTab === "personal_assets" ? "active" : ""
-                }`}
-              >
-                Personal Assets
+                ✕
               </button>
             </div>
-          )}
 
-          {(activeTab === "details" || isAdding) && (
-            <form onSubmit={handleSave} className="ward-form-grid">
-              <h3 className="ward-info-title">Ward Information</h3>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "20px",
-                }}
-              >
-                <div>
-                  <label className="stat-label">District *</label>
-                  <div className="input-with-button">
-                    <select
-                      required
-                      value={formData.district_id}
-                      onChange={handleFormDistrictChange}
-                      disabled={!isAdding}
-                      className="form-select-flex"
-                    >
-                      {districts.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingDistrict(true)}
-                      className="btn-plus-inline"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="stat-label">Municipality / Palika *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Type Municipality Name..."
-                    value={formData.municipality}
-                    onChange={(e) =>
-                      setFormData({ ...formData, municipality: e.target.value })
-                    }
-                    className="form-input-full"
-                  />
-                </div>
-                <div>
-                  <label className="stat-label">Ward Number *</label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.ward_number}
-                    onChange={(e) =>
-                      setFormData({ ...formData, ward_number: e.target.value })
-                    }
-                    disabled={!isAdding}
-                    className="form-input-full"
-                  />
-                </div>
-                <div>
-                  <label className="stat-label">Location</label>
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) =>
-                      setFormData({ ...formData, location: e.target.value })
-                    }
-                    className="form-input-full"
-                  />
-                </div>
-                <div>
-                  <label className="stat-label">Google Map Link</label>
-                  <input
-                    type="url"
-                    placeholder="https://maps.google.com/..."
-                    value={formData.google_map_link}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        google_map_link: e.target.value,
-                      })
-                    }
-                    className="form-input-full"
-                  />
-                </div>
-                <div className="grid-3-col">
-                  <div>
-                    <label className="stat-label">Mobile (Contact Phone)</label>
-                    <input
-                      type="tel"
-                      pattern="[0-9]*"
-                      value={formData.contact_phone}
-                      onChange={(e) => handleNumericInput(e, "contact_phone")}
-                      className="form-input-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="stat-label">Telephone</label>
-                    <input
-                      type="tel"
-                      pattern="[0-9]*"
-                      value={formData.telephone}
-                      onChange={(e) => handleNumericInput(e, "telephone")}
-                      className="form-input-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="stat-label">Email</label>
-                    <input
-                      type="email"
-                      value={formData.contact_email}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          contact_email: e.target.value,
-                        })
-                      }
-                      className="form-input-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Chairperson Profile Inputs */}
-              <h3 className="ward-info-title">Current Chairperson Profile</h3>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "20px",
-                }}
-              >
-                <div>
-                  <label className="stat-label">Chairperson Name</label>
-                  <input
-                    type="text"
-                    value={formData.chairperson_name}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        chairperson_name: e.target.value,
-                      })
-                    }
-                    className="form-input-full"
-                  />
-                </div>
-                <div>
-                  <label className="stat-label">Photo</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setProfilePhotoFile(e.target.files[0]);
-                      }
-                    }}
-                    className="form-input-full"
-                  />
-                </div>
-                <div>
-                  <label className="stat-label">Personal Phone</label>
-                  <input
-                    type="text"
-                    value={formData.chairperson_phone}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        chairperson_phone: e.target.value,
-                      })
-                    }
-                    className="form-input-full"
-                  />
-                </div>
-                <div>
-                  <label className="stat-label">Personal Email</label>
-                  <input
-                    type="email"
-                    value={formData.chairperson_email}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        chairperson_email: e.target.value,
-                      })
-                    }
-                    className="form-input-full"
-                  />
-                </div>
-                <div>
-                  <label className="stat-label">Political Party</label>
-                  <input
-                    type="text"
-                    value={formData.chairperson_political_party}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        chairperson_political_party: e.target.value,
-                      })
-                    }
-                    className="form-input-full"
-                  />
-                </div>
-                <div>
-                  <label className="stat-label">Appointed Date</label>
-                  <input
-                    type="date"
-                    value={formData.chairperson_appointment_date}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        chairperson_appointment_date: e.target.value,
-                      })
-                    }
-                    className="form-input-full"
-                  />
-                </div>
-                <div>
-                  <label className="stat-label">Education</label>
-                  <input
-                    type="text"
-                    value={formData.chairperson_education}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        chairperson_education: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., Masters in Public Administration"
-                    className="form-input-full"
-                  />
-                </div>
-                <div>
-                  <label className="stat-label">Experience</label>
-                  <input
-                    type="text"
-                    value={formData.chairperson_experience}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        chairperson_experience: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., 5 years as Ward Member"
-                    className="form-input-full"
-                  />
-                </div>
-                <div style={{ gridColumn: "span 2" }}>
-                  <label className="stat-label">Bio / Message</label>
-                  <textarea
-                    rows="3"
-                    value={formData.chairperson_bio}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        chairperson_bio: e.target.value,
-                      })
-                    }
-                    className="form-input-full"
-                    style={{ fontFamily: "inherit" }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-actions-footer">
+            {!isAdding && (
+              <div className="ward-tabs">
                 <button
-                  type="button"
-                  onClick={resetFormAndClose}
-                  className="action-btn btn-cancel-small"
+                  onClick={() => setActiveTab("details")}
+                  className={`tab-btn ${
+                    activeTab === "details" ? "active" : ""
+                  }`}
                 >
-                  Cancel
+                  Ward Details
                 </button>
-                <button type="submit" className="action-btn approve btn-save">
-                  {isAdding ? "Create Ward" : "Save Changes"}
+                <button
+                  onClick={() => setActiveTab("personal_assets")}
+                  className={`tab-btn ${
+                    activeTab === "personal_assets" ? "active" : ""
+                  }`}
+                >
+                  Personal Assets
                 </button>
               </div>
-            </form>
-          )}
+            )}
 
-          {activeTab === "personal_assets" && (
-            <div style={{ marginTop: "20px" }}>
-              <ChairpersonPersonalAssets wardId={selectedWard.id} />
-            </div>
-          )}
+            {(activeTab === "details" || isAdding) && (
+              <form onSubmit={handleSave} className="ward-modern-form">
+                {/* Section 1: Location & Context */}
+                <div className="form-content-section">
+                  <h3 className="modern-info-title">
+                    <i className="section-icon">📍</i> Office Location Details
+                  </h3>
+                  <div className="modern-grid-layout">
+                    <div className="form-field">
+                      <label className="modern-label">Province *</label>
+                      <select
+                        required
+                        value={formProvince}
+                        onChange={(e) => {
+                          setFormProvince(e.target.value);
+                          setFormDistrictName("");
+                          setFormData({
+                            ...formData,
+                            district_id: "",
+                            municipality: "",
+                            ward_number: "",
+                          });
+                        }}
+                        className="modern-select"
+                      >
+                        <option value="">-- Select Province --</option>
+                        {getProvinces().map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">District *</label>
+                      <div className="modern-input-with-action">
+                        <select
+                          required
+                          value={formDistrictName}
+                          disabled={!formProvince}
+                          onChange={(e) => {
+                            const dName = e.target.value;
+                            setFormDistrictName(dName);
+                            // Find matching district ID in our database
+                            const dbD = districts.find(
+                              (d) =>
+                                d.name.toLowerCase() === dName.toLowerCase()
+                            );
+                            setFormData({
+                              ...formData,
+                              district_id: dbD ? dbD.id : "",
+                              municipality: "",
+                              ward_number: "",
+                            });
+                          }}
+                          className="modern-select"
+                        >
+                          <option value="">-- Select District --</option>
+                          {formProvince &&
+                            getDistricts(formProvince).map((d) => (
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingDistrict(true)}
+                          className="modern-btn-plus"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">
+                        Municipality / Palika *
+                      </label>
+                      <select
+                        required
+                        disabled={!formDistrictName}
+                        value={formData.municipality}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            municipality: e.target.value,
+                            ward_number: "",
+                          })
+                        }
+                        className="modern-select"
+                      >
+                        <option value="">-- Select Municipality --</option>
+                        {formDistrictName &&
+                          getMunicipalities(formProvince, formDistrictName).map(
+                            (m) => (
+                              <option key={m.name} value={m.name}>
+                                {m.name}
+                              </option>
+                            )
+                          )}
+                      </select>
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Ward Number *</label>
+                      <select
+                        required
+                        disabled={!formData.municipality}
+                        value={formData.ward_number}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            ward_number: e.target.value,
+                          })
+                        }
+                        className="modern-select"
+                      >
+                        <option value="">-- Select Ward --</option>
+                        {availableWardNumbers.map((n) => (
+                          <option key={n} value={n}>
+                            Ward {n}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Office Name</label>
+                      <input
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) =>
+                          setFormData({ ...formData, location: e.target.value })
+                        }
+                        className="modern-input"
+                        placeholder="e.g. Near Kalanki Chowk"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Google Maps Link</label>
+                      <input
+                        type="url"
+                        value={formData.google_map_link}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            google_map_link: e.target.value,
+                          })
+                        }
+                        className="modern-input"
+                        placeholder="https://maps.app.goo.gl/..."
+                      />
+                    </div>
+                  </div>
+                </div>
+                {/* Section 2: Contact Info */}
+                <div className="form-content-section section-contacts">
+                  <h3 className="modern-info-title">
+                    <i className="section-icon">📞</i> Ward Office Contacts
+                  </h3>
+                  <div className="modern-grid-layout">
+                    <div className="form-field">
+                      <label className="modern-label">Ward Mobile</label>
+                      <input
+                        type="text"
+                        value={formData.contact_phone}
+                        onChange={(e) => handleNumericInput(e, "contact_phone")}
+                        className="modern-input"
+                        placeholder="98XXXXXXXX"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Ward Telephone</label>
+                      <input
+                        type="text"
+                        value={formData.telephone}
+                        onChange={(e) => handleNumericInput(e, "telephone")}
+                        className="modern-input"
+                        placeholder="01-XXXXXXX"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Office Email</label>
+                      <input
+                        type="email"
+                        value={formData.contact_email}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            contact_email: e.target.value,
+                          })
+                        }
+                        className="modern-input"
+                        placeholder="office@ward.gov.np"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Chairperson Profile */}
+                <div className="form-content-section section-chairperson">
+                  <h3 className="modern-info-title">
+                    <i className="section-icon">👤</i> Chairperson Profile
+                  </h3>
+                  <div className="modern-grid-layout">
+                    <div className="form-field">
+                      <label className="modern-label">Full Name</label>
+                      <input
+                        type="text"
+                        value={formData.chairperson_name}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            chairperson_name: e.target.value,
+                          })
+                        }
+                        className="modern-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Profile Photo</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setProfilePhotoFile(e.target.files[0]);
+                          }
+                        }}
+                        className="modern-file-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Personal Phone</label>
+                      <input
+                        type="text"
+                        value={formData.chairperson_phone}
+                        onChange={(e) =>
+                          handleNumericInput(e, "chairperson_phone")
+                        }
+                        className="modern-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Personal Email</label>
+                      <input
+                        type="email"
+                        value={formData.chairperson_email}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            chairperson_email: e.target.value,
+                          })
+                        }
+                        className="modern-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Political Party</label>
+                      <input
+                        type="text"
+                        value={formData.chairperson_political_party}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            chairperson_political_party: e.target.value,
+                          })
+                        }
+                        className="modern-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Appointed Date</label>
+                      <input
+                        type="date"
+                        value={formData.chairperson_appointment_date}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            chairperson_appointment_date: e.target.value,
+                          })
+                        }
+                        className="modern-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Education</label>
+                      <input
+                        type="text"
+                        value={formData.chairperson_education}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            chairperson_education: e.target.value,
+                          })
+                        }
+                        className="modern-input"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="modern-label">Experience</label>
+                      <input
+                        type="text"
+                        value={formData.chairperson_experience}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            chairperson_experience: e.target.value,
+                          })
+                        }
+                        className="modern-input"
+                      />
+                    </div>
+                    <div className="form-field field-full">
+                      <label className="modern-label">Bio / Message</label>
+                      <textarea
+                        rows="3"
+                        value={formData.chairperson_bio}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            chairperson_bio: e.target.value,
+                          })
+                        }
+                        className="modern-textarea"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="modern-form-footer">
+                  <button
+                    type="button"
+                    onClick={resetFormAndClose}
+                    className="btn-modern-cancel"
+                  >
+                    Discard Changes
+                  </button>
+                  <button type="submit" className="btn-modern-save">
+                    {isAdding ? "Create Ward Now" : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === "personal_assets" && (
+              <div className="modern-assets-section">
+                <ChairpersonPersonalAssets wardId={selectedWard.id} />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </AdminLayout>

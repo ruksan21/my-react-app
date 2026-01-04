@@ -18,7 +18,8 @@ require_once '../db_connect.php';
 // Use $_POST for FormData, or json_decode for JSON (fallback)
 if (!empty($_POST)) {
     $ward_number = intval($_POST['ward_number']);
-    $district_id = intval($_POST['district_id']);
+    $district_id = isset($_POST['district_id']) ? intval($_POST['district_id']) : 0;
+    $district_name = isset($_POST['district_name']) ? $conn->real_escape_string($_POST['district_name']) : '';
     $municipality = isset($_POST['municipality']) ? $conn->real_escape_string($_POST['municipality']) : '';
     $location = isset($_POST['location']) ? $conn->real_escape_string($_POST['location']) : '';
     $google_map_link = isset($_POST['google_map_link']) ? $conn->real_escape_string($_POST['google_map_link']) : '';
@@ -40,7 +41,8 @@ if (!empty($_POST)) {
         exit();
     }
     $ward_number = intval($data->ward_number);
-    $district_id = intval($data->district_id);
+    $district_id = isset($data->district_id) ? intval($data->district_id) : 0;
+    $district_name = isset($data->district_name) ? $conn->real_escape_string($data->district_name) : '';
     $municipality = isset($data->municipality) ? $conn->real_escape_string($data->municipality) : '';
     $location = isset($data->location) ? $conn->real_escape_string($data->location) : '';
     $google_map_link = isset($data->google_map_link) ? $conn->real_escape_string($data->google_map_link) : '';
@@ -57,10 +59,45 @@ if (!empty($_POST)) {
     $chairperson_bio = isset($data->chairperson_bio) ? $conn->real_escape_string($data->chairperson_bio) : '';
 }
 
+// Logic for Automatic District Registration
+if (!$district_id && $district_name) {
+    // Check if district exists by name
+    $find_district = "SELECT id FROM districts WHERE name = '$district_name' LIMIT 1";
+    $find_res = $conn->query($find_district);
+    
+    if ($find_res && $find_res->num_rows > 0) {
+        $row = $find_res->fetch_assoc();
+        $district_id = intval($row['id']);
+    } else {
+        // Create new district
+        $create_district = "INSERT INTO districts (name) VALUES ('$district_name')";
+        if ($conn->query($create_district)) {
+            $district_id = $conn->insert_id;
+        } else {
+            echo json_encode(array("success" => false, "message" => "Failed to auto-register district: " . $conn->error));
+            exit();
+        }
+    }
+}
+
 // Validate required fields
 if (!$ward_number || !$district_id) {
     echo json_encode(array("success" => false, "message" => "Ward number and district are required."));
     exit();
+}
+
+// Validate phone numbers are numeric
+$phone_fields = [
+    'Ward Mobile' => $contact_phone,
+    'Ward Telephone' => $telephone,
+    'Chairperson Phone' => $chairperson_phone
+];
+
+foreach ($phone_fields as $label => $val) {
+    if (!empty($val) && !preg_match('/^[0-9+ \-]+$/', $val)) {
+        echo json_encode(array("success" => false, "message" => "$label must contain only numbers, spaces, or plus/minus signs."));
+        exit();
+    }
 }
 
 // Check if ward already exists

@@ -4,7 +4,7 @@ import { useAuth } from "../Home/Context/AuthContext";
 import "./UserManagement.css";
 
 const UserManagement = () => {
-  const { allUsers, deleteUser, contextLoading } = useAuth();
+  const { allUsers, deleteUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -12,36 +12,58 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isViewing, setIsViewing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Edit Form State
   const [editForm, setEditForm] = useState({
-    username: "",
-    email: "", // Read-only usually? Or editable?
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    email: "",
     role: "",
   });
 
+  // Helper to get display name from user object
+  const getUserDisplayName = (user) => {
+    if (!user) return "Unknown";
+    const parts = [user.first_name, user.middle_name, user.last_name].filter(
+      (p) => p && p.trim() !== ""
+    );
+    return parts.length > 0 ? parts.join(" ") : "Unknown User";
+  };
+
   useEffect(() => {
-    if (allUsers) {
-      setUsers(allUsers);
-      setFilteredUsers(allUsers);
-    }
+    // Add delay to ensure allUsers is loaded
+    const timer = setTimeout(() => {
+      if (allUsers && Array.isArray(allUsers)) {
+        setUsers(allUsers);
+        setFilteredUsers(allUsers);
+      }
+      setIsLoading(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [allUsers]);
 
   useEffect(() => {
+    if (!users || users.length === 0) return;
+
     let result = users;
 
     if (roleFilter !== "all") {
       result = result.filter(
-        (user) => user.role.toLowerCase() === roleFilter.toLowerCase()
+        (user) =>
+          user.role && user.role.toLowerCase() === roleFilter.toLowerCase()
       );
     }
 
     if (searchTerm) {
-      result = result.filter(
-        (user) =>
-          user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const lowerSearch = searchTerm.toLowerCase();
+      result = result.filter((user) => {
+        const fullName = getUserDisplayName(user).toLowerCase();
+        const email = (user.email || "").toLowerCase();
+        return fullName.includes(lowerSearch) || email.includes(lowerSearch);
+      });
     }
 
     setFilteredUsers(result);
@@ -56,9 +78,11 @@ const UserManagement = () => {
   const handleEditClick = (user) => {
     setSelectedUser(user);
     setEditForm({
-      username: user.username,
-      email: user.email,
-      role: user.role,
+      firstName: user.first_name || "",
+      middleName: user.middle_name || "",
+      lastName: user.last_name || "",
+      email: user.email || "",
+      role: user.role || "",
     });
     setIsEditing(true);
   };
@@ -84,7 +108,15 @@ const UserManagement = () => {
     setSelectedUser(null);
   };
 
-  if (contextLoading) return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <AdminLayout title="User Management">
+        <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>
+          Loading users...
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout title="User Management">
@@ -94,10 +126,10 @@ const UserManagement = () => {
           <div className="user-modal-content user-profile-content">
             <div className="profile-header-center">
               <div className="profile-avatar-large">
-                {selectedUser.username.charAt(0).toUpperCase()}
+                {(selectedUser.first_name || "U").charAt(0).toUpperCase()}
               </div>
               <h2 style={{ marginTop: "16px", marginBottom: "4px" }}>
-                {selectedUser.username}
+                {getUserDisplayName(selectedUser)}
               </h2>
               <span
                 className={`profile-role-badge role-${selectedUser.role.toLowerCase()}`}
@@ -147,16 +179,46 @@ const UserManagement = () => {
               </button>
             </div>
             <form onSubmit={handleEditSubmit} className="user-form-grid">
-              <div>
-                <label className="stat-label">Username</label>
-                <input
-                  type="text"
-                  value={editForm.username}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, username: e.target.value })
-                  }
-                  className="user-input"
-                />
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gap: "10px",
+                }}
+              >
+                <div>
+                  <label className="stat-label">First Name</label>
+                  <input
+                    type="text"
+                    value={editForm.firstName}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, firstName: e.target.value })
+                    }
+                    className="user-input"
+                  />
+                </div>
+                <div>
+                  <label className="stat-label">Middle Name</label>
+                  <input
+                    type="text"
+                    value={editForm.middleName}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, middleName: e.target.value })
+                    }
+                    className="user-input"
+                  />
+                </div>
+                <div>
+                  <label className="stat-label">Last Name</label>
+                  <input
+                    type="text"
+                    value={editForm.lastName}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, lastName: e.target.value })
+                    }
+                    className="user-input"
+                  />
+                </div>
               </div>
               <div>
                 <label className="stat-label">Email</label>
@@ -246,10 +308,12 @@ const UserManagement = () => {
                   <td>
                     <div className="user-name-cell">
                       <div className="table-avatar-circle">
-                        {user.username.charAt(0).toUpperCase()}
+                        {(user.first_name || "U").charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 500 }}>{user.username}</div>
+                        <div style={{ fontWeight: 500 }}>
+                          {getUserDisplayName(user)}
+                        </div>
                         <div className="user-email-text">{user.email}</div>
                       </div>
                     </div>

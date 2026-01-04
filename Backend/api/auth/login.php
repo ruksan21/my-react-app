@@ -28,6 +28,28 @@ if (!empty($data->email) && !empty($data->password)) {
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
         if (password_verify($password, $user['password'])) {
+            // Check user status before allowing login
+            if (isset($user['status']) && $user['status'] !== 'active') {
+                http_response_code(403);
+                if ($user['status'] === 'pending') {
+                    echo json_encode(array(
+                        "success" => false, 
+                        "message" => "Your account is pending approval. Please wait for admin approval."
+                    ));
+                } else if ($user['status'] === 'rejected') {
+                    echo json_encode(array(
+                        "success" => false, 
+                        "message" => "Your account has been rejected. Please contact the administrator."
+                    ));
+                } else {
+                    echo json_encode(array(
+                        "success" => false, 
+                        "message" => "Your account is not active. Please contact the administrator."
+                    ));
+                }
+                exit();
+            }
+            
             unset($user['password']); 
             echo json_encode(array(
                 "success" => true,

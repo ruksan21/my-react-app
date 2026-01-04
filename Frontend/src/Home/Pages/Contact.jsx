@@ -1,14 +1,81 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../Nav/Navbar";
 import "./Contact.css";
 import { useWard } from "../Context/WardContext";
+import { API_ENDPOINTS } from "../../config/api";
 
 export default function Contact() {
-  const { municipality: selectedMunicipality, ward: selectedWard } = useWard();
-  const wardData = useMemo(
-    () => getDefaultWardData(selectedMunicipality, selectedWard),
-    [selectedMunicipality, selectedWard]
-  );
+  const {
+    municipality: selectedMunicipality,
+    ward: selectedWard,
+    wardId,
+  } = useWard();
+  const [wardInfo, setWardInfo] = useState({
+    phone1: "---",
+    phone2: "---",
+    email: "---",
+    contactEmail: "---",
+    address: selectedMunicipality + ", Ward No. " + selectedWard,
+    location: "Loading...",
+    district: "",
+    latitude: null,
+    longitude: null,
+    google_map_link: "",
+    officeHours: {
+      weekdays: "10:00 AM - 5:00 PM",
+      friday: "10:00 AM - 3:00 PM",
+      saturday: "Closed",
+    },
+  });
+
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch Ward Details and Departments
+  useEffect(() => {
+    if (!wardId) return;
+
+    setLoading(true);
+    // Fetch Ward Details
+    fetch(`${API_ENDPOINTS.wards.getDetails}?id=${wardId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          const w = data.data;
+          setWardInfo({
+            phone1: w.contact_phone || "---",
+            phone2: w.telephone || "---",
+            email: w.contact_email || "---",
+            contactEmail: w.chairperson_email || "---",
+            address:
+              w.location || `${w.municipality}, Ward No. ${w.ward_number}`,
+            location: w.location || w.municipality,
+            district: w.district_name || "",
+            latitude: w.latitude || null,
+            longitude: w.longitude || null,
+            google_map_link: w.google_map_link || "",
+            officeHours: {
+              weekdays: w.office_hours_weekdays || "10:00 AM - 5:00 PM",
+              friday: w.office_hours_friday || "10:00 AM - 3:00 PM",
+              saturday: w.office_hours_saturday || "Closed",
+            },
+          });
+        }
+      })
+      .catch((err) => console.error("Error fetching ward details:", err));
+
+    // Fetch Departments
+    fetch(`${API_ENDPOINTS.alerts.manageDepartments}?ward_id=${wardId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          setDepartments(data.data);
+        }
+      })
+      .catch((err) => console.error("Error fetching departments:", err))
+      .finally(() => setLoading(false));
+  }, [wardId]);
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -19,99 +86,13 @@ export default function Contact() {
   });
   const [formStatus, setFormStatus] = useState(null);
 
-  // Sample data for departments - In future, fetch this from backend
-  const [departments] = useState([
-    {
-      name: "Administration Department",
-      head: "Mr. Ram Bahadur Shrestha",
-      phone: "01-4234567",
-      email: "admin@wardportal.gov.np",
-      icon: "🏢",
-    },
-    {
-      name: "Planning & Development Department",
-      head: "Mrs. Sita Devi Poudel",
-      phone: "01-4234568",
-      email: "planning@wardportal.gov.np",
-      icon: "🏗️",
-    },
-    {
-      name: "Social Development Department",
-      head: "Mr. Hari Prasad Gurung",
-      phone: "01-4234569",
-      email: "social@wardportal.gov.np",
-      icon: "👥",
-    },
-    {
-      name: "Financial Administration Department",
-      head: "Mrs. Geeta Kumari Tamang",
-      phone: "01-4234570",
-      email: "finance@wardportal.gov.np",
-      icon: "💰",
-    },
-  ]);
-
   // Social media links - Update these with actual ward social media URLs
   const [socialMedia] = useState({
     facebook: "https://www.facebook.com/kathmandumetrocity",
     instagram: "https://www.instagram.com/kathmandumetrocity",
     twitter: "https://twitter.com/Ktmmetrocity",
-    whatsapp: "https://wa.me/9779851234567", // Replace with actual WhatsApp number
+    whatsapp: "https://wa.me/9779851234567",
   });
-
-  // Frontend-only: static ward/municipality without localStorage or backend
-
-  function getDefaultWardData(
-    municipality = "Kathmandu Metropolitan City",
-    ward = 1
-  ) {
-    const WARDS = {
-      1: {
-        phone1: "01-4211234",
-        phone2: "01-4211567",
-        email: "ward1@kathmandu.gov.np",
-        contactEmail: "contact@kathmandu.gov.np",
-        address: "Kathmandu Metropolitan City, Ward No. 1",
-        latitude: 27.7172,
-        longitude: 85.324,
-      },
-      2: {
-        phone1: "01-4211235",
-        phone2: "01-4211568",
-        email: "ward2@kathmandu.gov.np",
-        contactEmail: "contact@kathmandu.gov.np",
-        address: "Kathmandu Metropolitan City, Ward No. 2",
-        latitude: 27.7089,
-        longitude: 85.3247,
-      },
-      3: {
-        phone1: "01-4211236",
-        phone2: "01-4211569",
-        email: "ward3@kathmandu.gov.np",
-        contactEmail: "contact@kathmandu.gov.np",
-        address: "Kathmandu Metropolitan City, Ward No. 3",
-        latitude: 27.7105,
-        longitude: 85.3135,
-      },
-    };
-    const info = WARDS[ward] || WARDS[1];
-    return {
-      ward: String(ward),
-      municipality,
-      phone1: info.phone1,
-      phone2: info.phone2,
-      email: info.email,
-      contactEmail: info.contactEmail,
-      address: info.address,
-      officeHours: {
-        weekdays: "10:00 AM - 5:00 PM",
-        friday: "10:00 AM - 3:00 PM",
-        saturday: "Closed",
-      },
-      latitude: info.latitude,
-      longitude: info.longitude,
-    };
-  }
 
   function handleInputChange(e) {
     const { name, value } = e.target;
@@ -127,8 +108,8 @@ export default function Contact() {
     // POST /api/messages.php    { ward, municipality, fullName, email, phone, subject, message }
 
     const payload = {
-      ward: wardData.ward,
-      municipality: wardData.municipality,
+      ward: selectedWard,
+      municipality: selectedMunicipality,
       fullName: formData.fullName,
       email: formData.email,
       phone: formData.phone,
@@ -182,12 +163,36 @@ export default function Contact() {
   }
 
   function openLocation() {
-    if (wardData?.latitude && wardData?.longitude) {
+    // Priority 1: Use direct map link if it's not an iframe
+    if (
+      wardInfo?.google_map_link &&
+      !wardInfo.google_map_link.includes("<iframe")
+    ) {
+      window.open(wardInfo.google_map_link, "_blank");
+      return;
+    }
+
+    // Priority 2: Use specific coordinates if available
+    if (wardInfo?.latitude && wardInfo?.longitude) {
       window.open(
-        `https://www.google.com/maps?q=${wardData.latitude},${wardData.longitude}`,
+        `https://www.google.com/maps?q=${wardInfo.latitude},${wardInfo.longitude}`,
         "_blank"
       );
+      return;
     }
+
+    // Priority 3: Fallback - Search by Address
+    const query = encodeURIComponent(
+      `${wardInfo.address}, ${wardInfo.district}, Nepal`
+    );
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${query}`,
+      "_blank"
+    );
+  }
+
+  if (loading && !wardInfo.location) {
+    return <div className="loading-container">Loading Ward Details...</div>;
   }
 
   return (
@@ -211,11 +216,11 @@ export default function Contact() {
                 Monday - Friday, 9:00 AM - 5:00 PM
               </p>
               <>
-                <a href={`tel:${wardData?.phone1}`} className="contact-link">
-                  {wardData?.phone1}
+                <a href={`tel:${wardInfo?.phone1}`} className="contact-link">
+                  {wardInfo?.phone1}
                 </a>
-                <a href={`tel:${wardData?.phone2}`} className="contact-link">
-                  {wardData?.phone2}
+                <a href={`tel:${wardInfo?.phone2}`} className="contact-link">
+                  {wardInfo?.phone2}
                 </a>
               </>
             </div>
@@ -226,14 +231,14 @@ export default function Contact() {
               <h3>Email Us</h3>
               <p className="contact-timing">You can email us anytime</p>
               <>
-                <a href={`mailto:${wardData?.email}`} className="contact-link">
-                  {wardData?.email}
+                <a href={`mailto:${wardInfo?.email}`} className="contact-link">
+                  {wardInfo?.email}
                 </a>
                 <a
-                  href={`mailto:${wardData?.contactEmail}`}
+                  href={`mailto:${wardInfo?.contactEmail}`}
                   className="contact-link"
                 >
-                  {wardData?.contactEmail}
+                  {wardInfo?.contactEmail}
                 </a>
               </>
             </div>
@@ -243,9 +248,7 @@ export default function Contact() {
               </div>
               <h3>Visit Us</h3>
               <p className="contact-timing">Office Hours: 9:00 AM - 5:00 PM</p>
-              <p className="contact-address">
-                {selectedMunicipality}, Ward No. {selectedWard}
-              </p>
+              <p className="contact-address">{wardInfo.address}</p>
             </div>
           </div>
 
@@ -362,15 +365,24 @@ export default function Contact() {
               <div className="location-card">
                 <h2>Our Location</h2>
                 <div className="map-container">
-                  <iframe
-                    title="Ward Office Location"
-                    src={`https://maps.google.com/maps?q=${wardData?.latitude},${wardData?.longitude}&z=15&output=embed`}
-                    width="100%"
-                    height="300"
-                    style={{ border: 0, borderRadius: "8px" }}
-                    allowFullScreen=""
-                    loading="lazy"
-                  ></iframe>
+                  {wardInfo.google_map_link &&
+                  wardInfo.google_map_link.includes("iframe") ? (
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: wardInfo.google_map_link,
+                      }}
+                    />
+                  ) : (
+                    <iframe
+                      title="Ward Office Location"
+                      src={`https://maps.google.com/maps?q=${wardInfo.location}&z=15&output=embed`}
+                      width="100%"
+                      height="300"
+                      style={{ border: 0, borderRadius: "8px" }}
+                      allowFullScreen=""
+                      loading="lazy"
+                    ></iframe>
+                  )}
                 </div>
                 <div className="location-details">
                   <p className="location-icon-text">
@@ -378,7 +390,7 @@ export default function Contact() {
                     <strong>{selectedMunicipality}</strong>
                   </p>
                   <p className="location-address">
-                    Ward No. {selectedWard}, Kathmandu, Nepal
+                    Ward No. {selectedWard}, {wardInfo.district}, Nepal
                   </p>
                   <button className="open-map-btn" onClick={openLocation}>
                     🗺️ Open in Google Maps
@@ -391,19 +403,19 @@ export default function Contact() {
                   <div className="hours-item">
                     <span className="day">Sunday - Thursday</span>
                     <span className="time">
-                      {wardData?.officeHours?.weekdays}
+                      {wardInfo?.officeHours?.weekdays}
                     </span>
                   </div>
                   <div className="hours-item">
                     <span className="day">Friday</span>
                     <span className="time">
-                      {wardData?.officeHours?.friday}
+                      {wardInfo?.officeHours?.friday}
                     </span>
                   </div>
                   <div className="hours-item">
                     <span className="day">Saturday</span>
                     <span className="time closed">
-                      {wardData?.officeHours?.saturday}
+                      {wardInfo?.officeHours?.saturday}
                     </span>
                   </div>
                 </div>
@@ -424,23 +436,35 @@ export default function Contact() {
               Fetch these departments from the 'departments' table in your database.
               Endpoint: GET /api/departments.php?ward_id=...
             */}
-            {departments.map((dept, index) => (
-              <div className="department-card" key={index}>
-                <div className="dept-icon">{dept.icon}</div>
-                <div className="dept-info">
-                  <h3>{dept.name}</h3>
-                  <p>
-                    <i className="fa-solid fa-user"></i> {dept.head}
-                  </p>
-                  <p>
-                    <i className="fa-solid fa-phone"></i> {dept.phone}
-                  </p>
-                  <p>
-                    <i className="fa-solid fa-envelope"></i> {dept.email}
-                  </p>
+            {departments.length === 0 ? (
+              <p
+                style={{
+                  gridColumn: "1/-1",
+                  textAlign: "center",
+                  color: "#888",
+                }}
+              >
+                No department contacts listed for this ward yet.
+              </p>
+            ) : (
+              departments.map((dept, index) => (
+                <div className="department-card" key={index}>
+                  <div className="dept-icon">{dept.icon}</div>
+                  <div className="dept-info">
+                    <h3>{dept.name}</h3>
+                    <p>
+                      <i className="fa-solid fa-user"></i> {dept.head_name}
+                    </p>
+                    <p>
+                      <i className="fa-solid fa-phone"></i> {dept.phone}
+                    </p>
+                    <p>
+                      <i className="fa-solid fa-envelope"></i> {dept.email}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* FAQ Section */}

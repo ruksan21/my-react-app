@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./Assets.css";
 import { useWard } from "../Context/WardContext";
 import Navbar from "../Nav/Navbar";
+import { API_ENDPOINTS } from "../../config/api";
 
 const AssetCard = ({ icon, title, subtitle, value, description }) => (
   <div className="asset-card">
@@ -21,32 +22,49 @@ const AssetCard = ({ icon, title, subtitle, value, description }) => (
   </div>
 );
 
-export default function Assets({ embedded = false }) {
-  const { municipality, ward } = useWard();
+// Map asset types to icons
+const getAssetIcon = (assetType) => {
+  const iconMap = {
+    Electronics: "💻",
+    Furniture: "🪑",
+    Vehicle: "🚗",
+    Land: "⛏️",
+    Machinery: "⚙️",
+    Other: "📦",
+  };
+  return iconMap[assetType] || "📦";
+};
 
-  const assets = [
-    {
-      icon: "🏠",
-      title: "House",
-      subtitle: municipality,
-      value: "50,00,000",
-      description: "Own house",
-    },
-    {
-      icon: "⛏️",
-      title: "Land",
-      subtitle: "Kagaje",
-      value: "25,00,000",
-      description: "Agricultural land",
-    },
-    {
-      icon: "🚗",
-      title: "Vehicle",
-      subtitle: municipality,
-      value: "15,00,000",
-      description: "Private vehicle",
-    },
-  ];
+export default function Assets({ embedded = false }) {
+  const { municipality, ward, wardId } = useWard();
+  const [assets, setAssets] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchAssets = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `${API_ENDPOINTS.assets.manageWardAssets}?ward_id=${wardId}`
+      );
+      const data = await res.json();
+      if (data.success) {
+        setAssets(data.data || []);
+      } else {
+        setError("Failed to load assets");
+      }
+    } catch (err) {
+      console.error("Failed to fetch assets:", err);
+      setError("Error connecting to server");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [wardId]);
+
+  useEffect(() => {
+    fetchAssets();
+  }, [fetchAssets]);
 
   return (
     <>
@@ -60,21 +78,37 @@ export default function Assets({ embedded = false }) {
             </span>
           </div>
         )}
-        <div className="assets-grid">
-          {assets.map((a, i) => (
-            <AssetCard
-              key={i}
-              icon={a.icon}
-              title={a.title}
-              subtitle={a.subtitle}
-              value={a.value}
-              description={a.description}
-            />
-          ))}
-        </div>
-        <div className="assets-note">
-          These asset details apply to all ward chairpersons (demo).
-        </div>
+
+        {isLoading ? (
+          <div className="assets-note">Loading assets...</div>
+        ) : error ? (
+          <div className="assets-note" style={{ color: "#ef4444" }}>
+            {error}
+          </div>
+        ) : assets.length === 0 ? (
+          <div className="assets-note">
+            No assets have been registered for Ward {ward} yet.
+          </div>
+        ) : (
+          <>
+            <div className="assets-grid">
+              {assets.map((asset) => (
+                <AssetCard
+                  key={asset.id}
+                  icon={getAssetIcon(asset.asset_type)}
+                  title={asset.asset_name}
+                  subtitle={`${asset.asset_type} - Ward ${ward}`}
+                  value={parseInt(asset.value || 0).toLocaleString()}
+                  description={asset.description || "No description"}
+                />
+              ))}
+            </div>
+            <div className="assets-note">
+              Showing {assets.length} asset{assets.length !== 1 ? "s" : ""} for
+              Ward {ward}.
+            </div>
+          </>
+        )}
       </div>
     </>
   );

@@ -1,12 +1,15 @@
 /* WardManagement.css */
 
+/* --- Base & Modal Styles (Restored) --- */
 .ward-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,281 +17,454 @@
 }
 
 .district-modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  min-width: 300px;
+  background-color: var(--bg-primary);
+  padding: 30px;
+  border-radius: 12px;
+  min-width: 350px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
 }
 
 .district-input {
   width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-main);
 }
 
 .district-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 12px;
 }
 
-.btn-cancel-small {
-  padding: 6px 12px;
+/* --- Delete Action & Modal --- */
+.action-btn.delete {
+  background-color: #ef4444 !important; /* Vibrant Red */
+  color: white !important;
   border: none;
-  background: #ccc;
-  cursor: pointer;
-  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
 }
 
-.btn-add-small {
-  padding: 6px 12px;
-  border: none;
-  background: var(--admin-accent);
-  color: white;
-  cursor: pointer;
-  border-radius: 4px;
+.action-btn.delete:hover {
+  background-color: #dc2626 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(239, 68, 68, 0.3);
 }
 
-/* Filter Section */
+.delete-modal-content {
+  background-color: var(--bg-primary);
+  padding: 40px;
+  border-radius: 24px;
+  max-width: 450px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalSlideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.delete-warning-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.delete-modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 12px;
+}
+
+.delete-modal-text {
+  color: var(--text-main);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.delete-modal-subtext {
+  color: #ef4444;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 30px;
+}
+
+.btn-confirm-delete {
+  padding: 12px 28px !important;
+  font-weight: 700 !important;
+}
+
+/* --- Filter & Table Header (Restored) --- */
+.table-header-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
 .ward-filter-container {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 20px;
   align-items: center;
-}
-
-.filter-label {
-  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
 }
 
 .filter-controls {
   display: flex;
-  gap: 4px;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
 }
 
 .district-select {
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-primary);
   color: var(--text-main);
+  min-width: 180px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.btn-icon-add {
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid var(--admin-accent);
-  background: var(--bg-secondary);
-  color: var(--admin-accent);
-  cursor: pointer;
-  font-weight: bold;
+.district-select:hover {
+  border-color: var(--admin-accent);
+}
+
+.search-box-container {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.ward-search-input {
+  width: 100%;
+  padding: 10px 16px 10px 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-style: normal;
 }
 
 .total-count {
-  color: var(--text-muted);
-  margin-left: 8px;
-}
-
-/* Shared styles reused for consistency but scoped if needed */
-.ward-number-cell {
   font-weight: 600;
-}
-
-.district-subtext {
-  display: block;
-  font-weight: 500;
-}
-
-.district-muted {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.map-link {
-  display: block;
-  font-size: 0.8rem;
   color: var(--admin-accent);
+  background: rgba(var(--admin-accent-rgb), 0.1);
+  padding: 4px 12px;
+  border-radius: 20px;
 }
 
-.chairperson-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* --- Ward Form Premium Styles (New) --- */
+.ward-modern-form-wrapper {
+  padding: 1rem 0;
+  background: radial-gradient(
+    circle at top right,
+    rgba(var(--admin-accent-rgb), 0.05),
+    transparent
+  );
 }
 
-.avatar-small {
-  width: 24px;
-  height: 24px;
-  font-size: 0.7rem;
+.ward-form-modern-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
-.action-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-view-profile {
-  background-color: var(--info-color);
-  font-size: 0.85rem;
-  padding: 6px 12px;
-}
-
-.btn-edit-ward {
-  background-color: var(--admin-accent);
-  font-size: 0.85rem;
-  padding: 6px 12px;
-}
-
-.btn-delete-ward {
-  background-color: #dc3545;
-  font-size: 0.85rem;
-  padding: 6px 12px;
-  margin-left: 8px;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-/* Profile View */
-.ward-profile-container {
-  display: block;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.profile-section-title {
-  font-size: 1.1rem;
-  margin-bottom: 12px;
-}
-
-.profile-grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.profile-value {
-  margin: 4px 0;
-}
-
-.profile-link {
-  font-size: 0.9rem;
-}
-
-.btn-close-large {
-  margin-top: 20px;
-  padding: 10px 20px;
-  cursor: pointer;
-}
-
-/* Edit/Add Form */
-.ward-form-container {
-  display: block;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.ward-form-header {
+.ward-form-header-premium {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 24px;
+  align-items: center;
+  padding: 2rem 2.5rem;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--admin-accent-rgb), 0.05),
+    transparent
+  );
+  border-bottom: 1px solid var(--border-color);
 }
 
-.btn-close-icon {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-}
-
-/* Tabs */
-.ward-tabs {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  border-bottom: 2px solid var(--border-color);
-}
-
-.tab-btn {
-  padding: 10px 20px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-weight: 400;
-}
-
-.tab-btn.active {
-  border-bottom: 3px solid var(--admin-accent);
-  color: var(--admin-accent);
-  font-weight: 600;
-}
-
-.ward-form-grid {
-  display: grid;
-  gap: 20px;
-}
-
-.ward-info-title {
-  font-size: 1rem;
-  font-weight: 600;
+.modern-section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
   color: var(--text-main);
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
-.input-group {
-  margin-top: 6px;
+.modern-section-subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0 0;
 }
 
-.input-with-button {
+.btn-modern-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-muted);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modern-close:hover {
+  background: #ff4d4d;
+  color: white;
+  border-color: #ff4d4d;
+  transform: rotate(90deg);
+}
+
+.ward-modern-form {
+  padding: 1.5rem 2.5rem 2.5rem;
+}
+
+.form-content-section {
+  margin-bottom: 3rem;
+}
+
+.modern-info-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--admin-accent);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.section-icon {
+  width: 34px;
+  height: 34px;
+  background: rgba(var(--admin-accent-rgb), 0.1);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-style: normal;
+}
+
+.modern-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
-.form-select-flex {
-  flex: 1;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  margin-top: 6px;
+.form-field.field-full {
+  grid-column: 1 / -1;
 }
 
-.btn-plus-inline {
-  margin-top: 6px;
-  padding: 0 10px;
-  border-radius: 8px;
-  border: 1px solid var(--admin-accent);
+.modern-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modern-input,
+.modern-select,
+.modern-textarea,
+.modern-file-input {
   background: var(--bg-secondary);
-  color: var(--admin-accent);
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-input:focus,
+.modern-select:focus,
+.modern-textarea:focus {
+  border-color: var(--admin-accent);
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 4px rgba(var(--admin-accent-rgb), 0.1);
+  outline: none;
+}
+
+.modern-input-with-action {
+  display: flex;
+  gap: 10px;
+}
+
+.modern-btn-plus {
+  min-width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--admin-accent);
+  color: white;
+  border: none;
+  font-size: 1.5rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
-.form-input-full {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  margin-top: 6px;
+.modern-btn-plus:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--admin-accent-rgb), 0.3);
 }
 
-.grid-3-col {
-  grid-column: span 2;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 20px;
+.modern-textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-family: inherit;
 }
 
-.form-actions-footer {
+.modern-form-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 20px;
+  gap: 16px;
+  padding-top: 2rem;
   border-top: 1px solid var(--border-color);
 }
 
-.btn-save {
-  padding: 10px 30px;
+.btn-modern-cancel {
+  padding: 12px 24px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1.5px solid var(--border-color);
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modern-cancel:hover {
+  background: var(--bg-secondary);
+  color: var(--text-main);
+}
+
+.btn-modern-save {
+  padding: 12px 32px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--admin-accent), #4facfe);
+  color: white;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(var(--admin-accent-rgb), 0.3);
+}
+
+.btn-modern-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(var(--admin-accent-rgb), 0.4);
+}
+
+/* Tabs Polish */
+.ward-tabs {
+  display: flex;
+  gap: 10px;
+  padding: 0 2.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(var(--admin-accent-rgb), 0.02);
+}
+
+.tab-btn {
+  padding: 1rem 1.5rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.tab-btn.active {
+  color: var(--admin-accent);
+}
+
+.tab-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--admin-accent);
+  border-radius: 3px 3px 0 0;
+}
+
+.modern-assets-section {
+  padding: 2.5rem;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+  .ward-form-header-premium {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+
+  .btn-modern-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+  }
+
+  .ward-modern-form {
+    padding: 1.5rem;
+  }
+
+  .modern-grid-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ward-tabs {
+    padding: 0 1rem;
+  }
 }
