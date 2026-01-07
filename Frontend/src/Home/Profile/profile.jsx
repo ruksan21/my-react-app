@@ -62,6 +62,15 @@ const Profile = () => {
   const [profileData, setProfileData] = useState(defaultProfileData);
   const [personalAssets, setPersonalAssets] = useState([]);
 
+  const handleImageError = (e) => {
+    if (profileData.photoFileName && !e.target.dataset.fallbackTried) {
+      e.target.dataset.fallbackTried = "true";
+      e.target.src = `${API_BASE_URL}/wards/uploads/${profileData.photoFileName}`;
+      return;
+    }
+    e.target.src = "https://i.imgur.com/JQrOMa7.png";
+  };
+
   useEffect(() => {
     // Initial fetch of isFollowing state for this specific user
     const user = JSON.parse(localStorage.getItem("user"));
@@ -81,15 +90,16 @@ const Profile = () => {
           const wardData = data.data;
           // Update profile data with database values
           setProfileData({
-            name: wardData.chairperson_name || "Ram Bahadur Shrestha",
+            name: wardData.chairperson_name || "Not Assigned",
             role: `wardChairperson - ${
               wardData.municipality || wardData.district_name
             } , Ward No. ${wardData.ward_number}`,
-            phone: wardData.chairperson_phone || "9841234567",
-            email: wardData.chairperson_email || "ram.shrestha@ktm.gov.np",
+            phone: wardData.chairperson_phone || "N/A",
+            email: wardData.chairperson_email || "N/A",
             imageUrl: wardData.chairperson_photo
               ? `${API_BASE_URL}/uploads/${wardData.chairperson_photo}`
               : "https://i.imgur.com/JQrOMa7.png",
+            photoFileName: wardData.chairperson_photo || "",
             rating: 4.2,
             reviews: 89,
             followers: 1250,
@@ -97,24 +107,18 @@ const Profile = () => {
               address: `Ward No. ${wardData.ward_number}, ${
                 wardData.municipality || wardData.district_name
               }`,
-              education:
-                wardData.chairperson_education ||
-                "Master's Degree (Political Science)",
-              experience:
-                wardData.chairperson_experience || "15 years in local politics",
-              politicalParty:
-                wardData.chairperson_political_party || "Nepali Congress",
-              appointmentDate:
-                wardData.chairperson_appointment_date || "2022/08/31",
+              education: wardData.chairperson_education || "N/A",
+              experience: wardData.chairperson_experience || "N/A",
+              politicalParty: wardData.chairperson_political_party || "N/A",
+              appointmentDate: wardData.chairperson_appointment_date || "N/A",
             },
             contactDetails: {
-              phone: wardData.chairperson_phone || "9841234567",
-              email: wardData.chairperson_email || "ram.shrestha@ktm.gov.np",
+              phone: wardData.chairperson_phone || "N/A",
+              email: wardData.chairperson_email || "N/A",
               address: `Ward No. ${wardData.ward_number}, ${
                 wardData.municipality || wardData.district_name
               }`,
             },
-            officerId: wardData.officer_id,
             wardId: wardData.ward_id,
           });
         }
@@ -441,6 +445,7 @@ const Profile = () => {
             src={profileData.imageUrl}
             alt="Ram Bahadur Shrestha"
             className="profile-picture"
+            onError={handleImageError}
           />
           <div className="profile-name-role">
             <h1>{profileData.name}</h1>

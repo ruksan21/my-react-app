@@ -66,14 +66,15 @@ export default function LoginPage() {
 
       // Login successful
       const userData = data.data.user;
+      const workLocation = data.data.workLocation || null;
       const authToken = data.data.token;
 
       // Save token and user to localStorage
       localStorage.setItem("authToken", authToken);
       localStorage.setItem("user", JSON.stringify(userData));
 
-      // Update context
-      login(userData);
+      // Update context with work location
+      login(userData, workLocation);
       setShowSuccess(true);
 
       // Redirect after showing success

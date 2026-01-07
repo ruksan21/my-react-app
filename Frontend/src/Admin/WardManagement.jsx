@@ -203,9 +203,49 @@ const WardManagement = () => {
   const handleSave = async (e) => {
     e.preventDefault();
 
-    // Validation (Only Ward Number is strictly required from metadata)
-    if (!formData.ward_number) {
-      alert("Please select a valid Ward Number.");
+    // Comprehensive Validation - All fields required
+    const requiredFields = {
+      ward_number: "Ward Number",
+      district_id: "District",
+      municipality: "Municipality",
+      location: "Location",
+      contact_phone: "Contact Phone",
+      contact_email: "Contact Email",
+      chairperson_name: "Chairperson Name",
+      chairperson_phone: "Chairperson Phone",
+      chairperson_email: "Chairperson Email",
+    };
+
+    const missingFields = [];
+    for (const [field, label] of Object.entries(requiredFields)) {
+      if (!formData[field] || !formData[field].toString().trim()) {
+        missingFields.push(label);
+      }
+    }
+
+    if (missingFields.length > 0) {
+      alert(`Please fill in all required fields:\n\n• ${missingFields.join("\n• ")}`);
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.contact_email)) {
+      alert("Please enter a valid contact email.");
+      return;
+    }
+    if (!emailRegex.test(formData.chairperson_email)) {
+      alert("Please enter a valid chairperson email.");
+      return;
+    }
+
+    // Phone validation
+    if (!/^[0-9\-\+\s]+$/.test(formData.contact_phone)) {
+      alert("Please enter a valid contact phone number.");
+      return;
+    }
+    if (!/^[0-9\-\+\s]+$/.test(formData.chairperson_phone)) {
+      alert("Please enter a valid chairperson phone number.");
       return;
     }
 
@@ -534,49 +574,218 @@ const WardManagement = () => {
           )}
         </div>
       ) : isViewingProfile ? (
-        <div className="stat-card ward-profile-container">
-          <div>
-            <h3 className="profile-section-title">Ward Contact Details</h3>
-            <div className="profile-grid-2">
-              <div>
-                <label className="stat-label">Location</label>
-                <p className="profile-value">
-                  {selectedWard?.location || "N/A"}
-                </p>
-                {selectedWard?.google_map_link && (
-                  <a
-                    href={selectedWard.google_map_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="profile-link"
-                  >
-                    View on Google Maps
-                  </a>
-                )}
-              </div>
-              <div>
-                <label className="stat-label">Mobile (Contact)</label>
-                <p className="profile-value">
-                  {selectedWard?.contact_phone || "N/A"}
+        <div className="ward-modern-form-wrapper">
+          <div className="ward-form-modern-card">
+            <div className="ward-form-header-premium">
+              <div className="header-title-group">
+                <h2 className="modern-section-title">
+                  Ward {selectedWard?.ward_number} - {selectedWard?.district_name}
+                </h2>
+                <p className="modern-section-subtitle">
+                  {selectedWard?.municipality || "Municipality"}
                 </p>
               </div>
-              <div>
-                <label className="stat-label">Telephone</label>
-                <p className="profile-value">
-                  {selectedWard?.telephone || "N/A"}
-                </p>
-              </div>
-              <div>
-                <label className="stat-label">Ward Email</label>
-                <p className="profile-value">
-                  {selectedWard?.contact_email || "N/A"}
-                </p>
-              </div>
+              <button
+                onClick={resetFormAndClose}
+                className="btn-modern-close"
+                title="Close"
+              >
+                ✕
+              </button>
             </div>
+
+            <div className="ward-tabs">
+              <button
+                onClick={() => setActiveTab("details")}
+                className={`tab-btn ${
+                  activeTab === "details" ? "active" : ""
+                }`}
+              >
+                Ward Details
+              </button>
+              <button
+                onClick={() => setActiveTab("personal_assets")}
+                className={`tab-btn ${
+                  activeTab === "personal_assets" ? "active" : ""
+                }`}
+              >
+                Personal Assets
+              </button>
+            </div>
+
+            {activeTab === "details" && (
+              <div className="ward-view-content">
+                {/* Section 1: Ward Contact Details */}
+                <div className="form-content-section">
+                  <h3 className="modern-info-title">
+                    <i className="section-icon">📍</i> Office Location Details
+                  </h3>
+                  <div className="profile-grid-2">
+                    <div>
+                      <label className="stat-label">Location</label>
+                      <p className="profile-value">
+                        {selectedWard?.location || "N/A"}
+                      </p>
+                      {selectedWard?.google_map_link && (
+                        <a
+                          href={selectedWard.google_map_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="profile-link"
+                        >
+                          View on Google Maps
+                        </a>
+                      )}
+                    </div>
+                    <div>
+                      <label className="stat-label">Municipality</label>
+                      <p className="profile-value">
+                        {selectedWard?.municipality || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Ward Office Contacts */}
+                <div className="form-content-section section-contacts">
+                  <h3 className="modern-info-title">
+                    <i className="section-icon">📞</i> Ward Office Contacts
+                  </h3>
+                  <div className="profile-grid-2">
+                    <div>
+                      <label className="stat-label">Ward Mobile</label>
+                      <p className="profile-value">
+                        {selectedWard?.contact_phone || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="stat-label">Ward Telephone</label>
+                      <p className="profile-value">
+                        {selectedWard?.telephone || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="stat-label">Ward Email</label>
+                      <p className="profile-value">
+                        {selectedWard?.contact_email || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Chairperson Profile */}
+                <div className="form-content-section section-chairperson">
+                  <h3 className="modern-info-title">
+                    <i className="section-icon">👤</i> Chairperson Profile
+                  </h3>
+                  
+                  {/* Photo Display Section */}
+                  <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
+                    <label className="stat-label">Profile Photo</label>
+                    {selectedWard?.chairperson_photo ? (
+                      <div style={{ marginTop: "10px" }}>
+                        <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "10px" }}>
+                          Photo File: <strong>{selectedWard.chairperson_photo}</strong>
+                        </p>
+                        <img
+                          src={`http://localhost/my-react-app/Backend/api/wards/uploads/${selectedWard.chairperson_photo}`}
+                          alt="Chairperson"
+                          style={{ maxWidth: "200px", height: "auto", borderRadius: "8px", border: "2px solid #ddd" }}
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                            e.target.nextElementSibling.style.display = "block";
+                          }}
+                        />
+                        <div style={{ display: "none", padding: "20px", backgroundColor: "#fff3cd", borderRadius: "6px", marginTop: "10px" }}>
+                          <p style={{ color: "#856404", margin: "0" }}>⚠️ Photo file not found at upload location</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ color: "#999", fontSize: "0.9rem", fontStyle: "italic" }}>No photo uploaded</p>
+                    )}
+                  </div>
+
+                  <div className="chairperson-profile-view">
+                    <div className="chairperson-info-grid">
+                      <div>
+                        <label className="stat-label">Full Name</label>
+                        <p className="profile-value">
+                          {selectedWard?.chairperson_name || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="stat-label">Personal Phone</label>
+                        <p className="profile-value">
+                          {selectedWard?.chairperson_phone || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="stat-label">Personal Email</label>
+                        <p className="profile-value">
+                          {selectedWard?.chairperson_email || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="stat-label">Political Party</label>
+                        <p className="profile-value">
+                          {selectedWard?.chairperson_political_party || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="stat-label">Appointed Date</label>
+                        <p className="profile-value">
+                          {selectedWard?.chairperson_appointment_date
+                            ? new Date(
+                                selectedWard.chairperson_appointment_date
+                              ).toLocaleDateString()
+                            : "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="stat-label">Education</label>
+                        <p className="profile-value">
+                          {selectedWard?.chairperson_education || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="stat-label">Experience</label>
+                        <p className="profile-value">
+                          {selectedWard?.chairperson_experience || "N/A"}
+                        </p>
+                      </div>
+                      <div className="field-full">
+                        <label className="stat-label">Bio / Message</label>
+                        <p className="profile-value">
+                          {selectedWard?.chairperson_bio || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="modern-form-footer">
+                  <button
+                    onClick={() => handleEditClick(selectedWard)}
+                    className="btn-modern-save"
+                  >
+                    Edit Details
+                  </button>
+                  <button
+                    onClick={resetFormAndClose}
+                    className="btn-modern-cancel"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "personal_assets" && (
+              <div className="modern-assets-section">
+                <ChairpersonPersonalAssets wardId={selectedWard.id} />
+              </div>
+            )}
           </div>
-          <button onClick={resetFormAndClose} className="btn-close-large">
-            Close
-          </button>
         </div>
       ) : (
         /* Edit/Add View */

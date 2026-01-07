@@ -15,8 +15,8 @@ require_once '../db_connect.php';
 // We might want to exclude pending officers if they are shown elsewhere, but usually 'User Management' shows active users.
 // For now, fetching everything. Frontend can filter.
 $query = "SELECT id, first_name, middle_name, last_name, email, contact_number, role, status, 
-          ward_number, officer_id, department, assigned_ward, gender, dob, 
-          district, city, citizenship_number, created_at, photo 
+          ward_number, officer_id, department, work_province, work_district, work_municipality, work_ward, work_office_location, gender, dob, 
+          province, district, city, citizenship_number, created_at, photo 
           FROM users 
           ORDER BY id DESC";
 

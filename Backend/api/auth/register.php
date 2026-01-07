@@ -110,12 +110,16 @@ if (isset($_FILES['profilePhoto']) && $_FILES['profilePhoto']['error'] === UPLOA
 // Officer-specific logic
 $officer_id = $conn->real_escape_string($_POST['officerId'] ?? '');
 $department = $conn->real_escape_string($_POST['department'] ?? '');
-$assigned_ward = (isset($_POST['assignedWard']) && $_POST['assignedWard'] !== '') ? intval($_POST['assignedWard']) : 'NULL';
+$work_province = $conn->real_escape_string($_POST['workProvince'] ?? '');
+$work_district = $conn->real_escape_string($_POST['workDistrict'] ?? '');
+$work_municipality = $conn->real_escape_string($_POST['workMunicipality'] ?? '');
+$work_ward = (isset($_POST['workWard']) && $_POST['workWard'] !== '') ? intval($_POST['workWard']) : 'NULL';
+$work_office_location = $conn->real_escape_string($_POST['workOfficeLocation'] ?? '');
 $id_card_photo = "";
 
 if ($role === 'officer') {
-    if (!$officer_id || !$department || $assigned_ward === 'NULL') {
-        echo json_encode(["success" => false, "message" => "Officer ID, Department, and Assigned Ward are required."]);
+    if (!$officer_id || !$department || !$work_province || !$work_district || !$work_municipality || $work_ward === 'NULL') {
+        echo json_encode(["success" => false, "message" => "Officer ID, Department, and complete Work Location (Province, District, Municipality, Ward) are required."]);
         exit();
     }
     
@@ -141,11 +145,11 @@ $issue_date_val = $citizenship_issue_date ? "'$citizenship_issue_date'" : "NULL"
 $query = "INSERT INTO users (
     first_name, middle_name, last_name, email, password, contact_number, dob, gender, 
     province, district, city, ward_number, citizenship_number, citizenship_issue_date, citizenship_issue_district, 
-    citizenship_photo, role, officer_id, department, assigned_ward, id_card_photo, status, photo
+    citizenship_photo, role, officer_id, department, work_province, work_district, work_municipality, work_ward, work_office_location, id_card_photo, status, photo
 ) VALUES (
     '$first_name', '$middle_name', '$last_name', '$email', '$password', '$contact_number', $dob_val, '$gender', 
     '$province', '$district', '$city', $ward_number, '$citizenship_number', $issue_date_val, '$citizenship_issue_district', 
-    '$citizenship_photo', '$role', '$officer_id', '$department', $assigned_ward, '$id_card_photo', 
+    '$citizenship_photo', '$role', '$officer_id', '$department', '$work_province', '$work_district', '$work_municipality', $work_ward, '$work_office_location', '$id_card_photo', 
     " . ($role === 'officer' ? "'pending'" : "'active'") . ", '$profile_photo'
 )";
 
@@ -160,11 +164,16 @@ try {
         
         // Determine Ward ID for the alert
         $alert_ward_id = "NULL";
-        if ($role === 'officer' && $assigned_ward !== 'NULL') {
-            $alert_ward_id = $assigned_ward;
+        if ($role === 'officer' && $work_ward !== 'NULL') {
+            // Find ward ID from wards table based on work location
+            $w_query = $conn->query("SELECT id FROM wards WHERE province = '$work_province' AND district = '$work_district' AND municipality = '$work_municipality' AND ward_number = $work_ward LIMIT 1");
+            if ($w_query && $w_query->num_rows > 0) {
+                $w_row = $w_query->fetch_assoc();
+                $alert_ward_id = $w_row['id'];
+            }
         } elseif ($role === 'citizen' && $ward_number !== 'NULL') {
              // Try to find the ward ID corresponding to this ward number
-             $w_query = $conn->query("SELECT id FROM wards WHERE ward_number = $ward_number LIMIT 1");
+             $w_query = $conn->query("SELECT id FROM wards WHERE province = '$province' AND district = '$district' AND municipality = '$city' AND ward_number = $ward_number LIMIT 1");
              if ($w_query && $w_query->num_rows > 0) {
                  $w_row = $w_query->fetch_assoc();
                  $alert_ward_id = $w_row['id'];
@@ -176,7 +185,12 @@ try {
 
         echo json_encode(array("success" => true, "message" => "Registration successful!"));
     } else {
-        echo json_encode(array("success" => false, "message" => "Database Error: " . $conn->error));
+        // Check for duplicate email error
+        if (strpos($conn->error, 'Duplicate entry') !== false && strpos($conn->error, 'email') !== false) {
+            echo json_encode(array("success" => false, "message" => "This email is already registered. Please use a different email or login."));
+        } else {
+            echo json_encode(array("success" => false, "message" => "Database Error: " . $conn->error));
+        }
     }
 } catch (Exception $e) {
     echo json_encode(array("success" => false, "message" => "Fatal Error: " . $e->getMessage()));

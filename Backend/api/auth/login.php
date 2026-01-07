@@ -51,11 +51,25 @@ if (!empty($data->email) && !empty($data->password)) {
             }
             
             unset($user['password']); 
+            
+            // For officers, include work location
+            $workLocation = null;
+            if ($user['role'] === 'officer') {
+                $workLocation = array(
+                    "work_province" => isset($user['work_province']) ? $user['work_province'] : null,
+                    "work_district" => isset($user['work_district']) ? $user['work_district'] : null,
+                    "work_municipality" => isset($user['work_municipality']) ? $user['work_municipality'] : null,
+                    "work_ward" => isset($user['work_ward']) ? $user['work_ward'] : null,
+                    "work_office_location" => isset($user['work_office_location']) ? $user['work_office_location'] : null
+                );
+            }
+            
             echo json_encode(array(
                 "success" => true,
                 "message" => "Login successful!",
                 "data" => array(
                     "user" => $user, // Role is included here (admin, officer, citizen)
+                    "workLocation" => $workLocation,
                     "token" => bin2hex(random_bytes(16))
                 )
             ));

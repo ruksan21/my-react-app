@@ -4,7 +4,8 @@ import { useAuth } from "../Home/Context/AuthContext";
 import { API_ENDPOINTS, API_BASE_URL } from "../config/api";
 
 const OfficerAssets = () => {
-  const { user } = useAuth();
+  const { getOfficerWorkLocation, user } = useAuth();
+  const workLocation = getOfficerWorkLocation();
   const wardId = user?.assigned_ward || user?.ward || 1;
 
   const [assets, setAssets] = useState([]);
@@ -25,9 +26,19 @@ const OfficerAssets = () => {
   const fetchAssets = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(
-        `${API_ENDPOINTS.assets.manageWardAssets}?ward_id=${wardId}`
-      );
+      let url = `${API_ENDPOINTS.assets.manageWardAssets}`;
+      if (workLocation) {
+        const params = new URLSearchParams({
+          work_province: workLocation.work_province || "",
+          work_district: workLocation.work_district || "",
+          work_municipality: workLocation.work_municipality || "",
+          work_ward: String(workLocation.work_ward || ""),
+        });
+        url += `?${params.toString()}`;
+      } else if (wardId) {
+        url += `?ward_id=${wardId}`;
+      }
+      const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
         setAssets(data.data);
@@ -37,7 +48,7 @@ const OfficerAssets = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [wardId]);
+  }, [workLocation, wardId]);
 
   useEffect(() => {
     fetchAssets();
@@ -53,7 +64,19 @@ const OfficerAssets = () => {
     const method = "POST";
     const payload = isEditing
       ? { ...formData, id: currentAssetId }
+      : workLocation
+      ? {
+          ...formData,
+          ward_id: 0,
+          work_province: workLocation.work_province,
+          work_district: workLocation.work_district,
+          work_municipality: workLocation.work_municipality,
+          work_ward: workLocation.work_ward,
+        }
       : { ...formData, ward_id: wardId };
+
+    console.log("Asset submission payload:", payload);
+    console.log("Work Location:", workLocation);
 
     try {
       const res = await fetch(`${API_ENDPOINTS.assets.manageWardAssets}`, {
@@ -62,6 +85,7 @@ const OfficerAssets = () => {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
+      console.log("Asset API Response:", data);
       if (data.success) {
         setShowAddModal(false);
         setFormData({
@@ -75,10 +99,11 @@ const OfficerAssets = () => {
         setIsEditing(false);
         fetchAssets();
       } else {
-        alert(data.message);
+        alert(data.message || "Failed to save asset");
       }
     } catch (err) {
       console.error("Failed to save asset:", err);
+      alert("Error saving asset: " + err.message);
     }
   };
 
@@ -122,7 +147,7 @@ const OfficerAssets = () => {
           <div>
             <h2 className="section-title">Registered Assets</h2>
             <span style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-              Total assets in Ward {wardId}: {assets.length}
+              {workLocation ? `${workLocation.work_municipality}, Ward ${workLocation.work_ward}` : `Ward ${wardId}`}: {assets.length}
             </span>
           </div>
           <button

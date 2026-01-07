@@ -313,3 +313,72 @@
 .terms-group .error-message {
   margin-left: 30px;
 }
+
+/* Address Grid Container */
+.address-grid-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.address-grid-container .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.address-grid-container .form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: none;
+}
+
+.address-grid-container .input-wrapper {
+  position: relative;
+}
+
+.address-grid-container .form-control {
+  width: 100%;
+  padding: 11px 15px 11px 42px;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  font-size: 0.9rem;
+  color: #1e293b;
+  transition: all 0.2s ease;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.address-grid-container .form-control:hover {
+  border-color: #94a3b8;
+}
+
+.address-grid-container .form-control:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.address-grid-container .form-control:disabled {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #cbd5e1;
+}
+
+@media (max-width: 1024px) {
+  .address-grid-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .address-grid-container {
+    grid-template-columns: 1fr;
+  }
+}

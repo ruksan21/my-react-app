@@ -41,7 +41,15 @@ export default function RegisterPage({
 
   const [officerId, setOfficerId] = useState("");
   const [department, setDepartment] = useState("");
-  const [assignedWard, setAssignedWard] = useState("");
+  
+  // Work Address (Office Location)
+  const [workProvince, setWorkProvince] = useState("");
+  const [workDistrict, setWorkDistrict] = useState("");
+  const [workMunicipality, setWorkMunicipality] = useState("");
+  const [workWard, setWorkWard] = useState("");
+  const [workOfficeLocation, setWorkOfficeLocation] = useState("");
+  const [availableWorkWards, setAvailableWorkWards] = useState([]);
+  
   const [idCardPhoto, setIdCardPhoto] = useState(null);
 
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -85,6 +93,37 @@ export default function RegisterPage({
     }
   };
 
+  // Work Address Handlers
+  const handleWorkProvinceChange = (e) => {
+    setWorkProvince(e.target.value);
+    setWorkDistrict("");
+    setWorkMunicipality("");
+    setWorkWard("");
+    setAvailableWorkWards([]);
+  };
+
+  const handleWorkDistrictChange = (e) => {
+    setWorkDistrict(e.target.value);
+    setWorkMunicipality("");
+    setWorkWard("");
+    setAvailableWorkWards([]);
+  };
+
+  const handleWorkMunicipalityChange = (e) => {
+    const muniName = e.target.value;
+    setWorkMunicipality(muniName);
+    setWorkWard("");
+
+    if (muniName && workDistrict) {
+      const muniInfo = getMunicipalityInfo(workDistrict, muniName);
+      const count = muniInfo ? muniInfo.wards : 0;
+      const wards = Array.from({ length: count }, (_, i) => i + 1);
+      setAvailableWorkWards(wards);
+    } else {
+      setAvailableWorkWards([]);
+    }
+  };
+
   const validate = () => {
     const newErrors = {};
     if (!firstName.trim()) newErrors.firstName = "Required";
@@ -92,7 +131,7 @@ export default function RegisterPage({
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
     if (!emailRegex.test(email)) newErrors.email = "Invalid email";
     if (password.length < 8) newErrors.password = "Min 8 characters";
-    if (password !== confirmPassword) newErrors.confirmPassword = "Mismatch";
+    if (password !== confirmPassword) newErrors.confirmPassword = "Passwords don't match";
     if (!province) newErrors.province = "Province required";
     if (!district) newErrors.district = "District required";
     if (!city) newErrors.city = "Municipality required";
@@ -109,7 +148,10 @@ export default function RegisterPage({
     if (role === "officer") {
       if (!officerId.trim()) newErrors.officerId = "Required";
       if (!department) newErrors.department = "Required";
-      if (!assignedWard) newErrors.assignedWard = "Required";
+      if (!workProvince) newErrors.workProvince = "Required";
+      if (!workDistrict) newErrors.workDistrict = "Required";
+      if (!workMunicipality) newErrors.workMunicipality = "Required";
+      if (!workWard) newErrors.workWard = "Required";
       if (!idCardPhoto) newErrors.idCardPhoto = "Upload required";
     }
 
@@ -161,7 +203,11 @@ export default function RegisterPage({
       if (role === "officer") {
         formData.append("officerId", officerId);
         formData.append("department", department);
-        formData.append("assignedWard", assignedWard);
+        formData.append("workProvince", workProvince);
+        formData.append("workDistrict", workDistrict);
+        formData.append("workMunicipality", workMunicipality);
+        formData.append("workWard", workWard);
+        formData.append("workOfficeLocation", workOfficeLocation);
         formData.append("idCardPhoto", idCardPhoto);
       }
 
@@ -470,8 +516,8 @@ export default function RegisterPage({
           <div className="form-section">
             <h2 className="section-title">Address & Location</h2>
 
-            <div className="form-row">
-              <div className="form-group field-full">
+            <div className="form-row two-cols">
+              <div className="form-group">
                 <label>Province *</label>
                 <div className="input-wrapper">
                   <i className="fa-solid fa-map"></i>
@@ -493,9 +539,7 @@ export default function RegisterPage({
                   <p className="error-message show">{errors.province}</p>
                 )}
               </div>
-            </div>
 
-            <div className="form-row two-cols">
               <div className="form-group">
                 <label>District *</label>
                 <div className="input-wrapper">
@@ -520,6 +564,9 @@ export default function RegisterPage({
                   <p className="error-message show">{errors.district}</p>
                 )}
               </div>
+            </div>
+            
+            <div className="form-row two-cols">
               <div className="form-group">
                 <label>Municipality *</label>
                 <div className="input-wrapper">
@@ -544,9 +591,7 @@ export default function RegisterPage({
                   <p className="error-message show">{errors.city}</p>
                 )}
               </div>
-            </div>
 
-            <div className="form-row two-cols">
               <div className="form-group">
                 <label>Ward No *</label>
                 <div className="input-wrapper">
@@ -700,12 +745,15 @@ export default function RegisterPage({
                     <i className="fa-solid fa-hashtag"></i>
                     <input
                       type="text"
-                      className="form-control"
+                      className={`form-control ${errors.officerId ? "error" : ""}`}
                       value={officerId}
                       onChange={(e) => setOfficerId(e.target.value)}
                       placeholder="OFF-XXXX"
                     />
                   </div>
+                  {errors.officerId && (
+                    <p className="error-message show">{errors.officerId}</p>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Department *</label>
@@ -720,7 +768,17 @@ export default function RegisterPage({
                     >
                       <option value="">Select Department</option>
                       <option value="Health">Health</option>
-                      <option value="Admin">Admin</option>
+                      <option value="Finance">Finance</option>
+                      <option value="Education">Education</option>
+                      <option value="Transportation">Transportation</option>
+                      <option value="Public Safety">Public Safety</option>
+                      <option value="Environmental Services">
+                        Environmental Services
+                      </option>
+                      <option value="IT">Information Technology</option>
+                      <option value="Social Services">Social Services</option>
+                      <option value="Urban Planning">Urban Planning</option>
+                      <option value="Other">Other</option>
                     </select>
                   </div>
                   {errors.department && (
@@ -728,24 +786,118 @@ export default function RegisterPage({
                   )}
                 </div>
               </div>
+              
+              <h3 className="section-title" style={{ fontSize: "1rem", marginTop: "20px" }}>Work/Office Location</h3>
               <div className="form-row two-cols">
                 <div className="form-group">
-                  <label>Assigned Ward *</label>
+                  <label>Province *</label>
+                  <div className="input-wrapper">
+                    <i className="fa-solid fa-map"></i>
+                    <select
+                      className={`form-control ${errors.workProvince ? "error" : ""}`}
+                      value={workProvince}
+                      onChange={handleWorkProvinceChange}
+                    >
+                      <option value="">Select Province</option>
+                      {getProvinces().map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {errors.workProvince && (
+                    <p className="error-message show">{errors.workProvince}</p>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label>District *</label>
                   <div className="input-wrapper">
                     <i className="fa-solid fa-map-pin"></i>
+                    <select
+                      className={`form-control ${errors.workDistrict ? "error" : ""}`}
+                      value={workDistrict}
+                      onChange={handleWorkDistrictChange}
+                      disabled={!workProvince}
+                    >
+                      <option value="">Select District</option>
+                      {workProvince &&
+                        getDistricts(workProvince).map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  {errors.workDistrict && (
+                    <p className="error-message show">{errors.workDistrict}</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="form-row two-cols">
+                <div className="form-group">
+                  <label>Municipality *</label>
+                  <div className="input-wrapper">
+                    <i className="fa-solid fa-city"></i>
+                    <select
+                      className={`form-control ${errors.workMunicipality ? "error" : ""}`}
+                      value={workMunicipality}
+                      onChange={handleWorkMunicipalityChange}
+                      disabled={!workDistrict}
+                    >
+                      <option value="">Select Municipality</option>
+                      {workDistrict &&
+                        getMunicipalities(workProvince, workDistrict).map((m) => (
+                          <option key={m.name} value={m.name}>
+                            {m.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  {errors.workMunicipality && (
+                    <p className="error-message show">{errors.workMunicipality}</p>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label>Ward No *</label>
+                  <div className="input-wrapper">
+                    <i className="fa-solid fa-house"></i>
+                    <select
+                      className={`form-control ${errors.workWard ? "error" : ""}`}
+                      value={workWard}
+                      onChange={(e) => setWorkWard(e.target.value)}
+                      disabled={!workMunicipality}
+                    >
+                      <option value="">Select Ward</option>
+                      {availableWorkWards.map((num) => (
+                        <option key={num} value={num}>
+                          Ward {num}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {errors.workWard && (
+                    <p className="error-message show">{errors.workWard}</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="form-row two-cols">
+                <div className="form-group">
+                  <label>Office Location/Address</label>
+                  <div className="input-wrapper">
+                    <i className="fa-solid fa-building"></i>
                     <input
-                      type="number"
-                      className={`form-control ${
-                        errors.assignedWard ? "error" : ""
-                      }`}
-                      value={assignedWard}
-                      onChange={(e) => setAssignedWard(e.target.value)}
-                      placeholder="1-35"
+                      type="text"
+                      className="form-control"
+                      value={workOfficeLocation}
+                      onChange={(e) => setWorkOfficeLocation(e.target.value)}
+                      placeholder="Building name, floor, room no"
                     />
                   </div>
-                  {errors.assignedWard && (
-                    <p className="error-message show">{errors.assignedWard}</p>
-                  )}
                 </div>
                 <div className="form-group">
                   <label>ID Card Photo *</label>
@@ -793,12 +945,15 @@ export default function RegisterPage({
                   <input
                     type="password"
                     name="password"
-                    className="form-control"
+                    className={`form-control ${errors.password ? "error" : ""}`}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                   />
                 </div>
+                {errors.password && (
+                  <p className="error-message show">{errors.password}</p>
+                )}
               </div>
               <div className="form-group">
                 <label>Confirm Password *</label>
@@ -807,12 +962,15 @@ export default function RegisterPage({
                   <input
                     type="password"
                     name="confirmPassword"
-                    className="form-control"
+                    className={`form-control ${errors.confirmPassword ? "error" : ""}`}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
                   />
                 </div>
+                {errors.confirmPassword && (
+                  <p className="error-message show">{errors.confirmPassword}</p>
+                )}
               </div>
             </div>
           </div>

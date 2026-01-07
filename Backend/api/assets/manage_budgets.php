@@ -18,14 +18,60 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $ward_id = isset($_GET['ward_id']) ? intval($_GET['ward_id']) : 0;
     
-    if ($ward_id === 0) {
-        echo json_encode(["success" => false, "message" => "Ward ID required"]);
+    // Officer work location filters
+    $work_province = isset($_GET['work_province']) ? $conn->real_escape_string($_GET['work_province']) : null;
+    $work_district = isset($_GET['work_district']) ? $conn->real_escape_string($_GET['work_district']) : null;
+    $work_municipality = isset($_GET['work_municipality']) ? $conn->real_escape_string($_GET['work_municipality']) : null;
+    $work_ward = isset($_GET['work_ward']) ? intval($_GET['work_ward']) : null;
+    
+    if ($ward_id === 0 && !($work_province || $work_district || $work_municipality || $work_ward)) {
+        echo json_encode(["success" => false, "message" => "Ward ID or work location required"]);
         exit();
     }
     
-    $sql = "SELECT * FROM ward_budgets WHERE ward_id = ? ORDER BY created_at DESC LIMIT 1";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $ward_id);
+    if ($ward_id > 0) {
+        $sql = "SELECT * FROM ward_budgets WHERE ward_id = ? ORDER BY created_at DESC LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $ward_id);
+    } else {
+        // Filter by work location
+        $sql = "SELECT wb.* FROM ward_budgets wb
+                INNER JOIN wards w ON wb.ward_id = w.id
+                INNER JOIN districts d ON w.district_id = d.id
+                WHERE 1=1";
+        
+        $params = [];
+        $types = "";
+        
+        if ($work_province) {
+            $sql .= " AND d.province = ?";
+            $params[] = $work_province;
+            $types .= "s";
+        }
+        if ($work_district) {
+            $sql .= " AND d.name = ?";
+            $params[] = $work_district;
+            $types .= "s";
+        }
+        if ($work_municipality) {
+            $sql .= " AND w.municipality = ?";
+            $params[] = $work_municipality;
+            $types .= "s";
+        }
+        if ($work_ward) {
+            $sql .= " AND w.ward_number = ?";
+            $params[] = $work_ward;
+            $types .= "i";
+        }
+        
+        $sql .= " ORDER BY wb.created_at DESC LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+    }
+    
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -52,8 +98,29 @@ else if ($method === 'POST') {
     $indirect_beneficiaries = isset($data['indirect_beneficiaries']) ? intval($data['indirect_beneficiaries']) : 0;
     $fiscal_year = isset($data['fiscal_year']) ? $conn->real_escape_string($data['fiscal_year']) : '';
     
+    // Allow resolving ward by work location if ward_id is missing
+    if ($ward_id === 0) {
+        $work_province = $data['work_province'] ?? null;
+        $work_district = $data['work_district'] ?? null;
+        $work_municipality = $data['work_municipality'] ?? null;
+        $work_ward = $data['work_ward'] ?? null;
+        if ($work_province && $work_district && $work_municipality && $work_ward) {
+            $sql_resolve = "SELECT w.id FROM wards w INNER JOIN districts d ON w.district_id = d.id
+                            WHERE d.province = ? AND d.name = ? AND w.municipality = ? AND w.ward_number = ? LIMIT 1";
+            $stmt_res = $conn->prepare($sql_resolve);
+            $stmt_res->bind_param("sssi", $work_province, $work_district, $work_municipality, $work_ward);
+            $stmt_res->execute();
+            $res = $stmt_res->get_result();
+            if ($res && $res->num_rows > 0) {
+                $row = $res->fetch_assoc();
+                $ward_id = intval($row['id']);
+            }
+            $stmt_res->close();
+        }
+    }
+
     if ($ward_id === 0 || $officer_id === 0) {
-        echo json_encode(["success" => false, "message" => "Ward ID and Officer ID required"]);
+        echo json_encode(["success" => false, "message" => "Ward ID/Work location and Officer ID required"]);
         exit();
     }
 

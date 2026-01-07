@@ -5,7 +5,8 @@ import { useAuth } from "../Home/Context/AuthContext";
 import { API_ENDPOINTS } from "../config/api";
 
 export default function OfficerBudget() {
-  const { user } = useAuth();
+  const { getOfficerWorkLocation, user } = useAuth();
+  const workLocation = getOfficerWorkLocation();
 
   // Beneficiary form state
   const [benTotal, setBenTotal] = useState("");
@@ -25,16 +26,20 @@ export default function OfficerBudget() {
 
   // Load budget data from backend
   useEffect(() => {
-    if (user?.assigned_ward) {
-      fetchBudgetData();
+    if (workLocation) {
+      fetchBudgetData(workLocation);
     }
-  }, [user]);
+  }, [workLocation]);
 
-  const fetchBudgetData = async () => {
+  const fetchBudgetData = async (loc) => {
     try {
-      const response = await fetch(
-        `${API_ENDPOINTS.assets.manageBudgets}?ward_id=${user.assigned_ward}`
-      );
+      const params = new URLSearchParams({
+        work_province: loc.work_province,
+        work_district: loc.work_district,
+        work_municipality: loc.work_municipality,
+        work_ward: String(loc.work_ward || ""),
+      });
+      const response = await fetch(`${API_ENDPOINTS.assets.manageBudgets}?${params.toString()}`);
       const result = await response.json();
 
       if (result.success && result.data) {
@@ -99,7 +104,7 @@ export default function OfficerBudget() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ward_id: user.assigned_ward,
+            ward_id: 0,
             officer_id: user.id,
             total_allocated: Number(budgetAllocated) || 0,
             total_spent: Number(budgetSpent) || 0,
@@ -107,6 +112,11 @@ export default function OfficerBudget() {
             direct_beneficiaries: Number(benDirect) || 0,
             indirect_beneficiaries: Number(benIndirect) || 0,
             fiscal_year: "2023/24",
+            // include location so backend resolves ward_id
+            work_province: workLocation?.work_province,
+            work_district: workLocation?.work_district,
+            work_municipality: workLocation?.work_municipality,
+            work_ward: workLocation?.work_ward,
           }),
         }
       );

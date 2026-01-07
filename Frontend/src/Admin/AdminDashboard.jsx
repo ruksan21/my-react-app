@@ -8,10 +8,8 @@ const AdminDashboard = () => {
   // recentComplaints removed as per cleanup request
 
   // Calculate stats
-  // Check for both "user" (legacy) and "citizen" (new default)
-  const totalUsers =
-    allUsers?.filter((u) => u.role === "user" || u.role === "citizen")
-      ?.length || 0;
+  // Total users = all roles in users table (admin/officer/citizen)
+  const totalUsers = allUsers?.length || 0;
   const activeOfficers =
     allUsers?.filter((u) => u.role === "officer" && u.status === "active")
       ?.length || 0;
@@ -42,10 +40,7 @@ const AdminDashboard = () => {
   };
 
   const newUsersThisMonth =
-    allUsers?.filter(
-      (u) =>
-        (u.role === "user" || u.role === "citizen") && isThisMonth(u.joinedDate)
-    )?.length || 0;
+    allUsers?.filter((u) => isThisMonth(u.joinedDate))?.length || 0;
 
   const newOfficersThisMonth =
     allUsers?.filter(

@@ -6,37 +6,58 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: radial-gradient(circle at top left, rgba(219, 234, 254, 0.55), rgba(226, 232, 240, 0.65));
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(6px);
 }
 
 .officer-modal-content {
-  width: 800px;
+  width: 92%;
+  max-width: 1080px;
   display: block;
   max-height: 90vh;
   overflow-y: auto;
-  padding: 24px;
+  padding: 34px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.18);
 }
 
 .officer-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f0f4f8;
 }
 
 .officer-modal-title {
   margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
 }
 
 .officer-close-btn {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   cursor: pointer;
+  color: #64748b;
+  transition: color 0.2s;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.officer-close-btn:hover {
+  color: #1a202c;
 }
 
 .officer-form-grid {
@@ -44,16 +65,76 @@
   gap: 20px;
 }
 
+/* Form look & feel aligned with Register page */
 .form-section {
-  /* Inherited or specific styles if needed */
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px 20px 12px;
+  box-shadow: 0 10px 30px rgba(148, 163, 184, 0.15);
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.form-input,
+.municipality-select,
+.file-input-wrapper {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: #fff;
+  font-size: 0.95rem;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus,
+.municipality-select:focus,
+.file-input-wrapper:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.section-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.form-input.input-error,
+.municipality-select.input-error,
+.file-input-wrapper.input-error,
+.assigned-ward-select.input-error {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2 !important;
+}
+
+.form-input.input-error:focus,
+.municipality-select.input-error:focus,
+.file-input-wrapper.input-error:focus,
+.assigned-ward-select.input-error:focus {
+  outline: 2px solid #dc2626;
+  outline-offset: -1px;
 }
 
 .form-section-header {
-  font-size: 1rem;
-  color: var(--admin-accent);
-  border-bottom: 1px solid #eee;
-  padding-bottom: 8px;
-  margin-bottom: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a202c;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .three-col-grid {
@@ -115,6 +196,49 @@
   background-color: var(--text-muted);
   color: white;
   padding: 10px 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .officer-modal-content {
+    width: 96% !important;
+    max-width: 96%;
+    margin: 0 auto;
+    padding: 22px;
+  }
+
+  .officer-modal-header {
+    padding-bottom: 12px;
+  }
+
+  .three-col-grid,
+  .two-col-grid,
+  .municipality-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .officer-modal-content {
+    width: 98% !important;
+    max-height: 95vh;
+  }
+
+  .officer-modal-title {
+    font-size: 1.1rem;
+  }
+
+  .form-section-header {
+    font-size: 1rem;
+  }
 }
 
 .btn-create {

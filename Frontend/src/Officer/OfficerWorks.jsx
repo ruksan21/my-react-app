@@ -76,19 +76,26 @@ const WorkCard = ({ work, onEdit, onDelete }) => {
 };
 
 export default function OfficerWorks() {
-  const { user } = useAuth();
+  const { getOfficerWorkLocation } = useAuth();
+  const workLocation = getOfficerWorkLocation();
   const [works, setWorks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.assigned_ward) {
-      fetchWorks();
+    if (workLocation) {
+      fetchWorks(workLocation);
     }
-  }, [user]);
+  }, [workLocation]);
 
-  const fetchWorks = () => {
+  const fetchWorks = (loc) => {
     setIsLoading(true);
-    const url = `${API_ENDPOINTS.works.getAll}?ward_id=${user.assigned_ward}`;
+    const params = new URLSearchParams({
+      work_province: loc.work_province,
+      work_district: loc.work_district,
+      work_municipality: loc.work_municipality,
+      work_ward: String(loc.work_ward || ""),
+    });
+    const url = `${API_ENDPOINTS.works.getAll}?${params.toString()}`;
     fetch(url)
       .then((res) => res.json())
       .then((data) => {

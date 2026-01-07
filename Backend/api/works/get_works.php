@@ -15,8 +15,14 @@ $ward_id = isset($_GET['ward_id']) ? intval($_GET['ward_id']) : null;
 $ward_number = isset($_GET['ward_number']) ? intval($_GET['ward_number']) : null;
 $municipality = isset($_GET['municipality']) ? $conn->real_escape_string($_GET['municipality']) : null;
 
+// Officer work location filters
+$work_province = isset($_GET['work_province']) ? $conn->real_escape_string($_GET['work_province']) : null;
+$work_district = isset($_GET['work_district']) ? $conn->real_escape_string($_GET['work_district']) : null;
+$work_municipality = isset($_GET['work_municipality']) ? $conn->real_escape_string($_GET['work_municipality']) : null;
+$work_ward = isset($_GET['work_ward']) ? intval($_GET['work_ward']) : null;
+
 // Build the query - Use ward_id directly from development_works table
-$sql = "SELECT dw.*, w.ward_number, d.name as district_name, w.municipality 
+$sql = "SELECT dw.*, w.ward_number, d.name as district_name, d.province, w.municipality 
         FROM development_works dw 
         LEFT JOIN wards w ON dw.ward_id = w.id
         LEFT JOIN districts d ON w.district_id = d.id
@@ -31,6 +37,20 @@ if ($ward_id) {
     // Optional Municipality filter
     if ($municipality) {
         $sql .= " AND w.municipality = '$municipality'";
+    }
+} elseif ($work_province || $work_district || $work_municipality || $work_ward) {
+    // Officer work location filtering
+    if ($work_province) {
+        $sql .= " AND d.province = '$work_province'";
+    }
+    if ($work_district) {
+        $sql .= " AND d.name = '$work_district'";
+    }
+    if ($work_municipality) {
+        $sql .= " AND w.municipality = '$work_municipality'";
+    }
+    if ($work_ward) {
+        $sql .= " AND w.ward_number = $work_ward";
     }
 } else {
     // If NO filters provided, show all works

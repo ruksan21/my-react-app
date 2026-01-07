@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once '../db_connect.php';
 
 // Pending officer haru matra select gareko
-$query = "SELECT id, first_name, middle_name, last_name, email, officer_id, department, assigned_ward as ward, status 
+$query = "SELECT id, first_name, middle_name, last_name, email, officer_id, department, work_province, work_district, work_municipality, work_ward, status 
           FROM users 
           WHERE role = 'officer' AND status = 'pending'
           ORDER BY created_at DESC";

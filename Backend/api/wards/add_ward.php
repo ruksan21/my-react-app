@@ -117,7 +117,8 @@ if ($check_result->num_rows > 0) {
 $chairperson_photo = '';
 if (isset($_FILES['chairperson_photo']) && $_FILES['chairperson_photo']['error'] === UPLOAD_ERR_OK) {
     $file = $_FILES['chairperson_photo'];
-    $upload_dir = "uploads/";
+    // Store under api/uploads so frontend can fetch via BASE_URL/uploads
+    $upload_dir = __DIR__ . '/../uploads/';
     if (!file_exists($upload_dir)) mkdir($upload_dir, 0777, true);
     
     $file_extension = pathinfo($file['name'], PATHINFO_EXTENSION);

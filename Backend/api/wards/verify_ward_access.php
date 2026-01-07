@@ -12,16 +12,24 @@ function verifyWardAccess($conn, $officer_id, $target_ward_id) {
         return false;
     }
 
-    // Check if the officer is actually assigned to this ward
-    $sql = "SELECT id FROM users WHERE id = ? AND role = 'officer' AND assigned_ward = ?";
+    // Officer is allowed if their work location matches the target ward
+    $sql = "SELECT u.id
+            FROM users u
+            INNER JOIN wards w ON w.id = ?
+            INNER JOIN districts d ON w.district_id = d.id
+            WHERE u.id = ?
+              AND u.role = 'officer'
+              AND u.work_province = d.province
+              AND u.work_district = d.name
+              AND u.work_municipality = w.municipality
+              AND u.work_ward = w.ward_number";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ii", $officer_id, $target_ward_id);
+    $stmt->bind_param("ii", $target_ward_id, $officer_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    $has_access = $result->num_rows > 0;
-    
+    $has_access = $result && $result->num_rows > 0;
+
     $stmt->close();
-    
     return $has_access;
 }
 

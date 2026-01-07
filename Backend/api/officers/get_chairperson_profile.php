@@ -29,35 +29,17 @@ $query = "SELECT
     w.chairperson_appointment_date,
     w.chairperson_bio,
     w.chairperson_photo,
-    d.name as district_name,
-    u.id as officer_id
+    d.name as district_name
 FROM wards w
 INNER JOIN districts d ON w.district_id = d.id
-LEFT JOIN users u ON u.assigned_ward = w.id AND u.role = 'officer'
 WHERE w.id = $ward_id";
 
 $result = $conn->query($query);
 
 if ($result->num_rows === 0) {
-    // Return default data if ward not found in database
     echo json_encode(array(
         "success" => false,
-        "message" => "Ward not found, using default data",
-        "data" => array(
-            "ward_number" => 1,
-            "district_name" => "Kathmandu",
-            "location" => "Ward No. 1, Kathmandu",
-            "ward_phone" => "01-4433221",
-            "ward_email" => "ward1@ktm.gov.np",
-            "chairperson_name" => "Ram Bahadur Shrestha",
-            "chairperson_phone" => "9841234567",
-            "chairperson_email" => "ram.shrestha@ktm.gov.np",
-            "chairperson_education" => "Master's Degree (Political Science)",
-            "chairperson_experience" => "15 years in local politics",
-            "chairperson_political_party" => "Nepali Congress",
-            "chairperson_appointment_date" => "2022-08-31",
-            "chairperson_bio" => "Dedicated to serving the community"
-        )
+        "message" => "Ward not found"
     ));
     exit();
 }

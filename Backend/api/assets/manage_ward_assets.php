@@ -21,12 +21,42 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $ward_id = isset($_GET['ward_id']) ? intval($_GET['ward_id']) : 0;
     
-    if ($ward_id === 0) {
-        echo json_encode(array("success" => false, "message" => "Ward ID required."));
+    // Officer work location filters
+    $work_province = isset($_GET['work_province']) ? $conn->real_escape_string($_GET['work_province']) : null;
+    $work_district = isset($_GET['work_district']) ? $conn->real_escape_string($_GET['work_district']) : null;
+    $work_municipality = isset($_GET['work_municipality']) ? $conn->real_escape_string($_GET['work_municipality']) : null;
+    $work_ward = isset($_GET['work_ward']) ? intval($_GET['work_ward']) : null;
+    
+    if ($ward_id === 0 && !($work_province || $work_district || $work_municipality || $work_ward)) {
+        echo json_encode(array("success" => false, "message" => "Ward ID or work location required."));
         exit();
     }
     
-    $query = "SELECT * FROM ward_assets WHERE ward_id = $ward_id ORDER BY created_at DESC";
+    if ($ward_id > 0) {
+        $query = "SELECT * FROM ward_assets WHERE ward_id = $ward_id ORDER BY created_at DESC";
+    } else {
+        // Filter by work location
+        $query = "SELECT wa.* FROM ward_assets wa
+                  INNER JOIN wards w ON wa.ward_id = w.id
+                  INNER JOIN districts d ON w.district_id = d.id
+                  WHERE 1=1";
+        
+        if ($work_province) {
+            $query .= " AND d.province = '$work_province'";
+        }
+        if ($work_district) {
+            $query .= " AND d.name = '$work_district'";
+        }
+        if ($work_municipality) {
+            $query .= " AND w.municipality = '$work_municipality'";
+        }
+        if ($work_ward) {
+            $query .= " AND w.ward_number = $work_ward";
+        }
+        
+        $query .= " ORDER BY wa.created_at DESC";
+    }
+    
     $result = $conn->query($query);
     
     $assets = array();
@@ -71,12 +101,40 @@ if ($method === 'POST') {
     }
     // Add new asset
     else {
-        if (!isset($data->ward_id) || !isset($data->asset_type) || !isset($data->asset_name)) {
-            echo json_encode(array("success" => false, "message" => "Required fields missing."));
-            exit();
-        }
-        
-        $ward_id = intval($data->ward_id);
+            // Allow creating by ward_id or by work location
+            if (!isset($data->asset_type) || !isset($data->asset_name)) {
+                echo json_encode(array("success" => false, "message" => "Required fields missing: asset_type and asset_name."));
+                exit();
+            }
+
+            $ward_id = isset($data->ward_id) ? intval($data->ward_id) : 0;
+            if ($ward_id === 0) {
+                // Try to resolve from work location
+                $work_province = isset($data->work_province) && !empty($data->work_province) ? $data->work_province : null;
+                $work_district = isset($data->work_district) && !empty($data->work_district) ? $data->work_district : null;
+                $work_municipality = isset($data->work_municipality) && !empty($data->work_municipality) ? $data->work_municipality : null;
+                $work_ward = isset($data->work_ward) && !empty($data->work_ward) ? intval($data->work_ward) : null;
+                
+                if ($work_province && $work_district && $work_municipality && $work_ward) {
+                    $sql_resolve = "SELECT w.id FROM wards w INNER JOIN districts d ON w.district_id = d.id
+                                    WHERE d.province = ? AND d.name = ? AND w.municipality = ? AND w.ward_number = ? LIMIT 1";
+                    $stmt_res = $conn->prepare($sql_resolve);
+                    if ($stmt_res) {
+                        $stmt_res->bind_param("sssi", $work_province, $work_district, $work_municipality, $work_ward);
+                        $stmt_res->execute();
+                        $res = $stmt_res->get_result();
+                        if ($res && $res->num_rows > 0) {
+                            $row = $res->fetch_assoc();
+                            $ward_id = intval($row['id']);
+                        }
+                        $stmt_res->close();
+                    }
+                }
+            }
+            if ($ward_id === 0) {
+                echo json_encode(array("success" => false, "message" => "Ward not resolved. Please provide valid work location or ward_id."));
+                exit();
+            }
         $asset_type = $conn->real_escape_string($data->asset_type);
         $asset_name = $conn->real_escape_string($data->asset_name);
         $description = isset($data->description) ? $conn->real_escape_string($data->description) : '';
@@ -85,7 +143,7 @@ if ($method === 'POST') {
         $status = isset($data->status) ? $conn->real_escape_string($data->status) : 'active';
         
         $query = "INSERT INTO ward_assets (ward_id, asset_type, asset_name, description, value, acquisition_date, status) 
-                  VALUES ($ward_id, '$asset_type', '$asset_name', '$description', $value, " . 
+              VALUES ($ward_id, '$asset_type', '$asset_name', '$description', $value, " . 
                   ($acquisition_date ? "'$acquisition_date'" : "NULL") . ", '$status')";
         
         if ($conn->query($query)) {

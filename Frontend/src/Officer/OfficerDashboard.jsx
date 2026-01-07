@@ -1,8 +1,12 @@
 import React from "react";
 import OfficerLayout from "./OfficerLayout";
+import { useAuth } from "../Home/Context/AuthContext";
 import "./OfficerDashboard.css";
 
 const OfficerDashboard = () => {
+  const { getOfficerWorkLocation } = useAuth();
+  const workLocation = getOfficerWorkLocation();
+
   const stats = [
     { label: "New Applications", value: "5", icon: "📝" },
     { label: "Pending Complaints", value: "3", icon: "📢" },
@@ -11,6 +15,25 @@ const OfficerDashboard = () => {
 
   return (
     <OfficerLayout title="Ward Overview">
+      {/* Ward Assignment Badge */}
+      {workLocation && (
+        <div className="ward-assignment-badge">
+          <span className="badge-icon">📍</span>
+          <span className="badge-text">
+            तपाईंको Assignment: <strong>{workLocation.work_municipality}, Ward {workLocation.work_ward}</strong>
+          </span>
+        </div>
+      )}
+      
+      {!workLocation && (
+        <div className="ward-assignment-badge warning">
+          <span className="badge-icon">⚠️</span>
+          <span className="badge-text">
+            Ward assignment पेन्डिङ छ। Admin बाट approval पर्खनुहोस्।
+          </span>
+        </div>
+      )}
+
       <div className="dashboard-stats-grid">
         {stats.map((stat, index) => (
           <div className="dashboard-stat-card" key={index}>

@@ -468,3 +468,100 @@
     padding: 0 1rem;
   }
 }
+
+/* Chairperson Profile View Styles */
+.ward-view-content {
+  padding: 2.5rem;
+}
+
+.chairperson-profile-view {
+  display: flex;
+  gap: 2.5rem;
+  align-items: flex-start;
+}
+
+.chairperson-photo-container {
+  flex-shrink: 0;
+}
+
+.chairperson-photo {
+  width: 200px;
+  height: 200px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  border: 2px solid var(--border-color);
+}
+
+.chairperson-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  flex: 1;
+}
+
+.chairperson-info-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chairperson-info-grid > div.field-full {
+  grid-column: 1 / -1;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.profile-value {
+  font-size: 1rem;
+  color: var(--text-main);
+  margin: 0;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.profile-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2rem;
+}
+
+.profile-grid-2 > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-link {
+  color: var(--admin-accent);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: inline-block;
+}
+
+.profile-link:hover {
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .chairperson-profile-view {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .chairperson-info-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .ward-view-content {
+    padding: 1.5rem;
+  }
+}

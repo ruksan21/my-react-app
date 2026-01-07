@@ -102,17 +102,46 @@ export const AuthProvider = ({ children }) => {
 
   // --- Auth Functions ---
 
-  const login = (userData) => {
+  const login = (userData, workLocation = null) => {
     // In a real app, we'd verify against `allUsers` database here.
     // For now, we trust the `userData` passed from Login component or check mock.
 
-    setUser(userData);
+    const userWithLocation = { ...userData };
+    if (workLocation) {
+      userWithLocation.workLocation = workLocation;
+    }
+
+    setUser(userWithLocation);
     setIsLoggedIn(true);
-    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("user", JSON.stringify(userWithLocation));
     localStorage.setItem("isLoggedIn", "true");
 
     logActivity("login", "Login successfully");
     addNotification("success", "Login successfully");
+  };
+
+  // Helper to get officer work location (robust to role casing and fallbacks)
+  const getOfficerWorkLocation = () => {
+    if (user?.workLocation) {
+      return user.workLocation;
+    }
+    // Fallback: read from user fields if present
+    if (
+      user?.work_province ||
+      user?.work_district ||
+      user?.work_municipality ||
+      user?.work_ward ||
+      user?.work_office_location
+    ) {
+      return {
+        work_province: user?.work_province || null,
+        work_district: user?.work_district || null,
+        work_municipality: user?.work_municipality || null,
+        work_ward: user?.work_ward || null,
+        work_office_location: user?.work_office_location || null,
+      };
+    }
+    return null;
   };
 
   const logout = () => {
@@ -410,6 +439,7 @@ export const AuthProvider = ({ children }) => {
     createSystemAlert,
     hasRole,
     hasPermission,
+    getOfficerWorkLocation, // Helper for work location
   };
 
   if (loading) {
