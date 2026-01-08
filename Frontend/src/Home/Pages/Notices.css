@@ -1,0 +1,283 @@
+/* Notices Page Container */
+.notices-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.notices-page.embedded {
+  padding: 0;
+}
+
+/* Section Header */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.section-pin {
+  font-size: 1.75rem;
+}
+
+.section-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+/* Embedded Header */
+.embedded-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 0.5rem;
+  color: white;
+  font-weight: 600;
+}
+
+.embedded-pin {
+  font-size: 1.25rem;
+}
+
+.embedded-title {
+  font-size: 1rem;
+}
+
+/* Notices List */
+.notices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Notice Card */
+.notice-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.notice-card.active {
+  border-left: 4px solid #10b981;
+  background: linear-gradient(to right, #f0fdf4 0%, white 5%);
+}
+
+.notice-card.expired {
+  border-left: 4px solid #ef4444;
+  background: linear-gradient(to right, #fef2f2 0%, white 5%);
+  opacity: 0.85;
+}
+
+.notice-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Notice Header */
+.notice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.notice-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #667eea;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  display: inline-block;
+  text-transform: uppercase;
+}
+
+.notice-label.active-label {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.notice-label.expired-label {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.notice-title {
+  font-weight: 600;
+}
+
+.expiry-date.expired-text {
+  color: #dc2626;
+  font-weight: 7rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 0.5rem 0;
+}
+
+.notice-date {
+  font-size: 0.9rem;
+  color: #718096;
+  margin: 0;
+}
+
+.expiry-date {
+  color: #e53e3e;
+  font-weight: 500;
+}
+
+.notice-badge {
+  font-size: 2rem;
+  opacity: 0.8;
+}
+
+/* Notice Content */
+.notice-content {
+  padding: 1.5rem;
+  color: #4a5568;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+.notice-content p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* Notice Attachment */
+.notice-attachment {
+  padding: 1.5rem;
+  background: #f7fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.notice-attachment-img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.attachment-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #667eea;
+  color: white;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.attachment-link:hover {
+  background: #5568d3;
+  transform: translateX(4px);
+}
+
+/* Notice Document */
+.notice-document {
+  padding: 1.5rem;
+  background: #f7fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.document-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #48bb78;
+  color: white;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.document-link:hover {
+  background: #38a169;
+  transform: translateX(4px);
+}
+
+/* States */
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #718096;
+  font-size: 1.1rem;
+}
+
+.empty-state {
+  background: white;
+  border-radius: 1rem;
+  border: 2px dashed #cbd5e0;
+}
+
+/* Notice Note */
+.notices-note {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #999;
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .notices-page {
+    padding: 1rem;
+  }
+
+  .notice-title {
+    font-size: 1.25rem;
+  }
+
+  .notice-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .notice-badge {
+    align-self: flex-start;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .notice-header {
+    padding: 1rem;
+  }
+
+  .notice-content {
+    padding: 1rem;
+  }
+
+  .notice-attachment,
+  .notice-document {
+    padding: 1rem;
+  }
+
+  .attachment-link,
+  .document-link {
+    width: 100%;
+    justify-content: center;
+  }
+}

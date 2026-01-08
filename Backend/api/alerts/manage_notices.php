@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once '../db_connect.php';
 require_once '../wards/verify_ward_access.php';
-require_once '../wards/resolve_ward_id.php';
+require_once '../wards/find_ward_by_location.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 

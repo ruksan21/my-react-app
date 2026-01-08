@@ -5,8 +5,8 @@ import { useAuth } from "../Home/Context/AuthContext";
 import { API_ENDPOINTS } from "../config/api";
 
 const OfficerNotices = () => {
-  const { getOfficerWorkLocation, user } = useAuth();
-  const workLocation = getOfficerWorkLocation();
+  const { officerWorkLocation, user } = useAuth();
+  const workLocation = officerWorkLocation;
   const [notices, setNotices] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ title: "", content: "" });
@@ -22,28 +22,29 @@ const OfficerNotices = () => {
   useEffect(() => {
     if (user?.assigned_ward || workLocation) {
       fetchNotices();
+    } else {
+      setIsLoading(false);
     }
-  }, [user, workLocation]);
-
-  const fetchNotices = async () => {
+  }, [user?.id, workLocation]);
+  const fetchNotices = React.useCallback(async () => {
     try {
       setIsLoading(true);
-      let url = `${API_ENDPOINTS.alerts.manageNotices}`;
-      
-      // Use work location if available, otherwise fall back to assigned_ward
+      const params = new URLSearchParams();
       if (workLocation) {
-        const params = new URLSearchParams({
-          work_province: workLocation.work_province || "",
-          work_district: workLocation.work_district || "",
-          work_municipality: workLocation.work_municipality || "",
-          work_ward: String(workLocation.work_ward || ""),
-        });
-        url += `?${params.toString()}`;
+        params.append("work_province", workLocation.work_province || "");
+        params.append("work_district", workLocation.work_district || "");
+        params.append(
+          "work_municipality",
+          workLocation.work_municipality || ""
+        );
+        params.append("work_ward", String(workLocation.work_ward || ""));
       } else if (user?.assigned_ward) {
-        url += `?ward_id=${user.assigned_ward}`;
+        params.append("ward_id", String(user.assigned_ward));
       }
-      
-      const response = await fetch(url);
+
+      const response = await fetch(
+        `${API_ENDPOINTS.alerts.manageNotices}?${params.toString()}`
+      );
       const result = await response.json();
 
       if (result.success) {
@@ -54,7 +55,15 @@ const OfficerNotices = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [workLocation, user?.assigned_ward, setNotices, setIsLoading]);
+
+  useEffect(() => {
+    if (user?.assigned_ward || workLocation) {
+      fetchNotices();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user?.id, workLocation, fetchNotices]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -96,16 +105,6 @@ const OfficerNotices = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // DEBUG: Log what's available
-    console.log("=== DEBUG: OfficerNotices handleSubmit ===");
-    console.log("user object:", user);
-    console.log("workLocation from getOfficerWorkLocation():", workLocation);
-    console.log("user.work_province:", user?.work_province);
-    console.log("user.work_district:", user?.work_district);
-    console.log("user.work_municipality:", user?.work_municipality);
-    console.log("user.work_ward:", user?.work_ward);
-    console.log("user.assigned_ward:", user?.assigned_ward);
-
     // Build payload as FormData to support optional file upload and expiry
     const fd = new FormData();
     fd.append("title", formData.title);
@@ -118,38 +117,30 @@ const OfficerNotices = () => {
       fd.append("work_district", workLocation.work_district || "");
       fd.append("work_municipality", workLocation.work_municipality || "");
       // Use work_ward from workLocation, OR fall back to user.work_ward
-      const wardNumber = workLocation.work_ward != null ? workLocation.work_ward : user?.work_ward;
+      const wardNumber =
+        workLocation.work_ward != null
+          ? workLocation.work_ward
+          : user?.work_ward;
       if (wardNumber != null) fd.append("work_ward", String(wardNumber));
-      console.log("Using workLocation from context (with fallback for work_ward)");
+      if (wardNumber != null) fd.append("work_ward", String(wardNumber));
     } else if (user?.work_province || user?.work_district) {
       // Fallback: use user fields directly
       fd.append("work_province", user.work_province || "");
       fd.append("work_district", user.work_district || "");
       fd.append("work_municipality", user.work_municipality || "");
-      if (user.work_ward != null) fd.append("work_ward", String(user.work_ward));
-      console.log("Using work_* from user object directly");
+      if (user.work_ward != null)
+        fd.append("work_ward", String(user.work_ward));
+      if (user.work_ward != null)
+        fd.append("work_ward", String(user.work_ward));
     } else if (user?.assigned_ward) {
       fd.append("ward_id", String(user.assigned_ward));
-      console.log("Falling back to assigned_ward:", user.assigned_ward);
     } else {
-      console.warn("WARNING: No work location or ward found! Form may fail on backend.");
+      console.warn(
+        "WARNING: No work location or ward found! Form may fail on backend."
+      );
     }
     if (attachment) fd.append("attachment", attachment);
     if (documentFile) fd.append("document", documentFile);
-
-    console.log("Submitting notice (FormData) with fields:", {
-      title: formData.title,
-      content: formData.content,
-      officer_id: user.id,
-      work_province: workLocation?.work_province || user?.work_province,
-      work_district: workLocation?.work_district || user?.work_district,
-      work_municipality: workLocation?.work_municipality || user?.work_municipality,
-      work_ward: workLocation?.work_ward || user?.work_ward,
-      ward_id: user?.assigned_ward,
-      expiry_date: expiryDate,
-      attachment: attachment ? attachment.name : null,
-      document: documentFile ? documentFile.name : null,
-    });
 
     try {
       const response = await fetch(API_ENDPOINTS.alerts.manageNotices, {
@@ -159,12 +150,14 @@ const OfficerNotices = () => {
 
       const result = await response.json();
       console.log("Notice API response:", result);
-      
+
       if (response.status === 422) {
-        setWardError(result.message || "Ward not found. Ask admin to create this ward.");
+        setWardError(
+          result.message || "Ward not found. Ask admin to create this ward."
+        );
         return;
       }
-      
+
       if (result.success) {
         setWardError(null);
         setFormData({ title: "", content: "" });
@@ -188,14 +181,11 @@ const OfficerNotices = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this notice?")) {
       try {
-        const response = await fetch(
-          API_ENDPOINTS.alerts.manageNotices,
-          {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id }),
-          }
-        );
+        const response = await fetch(API_ENDPOINTS.alerts.manageNotices, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
 
         const result = await response.json();
         if (result.success) {
@@ -214,22 +204,27 @@ const OfficerNotices = () => {
     <OfficerLayout title="Notices">
       <div className="recent-activity">
         {wardError && (
-          <div style={{
-            background: "linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(239, 68, 68, 0.05))",
-            border: "2px solid rgba(220, 38, 38, 0.5)",
-            borderRadius: "12px",
-            padding: "16px 20px",
-            marginBottom: "20px",
-            color: "#dc2626",
-            fontWeight: 500,
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            backdropFilter: "blur(10px)"
-          }}>
+          <div
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(239, 68, 68, 0.05))",
+              border: "2px solid rgba(220, 38, 38, 0.5)",
+              borderRadius: "12px",
+              padding: "16px 20px",
+              marginBottom: "20px",
+              color: "#dc2626",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              backdropFilter: "blur(10px)",
+            }}
+          >
             <span style={{ fontSize: "24px" }}>⚠️</span>
             <div>
-              <div style={{ fontWeight: 600, marginBottom: "4px" }}>Ward Not Found</div>
+              <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+                Ward Not Found
+              </div>
               <div style={{ fontSize: "0.9em", opacity: 0.9 }}>{wardError}</div>
             </div>
           </div>
@@ -276,7 +271,12 @@ const OfficerNotices = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Image (optional)</label>
-                  <div className="upload-area" onClick={() => document.getElementById('notice-image-input').click()}>
+                  <div
+                    className="upload-area"
+                    onClick={() =>
+                      document.getElementById("notice-image-input").click()
+                    }
+                  >
                     <span>Click to upload image</span>
                   </div>
                   <input
@@ -294,8 +294,15 @@ const OfficerNotices = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">File (optional)</label>
-                  <div className="upload-area" onClick={() => document.getElementById('notice-doc-input').click()}>
-                    <span>{documentName || 'Click to upload file (PDF, DOC, etc.)'}</span>
+                  <div
+                    className="upload-area"
+                    onClick={() =>
+                      document.getElementById("notice-doc-input").click()
+                    }
+                  >
+                    <span>
+                      {documentName || "Click to upload file (PDF, DOC, etc.)"}
+                    </span>
                   </div>
                   <input
                     id="notice-doc-input"
@@ -317,19 +324,46 @@ const OfficerNotices = () => {
                     onChange={(e) => setCustomExpiry(e.target.value)}
                   />
                   <div className="expiry-chips">
-                    <button type="button" className="chip" onClick={() => {
-                      const d = new Date(); d.setHours(d.getHours() + 24);
-                      setCustomExpiry(d.toISOString().slice(0,16));
-                    }}>+24h</button>
-                    <button type="button" className="chip" onClick={() => {
-                      const d = new Date(); d.setDate(d.getDate() + 7);
-                      setCustomExpiry(d.toISOString().slice(0,16));
-                    }}>+7d</button>
-                    <button type="button" className="chip" onClick={() => {
-                      const d = new Date(); d.setMonth(d.getMonth() + 1);
-                      setCustomExpiry(d.toISOString().slice(0,16));
-                    }}>+1m</button>
-                    <button type="button" className="chip clear" onClick={() => setCustomExpiry("")}>No expiry</button>
+                    <button
+                      type="button"
+                      className="chip"
+                      onClick={() => {
+                        const d = new Date();
+                        d.setHours(d.getHours() + 24);
+                        setCustomExpiry(d.toISOString().slice(0, 16));
+                      }}
+                    >
+                      +24h
+                    </button>
+                    <button
+                      type="button"
+                      className="chip"
+                      onClick={() => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 7);
+                        setCustomExpiry(d.toISOString().slice(0, 16));
+                      }}
+                    >
+                      +7d
+                    </button>
+                    <button
+                      type="button"
+                      className="chip"
+                      onClick={() => {
+                        const d = new Date();
+                        d.setMonth(d.getMonth() + 1);
+                        setCustomExpiry(d.toISOString().slice(0, 16));
+                      }}
+                    >
+                      +1m
+                    </button>
+                    <button
+                      type="button"
+                      className="chip clear"
+                      onClick={() => setCustomExpiry("")}
+                    >
+                      No expiry
+                    </button>
                   </div>
                 </div>
               </div>
@@ -352,7 +386,10 @@ const OfficerNotices = () => {
                     <p className="notice-date">
                       📅 Published on {notice.published_date}
                       {notice.expiry_date && (
-                        <span className="expiry-label"> • Expires on {notice.expiry_date}</span>
+                        <span className="expiry-label">
+                          {" "}
+                          • Expires on {notice.expiry_date}
+                        </span>
                       )}
                     </p>
                   </div>
@@ -397,13 +434,20 @@ const NoticeAttachment = ({ attachment }) => {
     url = `${API_ENDPOINTS.uploads}/${cleaned}`;
   }
   const lower = (attachment || "").toLowerCase();
-  const isImage = [".png", ".jpg", ".jpeg", ".gif", ".webp"].some((ext) => lower.endsWith(ext));
+  const isImage = [".png", ".jpg", ".jpeg", ".gif", ".webp"].some((ext) =>
+    lower.endsWith(ext)
+  );
   return (
     <div className="notice-attachment">
       {isImage ? (
         <img src={url} alt="Notice attachment" />
       ) : (
-        <a href={url} target="_blank" rel="noreferrer" className="attachment-link">
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="attachment-link"
+        >
           View attachment
         </a>
       )}
@@ -419,7 +463,12 @@ const NoticeDocument = ({ document }) => {
   }
   return (
     <div className="notice-document">
-      <a href={url} target="_blank" rel="noreferrer" className="attachment-link">
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className="attachment-link"
+      >
         View file
       </a>
     </div>

@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../db_connect.php';
-require_once 'verify_ward_access.php';
+require_once '../wards/verify_ward_access.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 

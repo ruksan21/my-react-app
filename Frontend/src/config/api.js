@@ -1,6 +1,5 @@
 const BASE_URL = "http://localhost/my-react-app/Backend/api";
 
-
 export const API_ENDPOINTS = {
   // Authentication
   auth: {
@@ -20,12 +19,12 @@ export const API_ENDPOINTS = {
 
   // Ward Management
   wards: {
-    getAll: `${BASE_URL}/wards/get_wards.php`,
-    getDetails: `${BASE_URL}/wards/get_ward_details.php`,
+    getAll: `${BASE_URL}/wards/list_all_wards.php`,
+    getDetails: `${BASE_URL}/wards/fetch_ward_full_details.php`,
     add: `${BASE_URL}/wards/add_ward.php`,
     update: `${BASE_URL}/wards/update_ward.php`,
     delete: `${BASE_URL}/wards/delete_ward.php`,
-    autoGenerate: `${BASE_URL}/wards/auto_generate_wards.php`,
+    autoGenerate: `${BASE_URL}/wards/create_wards_for_municipality.php`,
     verifyAccess: `${BASE_URL}/wards/verify_ward_access.php`,
   },
 
@@ -54,6 +53,7 @@ export const API_ENDPOINTS = {
   // Work & Development
   works: {
     add: `${BASE_URL}/works/add_work.php`,
+    update: `${BASE_URL}/works/update_work.php`,
     getAll: `${BASE_URL}/works/get_works.php`,
     delete: `${BASE_URL}/works/delete_work.php`,
   },
@@ -78,6 +78,26 @@ export const API_ENDPOINTS = {
   // Statistics
   stats: {
     getProfileStats: `${BASE_URL}/stats/get_profile_stats.php`,
+  },
+
+  // Activities
+  activities: {
+    get: `${BASE_URL}/activities/get_activities.php`,
+    add: `${BASE_URL}/activities/add_activity.php`,
+    delete: `${BASE_URL}/activities/delete_activity.php`,
+  },
+
+  // Social Media
+  socialMedia: {
+    get: `${BASE_URL}/social-media/get_social_media.php`,
+    update: `${BASE_URL}/social-media/update_social_media.php`,
+  },
+
+  // Notifications
+  notifications: {
+    get: `${BASE_URL}/notifications/get_notifications.php`,
+    markAsRead: `${BASE_URL}/notifications/mark_as_read.php`,
+    markAllAsRead: `${BASE_URL}/notifications/mark_all_as_read.php`,
   },
 
   // Helper for uploads directory

@@ -48,14 +48,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
             unlink("../" . $image_path);
         }
 
-        echo json_encode(["status" => "success", "message" => "Work deleted successfully"]);
+        echo json_encode(["success" => true, "message" => "Work deleted successfully"]);
     } else {
-        echo json_encode(["status" => "error", "message" => "Failed to delete work: " . $stmt->error]);
+        echo json_encode(["success" => false, "message" => "Failed to delete work: " . $stmt->error]);
     }
 
     $stmt->close();
 } else {
-    echo json_encode(["status" => "error", "message" => "Invalid request method"]);
+    echo json_encode(["success" => false, "message" => "Invalid request method"]);
 }
 
 $conn->close();

@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../db_connect.php';
-require_once '../wards/resolve_ward_id.php';
+require_once '../wards/find_ward_by_location.php';
 require_once '../wards/verify_ward_access.php';
 
 // Check if it's a POST request
@@ -37,7 +37,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $start_date = $data['start_date'] ?? null;
     $end_date = $data['end_date'] ?? null;
     $beneficiaries = $data['beneficiaries'] ?? '';
-    $status = $data['status'] ?? 'Upcoming';
+    $status_input = $data['status'] ?? 'Upcoming';
+    // Map frontend status to backend enum if necessary
+    $status_map = [
+        'Upcoming' => 'pending',
+        'Ongoing' => 'on-going',
+        'Completed' => 'completed',
+        'pending' => 'pending',
+        'on-going' => 'on-going',
+        'completed' => 'completed'
+    ];
+    $status = $status_map[$status_input] ?? 'pending';
 
     $officer_id = $data['officer_id'] ?? 0;
 
@@ -107,9 +117,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("sssssssssii", $title, $description, $budget, $location, $start_date, $end_date, $beneficiaries, $status, $image_path, $officer_id, $ward_id);
 
     if ($stmt->execute()) {
-        echo json_encode(["status" => "success", "message" => "Work added successfully"]);
+        echo json_encode(["success" => true, "message" => "Work added successfully"]);
     } else {
-        echo json_encode(["status" => "error", "message" => "Failed to add work: " . $stmt->error]);
+        echo json_encode(["success" => false, "message" => "Failed to add work: " . $stmt->error]);
     }
 
     $stmt->close();

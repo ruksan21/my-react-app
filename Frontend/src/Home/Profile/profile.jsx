@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "./profile.css";
 import Works from "./works";
+import NoticePopup from "../Component/NoticePopup";
 import jsPDF from "jspdf";
 import Dashboard from "../Pages/Dashboard";
 import Assets from "../Pages/Assets";
@@ -325,7 +326,7 @@ const Profile = () => {
       return <Works wardId={profileData.wardId} />;
     }
     if (activeTab === "Dashboard") {
-      return <Dashboard embedded={true} />;
+      return <Dashboard embedded={true} wardId={profileData.wardId} />;
     }
     if (activeTab === "Assets") {
       return <Assets embedded={true} />;
@@ -438,6 +439,9 @@ const Profile = () => {
 
   return (
     <div className="profile-container">
+      {/* Notice Popup */}
+      <NoticePopup />
+      
       {/* Profile Header */}
       <div className="profile-header">
         <div className="profile-header-left">

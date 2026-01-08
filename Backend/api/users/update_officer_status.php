@@ -32,12 +32,26 @@ if (!empty($data->id) && !empty($data->status)) {
             $work_municipality = $officer['work_municipality'];
             $work_ward = $officer['work_ward'];
             
-            // Check if ward exists
+            // Check if ward exists with robust matching (handle NULLs and fuzzy match)
             $ward_query = "SELECT id FROM wards 
-                          WHERE province = '$work_province' 
-                          AND district = '$work_district' 
-                          AND municipality = '$work_municipality' 
-                          AND ward_number = $work_ward 
+                          WHERE ward_number = $work_ward
+                          AND (
+                              province IS NULL OR province = '' 
+                              OR TRIM(province) LIKE TRIM('$work_province')
+                              OR TRIM(province) LIKE CONCAT('%', TRIM('$work_province'), '%')
+                              OR '$work_province' LIKE CONCAT('%', TRIM(province), '%')
+                          )
+                          AND (
+                              district IS NULL OR district = '' 
+                              OR TRIM(district) LIKE TRIM('$work_district')
+                              OR TRIM(district) LIKE CONCAT('%', TRIM('$work_district'), '%')
+                              OR '$work_district' LIKE CONCAT('%', TRIM(district), '%')
+                          )
+                          AND (
+                              TRIM(municipality) LIKE TRIM('$work_municipality')
+                              OR TRIM(municipality) LIKE CONCAT('%', TRIM('$work_municipality'), '%')
+                              OR '$work_municipality' LIKE CONCAT('%', TRIM(municipality), '%')
+                          )
                           LIMIT 1";
             $ward_result = $conn->query($ward_query);
             

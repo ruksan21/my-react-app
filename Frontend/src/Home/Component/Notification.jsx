@@ -1,44 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../Context/AuthContext";
+import { useWard } from "../Context/WardContext";
+import { API_ENDPOINTS } from "../../config/api";
 import "./Notification.css";
 
 const Notification = () => {
+  const { user } = useAuth();
+  const { wardId } = useWard();
   const [isOpen, setIsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Sample notifications - will come from API in the future
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "New Work Assigned",
-      message: "Road construction work has been assigned to your ward",
-      time: "2 hours ago",
-      read: false,
-      type: "work",
-    },
-    {
-      id: 2,
-      title: "Meeting Scheduled",
-      message: "Ward committee meeting tomorrow at 10 AM",
-      time: "5 hours ago",
-      read: false,
-      type: "meeting",
-    },
-    {
-      id: 3,
-      title: "Budget Approved",
-      message: "Your budget proposal has been approved",
-      time: "1 day ago",
-      read: true,
-      type: "info",
-    },
-    {
-      id: 4,
-      title: "Complaint Received",
-      message: "New complaint from Ward 5 resident",
-      time: "2 days ago",
-      read: false,
-      type: "complaint",
-    },
-  ]);
+  useEffect(() => {
+    if (wardId) {
+      fetchNotifications();
+    }
+  }, [wardId]);
+
+  const fetchNotifications = async () => {
+    if (!wardId) return;
+    
+    setLoading(true);
+    try {
+      // Fetch ward notices as notifications
+      const response = await fetch(`${API_ENDPOINTS.alerts.manageNotices}?ward_id=${wardId}`);
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        // Convert notices to notification format
+        const noticeNotifications = data.data.map(notice => ({
+          id: notice.id,
+          title: "📢 New Notice",
+          message: notice.title,
+          type: 'notice',
+          created_at: notice.created_at,
+          read: false
+        }));
+        
+        setNotifications(noticeNotifications);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -46,7 +52,8 @@ const Notification = () => {
     setIsOpen(!isOpen);
   };
 
-  const markAsRead = (id) => {
+  const markAsRead = async (id) => {
+    // Mark notification as read in state
     setNotifications(
       notifications.map((notif) =>
         notif.id === id ? { ...notif, read: true } : notif
@@ -54,11 +61,13 @@ const Notification = () => {
     );
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    // Mark all notifications as read in state
     setNotifications(notifications.map((notif) => ({ ...notif, read: true })));
   };
 
   const clearAll = () => {
+    // Optionally add API call to delete all notifications
     setNotifications([]);
     setIsOpen(false);
   };

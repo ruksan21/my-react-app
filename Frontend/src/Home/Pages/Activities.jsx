@@ -1,37 +1,43 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../Nav/Navbar";
 import "./Activities.css";
 import { useWard } from "../Context/WardContext";
+import { API_ENDPOINTS } from "../../config/api";
 
 export default function Activities({ embedded = false }) {
-  const { municipality, ward } = useWard();
+  const { municipality, ward, wardId } = useWard();
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const activities = [
-    {
-      icon: "🏛️",
-      iconBg: "#E3F2FD",
-      title: "Ward Assembly Meeting",
-      subtitle: "Monthly ward assembly meeting completed",
-      date: "2024/11/15",
-      time: "10:00",
-    },
-    {
-      icon: "📍",
-      iconBg: "#F3E5F5",
-      title: "Field Visit",
-      subtitle: "Road construction site inspection",
-      date: "2024/11/12",
-      time: "14:00",
-    },
-    {
-      icon: "📅",
-      iconBg: "#E8F5E9",
-      title: "Community Program",
-      subtitle: "Participation in cleanliness campaign",
-      date: "2024/11/10",
-      time: "09:00",
-    },
-  ];
+  useEffect(() => {
+    if (wardId) {
+      fetchActivities();
+    }
+  }, [wardId]);
+
+  const fetchActivities = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${API_ENDPOINTS.activities.get}?ward_id=${wardId}`
+      );
+      const data = await response.json();
+      if (data.success) {
+        setActivities(
+          data.data.map((a) => ({
+            ...a,
+            // Map DB fields to UI fields if different
+            date: a.activity_date,
+            time: a.activity_time ? a.activity_time.substring(0, 5) : "",
+            iconBg: a.icon_bg || "#E3F2FD",
+          }))
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
+  };
 
   return (
     <>
@@ -50,6 +56,11 @@ export default function Activities({ embedded = false }) {
           <span className="section-title">Recent Activities</span>
         </div>
         <div className="activities-list">
+          {activities.length === 0 && !loading && (
+            <div style={{ padding: 20, textAlign: "center", color: "#666" }}>
+              No activities found.
+            </div>
+          )}
           {activities.map((act, idx) => (
             <div key={idx} className="activity-item">
               <span
@@ -69,7 +80,6 @@ export default function Activities({ embedded = false }) {
             </div>
           ))}
         </div>
-        <div className="activities-note">These activity details are demo.</div>
       </div>
     </>
   );

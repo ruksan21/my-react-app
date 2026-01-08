@@ -4,8 +4,8 @@ import { useAuth } from "../Home/Context/AuthContext";
 import { API_ENDPOINTS, API_BASE_URL } from "../config/api";
 
 const OfficerAssets = () => {
-  const { getOfficerWorkLocation, user } = useAuth();
-  const workLocation = getOfficerWorkLocation();
+  const { officerWorkLocation, user } = useAuth();
+  const workLocation = officerWorkLocation;
   const wardId = user?.assigned_ward || user?.ward || 1;
 
   const [assets, setAssets] = useState([]);
@@ -87,13 +87,15 @@ const OfficerAssets = () => {
       });
       const data = await res.json();
       console.log("Asset API Response:", data);
-      
+
       if (res.status === 422) {
-        setWardError(data.message || "Ward not found. Ask admin to create this ward.");
+        setWardError(
+          data.message || "Ward not found. Ask admin to create this ward."
+        );
         setShowAddModal(false);
         return;
       }
-      
+
       if (data.success) {
         setWardError(null);
         setShowAddModal(false);
@@ -153,22 +155,27 @@ const OfficerAssets = () => {
     <OfficerLayout title="Ward Assets Management">
       <div className="table-container">
         {wardError && (
-          <div style={{
-            background: "linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(239, 68, 68, 0.05))",
-            border: "2px solid rgba(220, 38, 38, 0.5)",
-            borderRadius: "12px",
-            padding: "16px 20px",
-            marginBottom: "20px",
-            color: "#dc2626",
-            fontWeight: 500,
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            backdropFilter: "blur(10px)"
-          }}>
+          <div
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(239, 68, 68, 0.05))",
+              border: "2px solid rgba(220, 38, 38, 0.5)",
+              borderRadius: "12px",
+              padding: "16px 20px",
+              marginBottom: "20px",
+              color: "#dc2626",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              backdropFilter: "blur(10px)",
+            }}
+          >
             <span style={{ fontSize: "24px" }}>⚠️</span>
             <div>
-              <div style={{ fontWeight: 600, marginBottom: "4px" }}>Ward Not Found</div>
+              <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+                Ward Not Found
+              </div>
               <div style={{ fontSize: "0.9em", opacity: 0.9 }}>{wardError}</div>
             </div>
           </div>
@@ -177,7 +184,10 @@ const OfficerAssets = () => {
           <div>
             <h2 className="section-title">Registered Assets</h2>
             <span style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-              {workLocation ? `${workLocation.work_municipality}, Ward ${workLocation.work_ward}` : `Ward ${wardId}`}: {assets.length}
+              {workLocation
+                ? `${workLocation.work_municipality}, Ward ${workLocation.work_ward}`
+                : `Ward ${wardId}`}
+              : {assets.length}
             </span>
           </div>
           <button

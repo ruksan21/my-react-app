@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../db_connect.php';
-require_once 'verify_ward_access.php';
+require_once '../wards/verify_ward_access.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -18,9 +18,25 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $ward_id = isset($_GET['ward_id']) ? intval($_GET['ward_id']) : 0;
     
+    // Officer work location filters
+    $work_province = isset($_GET['work_province']) ? $conn->real_escape_string($_GET['work_province']) : null;
+    $work_district = isset($_GET['work_district']) ? $conn->real_escape_string($_GET['work_district']) : null;
+    $work_municipality = isset($_GET['work_municipality']) ? $conn->real_escape_string($_GET['work_municipality']) : null;
+    $work_ward = isset($_GET['work_ward']) ? intval($_GET['work_ward']) : null;
+
     if ($ward_id === 0) {
-        echo json_encode(["success" => false, "message" => "Ward ID required"]);
-        exit();
+        if ($work_province && $work_district && $work_municipality && $work_ward) {
+            require_once '../wards/find_ward_by_location.php';
+            $ward_id = resolveWardIdStrict($conn, $work_province, $work_district, $work_municipality, $work_ward);
+            if ($ward_id === 0) {
+                http_response_code(422);
+                echo json_encode(["success" => false, "message" => "Ward not found for work location."]);
+                exit();
+            }
+        } else {
+            echo json_encode(["success" => false, "message" => "Ward ID or work location required"]);
+            exit();
+        }
     }
     
     $sql = "SELECT * FROM ward_departments WHERE ward_id = ? ORDER BY created_at DESC";
@@ -34,7 +50,7 @@ if ($method === 'GET') {
         $departments[] = $row;
     }
     
-    echo json_encode(["success" => true, "data" => $departments]);
+    echo json_encode(["success" => true, "data" => $departments, "ward_id" => $ward_id]);
     $stmt->close();
 }
 
@@ -44,6 +60,19 @@ else if ($method === 'POST') {
     
     $ward_id = isset($data['ward_id']) ? intval($data['ward_id']) : 0;
     $officer_id = isset($data['officer_id']) ? intval($data['officer_id']) : 0;
+    
+    if ($ward_id === 0) {
+        $work_province = $data['work_province'] ?? null;
+        $work_district = $data['work_district'] ?? null;
+        $work_municipality = $data['work_municipality'] ?? null;
+        $work_ward = $data['work_ward'] ?? null;
+        
+        if ($work_province && $work_district && $work_municipality && $work_ward) {
+            require_once '../wards/find_ward_by_location.php';
+            $ward_id = resolveWardIdStrict($conn, $work_province, $work_district, $work_municipality, $work_ward);
+        }
+    }
+
     $name = isset($data['name']) ? $conn->real_escape_string($data['name']) : '';
     $head_name = isset($data['headName']) ? $conn->real_escape_string($data['headName']) : '';
     $phone = isset($data['phone']) ? $conn->real_escape_string($data['phone']) : '';
@@ -51,7 +80,7 @@ else if ($method === 'POST') {
     $icon = isset($data['icon']) ? $conn->real_escape_string($data['icon']) : '🏢';
     
     if ($ward_id === 0 || $officer_id === 0 || empty($name)) {
-        echo json_encode(["success" => false, "message" => "Ward ID, Officer ID, and Department Name are required"]);
+        echo json_encode(["success" => false, "message" => "Ward ID/location, Officer ID, and Department Name are required"]);
         exit();
     }
 
@@ -84,27 +113,36 @@ else if ($method === 'PUT') {
     $data = json_decode(file_get_contents("php://input"), true);
     
     $id = isset($data['id']) ? intval($data['id']) : 0;
+    $officer_id = isset($data['officer_id']) ? intval($data['officer_id']) : 0;
     $name = isset($data['name']) ? $conn->real_escape_string($data['name']) : '';
     $head_name = isset($data['headName']) ? $conn->real_escape_string($data['headName']) : '';
     $phone = isset($data['phone']) ? $conn->real_escape_string($data['phone']) : '';
     $email = isset($data['email']) ? $conn->real_escape_string($data['email']) : '';
     $icon = isset($data['icon']) ? $conn->real_escape_string($data['icon']) : '🏢';
     
-    if ($id === 0 || empty($name)) {
-        echo json_encode(["success" => false, "message" => "Department ID and Name are required"]);
+    if ($id === 0 || $officer_id === 0 || empty($name)) {
+        echo json_encode(["success" => false, "message" => "Department ID, Officer ID, and Name are required"]);
         exit();
     }
-    
-    // For PUT, strict check requires validation. 
-    // Since we don't carry session, we'd need officer_id in body to verify.
-    // For now, let's assume if they can modify, they are authorized (limited security).
-    // Or we should update frontend. Ideally: update frontend to pass officer_id.
-    // Given user constraint "dharai code ma ferbadal na gara", we might skip deep refactor.
-    // BUT the requirement is "strict". 
-    // Let's assume the POST creation check covers most misuse, but direct API access allows bypass.
-    // Let's at least try to verify if we have officer_id.
-    
-    // Actually, I should update add_work.php properly as that's critical.
+
+    // First, resolve the ward_id for this department to verify access
+    $ward_q = "SELECT ward_id FROM ward_departments WHERE id = ?";
+    $stmt_w = $conn->prepare($ward_q);
+    $stmt_w->bind_param("i", $id);
+    $stmt_w->execute();
+    $res_w = $stmt_w->get_result();
+    $ward_id = ($res_w && $row = $res_w->fetch_assoc()) ? $row['ward_id'] : 0;
+    $stmt_w->close();
+
+    if ($ward_id === 0) {
+        echo json_encode(["success" => false, "message" => "Department not found."]);
+        exit();
+    }
+
+    // Verify access
+    if (!verifyWardAccess($conn, $officer_id, $ward_id)) {
+        sendUnauthorizedResponse();
+    }
     
     $sql = "UPDATE ward_departments SET name = ?, head_name = ?, phone = ?, email = ?, icon = ? WHERE id = ?";
     $stmt = $conn->prepare($sql);
@@ -123,10 +161,26 @@ else if ($method === 'PUT') {
 else if ($method === 'DELETE') {
     $data = json_decode(file_get_contents("php://input"), true);
     $dept_id = isset($data['id']) ? intval($data['id']) : 0;
+    $officer_id = isset($data['officer_id']) ? intval($data['officer_id']) : 0;
     
-    if ($dept_id === 0) {
-        echo json_encode(["success" => false, "message" => "Department ID required"]);
+    if ($dept_id === 0 || $officer_id === 0) {
+        echo json_encode(["success" => false, "message" => "Department ID and Officer ID required"]);
         exit();
+    }
+
+    // Resolve ward_id to verify access
+    $ward_q = "SELECT ward_id FROM ward_departments WHERE id = ?";
+    $stmt_w = $conn->prepare($ward_q);
+    $stmt_w->bind_param("i", $dept_id);
+    $stmt_w->execute();
+    $res_w = $stmt_w->get_result();
+    $ward_id = ($res_w && $row = $res_w->fetch_assoc()) ? $row['ward_id'] : 0;
+    $stmt_w->close();
+
+    if ($ward_id > 0) {
+        if (!verifyWardAccess($conn, $officer_id, $ward_id)) {
+            sendUnauthorizedResponse();
+        }
     }
     
     $sql = "DELETE FROM ward_departments WHERE id = ?";

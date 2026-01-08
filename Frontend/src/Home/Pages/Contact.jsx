@@ -32,16 +32,27 @@ export default function Contact() {
 
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [socialMedia, setSocialMedia] = useState({
+    facebook: "",
+    instagram: "",
+    twitter: "",
+    whatsapp: "",
+  });
 
   // Fetch Ward Details and Departments
   useEffect(() => {
-    if (!wardId) return;
+    if (!wardId) {
+      console.log("Contact: No wardId found");
+      return;
+    }
 
+    console.log("Contact: Fetching ward details for ID:", wardId);
     setLoading(true);
     // Fetch Ward Details
     fetch(`${API_ENDPOINTS.wards.getDetails}?id=${wardId}`)
       .then((res) => res.json())
       .then((data) => {
+        console.log("Contact: Ward details response:", data);
         if (data.success && data.data) {
           const w = data.data;
           setWardInfo({
@@ -62,6 +73,33 @@ export default function Contact() {
               saturday: w.office_hours_saturday || "Closed",
             },
           });
+
+          // Fetch social media links for this ward
+          const params = new URLSearchParams({
+            province: w.province,
+            municipality: w.municipality,
+            ward: w.ward_number,
+          });
+          // Only add district if it exists
+          if (w.district) {
+            params.append('district', w.district);
+          }
+          console.log("Contact: Fetching social media with params:", params.toString());
+          fetch(`${API_ENDPOINTS.socialMedia.get}?${params}`)
+            .then((res) => res.json())
+            .then((socialData) => {
+              console.log("Contact: Social media response:", socialData);
+              if (socialData.success && socialData.data) {
+                setSocialMedia({
+                  facebook: socialData.data.facebook || "",
+                  instagram: socialData.data.instagram || "",
+                  twitter: socialData.data.twitter || "",
+                  whatsapp: socialData.data.whatsapp || "",
+                });
+                console.log("Contact: Social media state updated:", socialData.data);
+              }
+            })
+            .catch((err) => console.error("Error fetching social media:", err));
         }
       })
       .catch((err) => console.error("Error fetching ward details:", err));
@@ -87,14 +125,6 @@ export default function Contact() {
     priority: "Medium",
   });
   const [formStatus, setFormStatus] = useState(null);
-
-  // Social media links - Update these with actual ward social media URLs
-  const [socialMedia] = useState({
-    facebook: "https://www.facebook.com/kathmandumetrocity",
-    instagram: "https://www.instagram.com/kathmandumetrocity",
-    twitter: "https://twitter.com/Ktmmetrocity",
-    whatsapp: "https://wa.me/9779851234567",
-  });
 
   function handleInputChange(e) {
     const { name, value } = e.target;
@@ -510,43 +540,56 @@ export default function Contact() {
           </div>
 
           {/* Social Media Section */}
-          <div className="social-media-section">
-            <h2>Follow Us on Social Media</h2>
-            <div className="social-buttons">
-              <a
-                href={socialMedia.facebook}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="social-btn facebook"
-              >
-                <i className="fa-brands fa-facebook-f"></i> Facebook
-              </a>
-              <a
-                href={socialMedia.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="social-btn instagram"
-              >
-                <i className="fa-brands fa-instagram"></i> Instagram
-              </a>
-              <a
-                href={socialMedia.twitter}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="social-btn x-twitter"
-              >
-                <i className="fa-brands fa-x-twitter"></i> X (Twitter)
-              </a>
-              <a
-                href={socialMedia.whatsapp}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="social-btn whatsapp"
-              >
-                <i className="fa-brands fa-whatsapp"></i> WhatsApp
-              </a>
+          {(socialMedia.facebook ||
+            socialMedia.instagram ||
+            socialMedia.twitter ||
+            socialMedia.whatsapp) && (
+            <div className="social-media-section">
+              <h2>Follow Us on Social Media</h2>
+              <div className="social-buttons">
+                {socialMedia.facebook && (
+                  <a
+                    href={socialMedia.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="social-btn facebook"
+                  >
+                    <i className="fa-brands fa-facebook-f"></i> Facebook
+                  </a>
+                )}
+                {socialMedia.instagram && (
+                  <a
+                    href={socialMedia.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="social-btn instagram"
+                  >
+                    <i className="fa-brands fa-instagram"></i> Instagram
+                  </a>
+                )}
+                {socialMedia.twitter && (
+                  <a
+                    href={socialMedia.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="social-btn x-twitter"
+                  >
+                    <i className="fa-brands fa-x-twitter"></i> X (Twitter)
+                  </a>
+                )}
+                {socialMedia.whatsapp && (
+                  <a
+                    href={socialMedia.whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="social-btn whatsapp"
+                  >
+                    <i className="fa-brands fa-whatsapp"></i> WhatsApp
+                  </a>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </>

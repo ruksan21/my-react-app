@@ -32,20 +32,23 @@ $municipality_safe = $conn->real_escape_string($municipality);
 
 // Logic:
 // 1. Ward Number must match exactly
-// 2. District usually matches exactly (but we'll allow case-insensitive)
-// 3. Province and Municipality might have variations (e.g. "Koshi" vs "Koshi Province", "Itahari" vs "Itahari Sub-Metropolitan City")
-// We use bidirectional LIKE: input contains DB_val OR DB_val contains input
+// 2. Municipality/District/Province fuzzy match OR database value is NULL (handle legacy/incomplete data)
+// 3. We use bidirectional LIKE for string components
 
 $query = "SELECT id, ward_number, municipality, district, province 
           FROM wards 
           WHERE ward_number = $ward_number
           AND (
-              TRIM(province) LIKE TRIM('$province_safe') 
+              province IS NULL 
+              OR TRIM(province) = ''
+              OR TRIM(province) LIKE TRIM('$province_safe') 
               OR TRIM(province) LIKE CONCAT('%', TRIM('$province_safe'), '%')
               OR '$province_safe' LIKE CONCAT('%', TRIM(province), '%')
           )
           AND (
-              TRIM(district) LIKE TRIM('$district_safe')
+              district IS NULL 
+              OR TRIM(district) = ''
+              OR TRIM(district) LIKE TRIM('$district_safe')
               OR TRIM(district) LIKE CONCAT('%', TRIM('$district_safe'), '%')
               OR '$district_safe' LIKE CONCAT('%', TRIM(district), '%')
           )
@@ -87,7 +90,8 @@ if ($result && $result->num_rows > 0) {
                 "ward" => $ward_number
             ],
             "query_used" => $query,
-            "candidates_with_same_ward_number" => $similar_wards
+            "candidates_with_same_ward_number" => $similar_wards,
+            "note" => "Checked for NULL province/district as well."
         ]
     ]);
 }

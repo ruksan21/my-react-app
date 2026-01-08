@@ -14,6 +14,7 @@ import Contact from "./Home/Pages/Contact";
 import Assets from "./Home/Pages/Assets";
 import Activities from "./Home/Pages/Activities";
 import Works from "./Home/Pages/Works";
+import Notices from "./Home/Pages/Notices";
 import Departments from "./Home/Pages/Departments";
 import ProtectedRoute from "./Home/utils/ProtectedRoute";
 import AdminRoutes from "./Admin/AdminRoutes";
@@ -66,6 +67,7 @@ function App() {
           <Route path="/assets" element={<Assets />} />
           <Route path="/activities" element={<Activities />} />
           <Route path="/works" element={<Works />} />
+          <Route path="/notices" element={<Notices />} />
           <Route path="/departments" element={<Departments />} />
           <Route path="/contact" element={<Contact />} />
 

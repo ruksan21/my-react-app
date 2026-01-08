@@ -51,23 +51,28 @@ const DepartmentCard = ({ department, onEdit, onDelete }) => {
 };
 
 export default function OfficerDepartments() {
-  const { user } = useAuth();
+  const { getOfficerWorkLocation, user } = useAuth();
+  const workLocation = getOfficerWorkLocation();
   const [departments, setDepartments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch departments from backend
-  useEffect(() => {
-    if (user?.assigned_ward) {
-      fetchDepartments();
-    }
-  }, [user]);
-
-  const fetchDepartments = async () => {
+  const fetchDepartments = React.useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `${API_ENDPOINTS.alerts.manageDepartments}?ward_id=${user.assigned_ward}`
-      );
+      let url = `${API_ENDPOINTS.alerts.manageDepartments}`;
+      if (workLocation) {
+        const params = new URLSearchParams({
+          work_province: workLocation.work_province || "",
+          work_district: workLocation.work_district || "",
+          work_municipality: workLocation.work_municipality || "",
+          work_ward: String(workLocation.work_ward || ""),
+        });
+        url += `?${params.toString()}`;
+      } else {
+        url += `?ward_id=${user.assigned_ward}`;
+      }
+
+      const response = await fetch(url);
       const result = await response.json();
 
       if (result.success) {
@@ -78,7 +83,14 @@ export default function OfficerDepartments() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [workLocation, user?.assigned_ward, setDepartments, setIsLoading]);
+
+  // Fetch departments from backend
+  useEffect(() => {
+    if (workLocation || user?.assigned_ward) {
+      fetchDepartments();
+    }
+  }, [user, workLocation, fetchDepartments]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDept, setEditingDept] = useState(null);
@@ -129,17 +141,22 @@ export default function OfficerDepartments() {
     try {
       const method = editingDept ? "PUT" : "POST";
       const body = editingDept
-        ? { id: editingDept.id, ...formData }
-        : { ward_id: user.assigned_ward, officer_id: user.id, ...formData };
+        ? { id: editingDept.id, officer_id: user.id, ...formData }
+        : {
+            ward_id: 0,
+            officer_id: user.id,
+            ...formData,
+            work_province: workLocation?.work_province,
+            work_district: workLocation?.work_district,
+            work_municipality: workLocation?.work_municipality,
+            work_ward: workLocation?.work_ward,
+          };
 
-      const response = await fetch(
-        API_ENDPOINTS.alerts.manageDepartments,
-        {
-          method,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }
-      );
+      const response = await fetch(API_ENDPOINTS.alerts.manageDepartments, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 
       const result = await response.json();
       if (result.success) {
@@ -157,14 +174,11 @@ export default function OfficerDepartments() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this department?")) {
       try {
-        const response = await fetch(
-          API_ENDPOINTS.alerts.manageDepartments,
-          {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id }),
-          }
-        );
+        const response = await fetch(API_ENDPOINTS.alerts.manageDepartments, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, officer_id: user.id }),
+        });
 
         const result = await response.json();
         if (result.success) {

@@ -73,6 +73,34 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshSession = React.useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const response = await fetch(
+        `${API_ENDPOINTS.users.getAll}?id=${user.id}`
+      );
+      const data = await response.json();
+      if (data.success && data.data && data.data.length > 0) {
+        const dbUser = data.data[0];
+        // Only update if there's a meaningful change in location or ID
+        if (
+          dbUser.work_province !== user.work_province ||
+          dbUser.work_district !== user.work_district ||
+          dbUser.work_municipality !== user.work_municipality ||
+          dbUser.work_ward !== user.work_ward
+        ) {
+          const updatedUser = { ...user, ...dbUser };
+          setUser(updatedUser);
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          console.log("Session refreshed with latest DB location.");
+        }
+      }
+    } catch (error) {
+      console.error("Error refreshing session:", error);
+    }
+  }, [user]);
+
+  // Load initial data
   // Load initial data
   useEffect(() => {
     // 1. Load Current User
@@ -100,6 +128,13 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  // 3. Refresh session from DB to ensure latest location
+  useEffect(() => {
+    if (isLoggedIn && user?.id) {
+      refreshSession();
+    }
+  }, [refreshSession, isLoggedIn, user?.id]);
+
   // --- Auth Functions ---
 
   const login = (userData, workLocation = null) => {
@@ -120,12 +155,8 @@ export const AuthProvider = ({ children }) => {
     addNotification("success", "Login successfully");
   };
 
-  // Helper to get officer work location (robust to role casing and fallbacks)
-  const getOfficerWorkLocation = () => {
-    if (user?.workLocation) {
-      return user.workLocation;
-    }
-    // Fallback: read from user fields if present
+  // Memoized officer work location object
+  const officerWorkLocation = React.useMemo(() => {
     if (
       user?.work_province ||
       user?.work_district ||
@@ -141,8 +172,25 @@ export const AuthProvider = ({ children }) => {
         work_office_location: user?.work_office_location || null,
       };
     }
+    // Check old workLocation object if it exists (legacy/previous state)
+    if (user?.workLocation) {
+      return user.workLocation;
+    }
     return null;
-  };
+  }, [
+    user?.work_province,
+    user?.work_district,
+    user?.work_municipality,
+    user?.work_ward,
+    user?.work_office_location,
+    user?.workLocation,
+  ]);
+
+  // Getter function for backward compatibility
+  const getOfficerWorkLocation = React.useCallback(
+    () => officerWorkLocation,
+    [officerWorkLocation]
+  );
 
   const logout = () => {
     if (user) {
@@ -439,7 +487,9 @@ export const AuthProvider = ({ children }) => {
     createSystemAlert,
     hasRole,
     hasPermission,
-    getOfficerWorkLocation, // Helper for work location
+    getOfficerWorkLocation, // Exposed function for components
+    officerWorkLocation, // Memoized work location object
+    refreshSession,
   };
 
   if (loading) {

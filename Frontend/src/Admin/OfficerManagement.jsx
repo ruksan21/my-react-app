@@ -84,7 +84,7 @@ const OfficerManagement = () => {
             const response = await fetch(
               `${
                 API_ENDPOINTS.wards.base
-              }/check_ward_exists.php?province=${encodeURIComponent(
+              }/verify_ward_exists.php?province=${encodeURIComponent(
                 officer.work_province
               )}&district=${encodeURIComponent(
                 officer.work_district

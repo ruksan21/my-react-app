@@ -5,14 +5,25 @@ import "./Works.css";
 import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 
 const WorkCard = ({ work }) => {
+  // Format budget to ensure it's displayed properly
+  const formatBudget = (budget) => {
+    if (!budget) return "N/A";
+    const budgetStr = String(budget);
+    if (budgetStr.startsWith("Rs.")) return budgetStr;
+    // Add commas for readability
+    const num = parseFloat(budgetStr.replace(/[^0-9.]/g, ''));
+    if (isNaN(num)) return budgetStr;
+    return `Rs. ${num.toLocaleString('en-IN')}`;
+  };
+
   return (
     <div className="work-card">
       <div className="work-header">
         <div>
-          <div className="work-label">WORKS</div>
+          <div className="work-label">DEVELOPMENT WORK</div>
           <h3 className="work-title">{work.title}</h3>
           <p className="work-location">
-            {work.ward}, {work.municipality}
+            📍 {work.ward}, {work.municipality}
           </p>
         </div>
         <span className={`work-status status-${work.status.toLowerCase()}`}>
@@ -36,29 +47,45 @@ const WorkCard = ({ work }) => {
         />
       </div>
 
+      {/* Budget Highlight Section */}
+      <div className="work-budget-highlight">
+        <div className="budget-icon">💰</div>
+        <div className="budget-details">
+          <div className="budget-label">Project Budget</div>
+          <div className="budget-amount">{formatBudget(work.budget)}</div>
+        </div>
+      </div>
+
       <div className="work-stats-grid">
         <div className="stat-item">
-          <label>Start Date</label>
-          <div>{work.start_date || work.startDate || "N/A"}</div>
+          <label>📅 Start Date</label>
+          <div>{work.start_date || work.startDate || "Not specified"}</div>
         </div>
         <div className="stat-item">
-          <label>End Date</label>
-          <div>{work.end_date || work.endDate || "N/A"}</div>
+          <label>📅 End Date</label>
+          <div>{work.end_date || work.endDate || "Not specified"}</div>
         </div>
         <div className="stat-item">
-          <label>Budget</label>
-          <div>
-            {work.budget.startsWith("Rs.") ? work.budget : `Rs. ${work.budget}`}
-          </div>
+          <label>👥 Beneficiaries</label>
+          <div>{work.beneficiaries || "N/A"}</div>
         </div>
         <div className="stat-item">
-          <label>Beneficiaries</label>
-          <div>{work.beneficiaries}</div>
+          <label>📊 Status</label>
+          <div className="status-text">{work.status}</div>
         </div>
       </div>
 
       <div className="work-description">
+        <h4 className="description-title">Project Details</h4>
         <p>{work.description}</p>
+      </div>
+
+      {/* Notice Section */}
+      <div className="work-notice-section">
+        <div className="notice-icon">📢</div>
+        <div className="notice-text">
+          For official notices and updates related to this project, check the Ward Notices section.
+        </div>
       </div>
     </div>
   );

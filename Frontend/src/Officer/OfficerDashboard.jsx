@@ -14,7 +14,7 @@ const OfficerDashboard = () => {
       if (user && user.role === "officer" && workLocation) {
         try {
           const response = await fetch(
-            `http://localhost/my-react-app/Backend/api/wards/check_ward_exists.php?province=${encodeURIComponent(
+            `http://localhost/my-react-app/Backend/api/wards/verify_ward_exists.php?province=${encodeURIComponent(
               workLocation.work_province
             )}&district=${encodeURIComponent(
               workLocation.work_district

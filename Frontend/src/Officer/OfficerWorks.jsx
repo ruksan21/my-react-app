@@ -82,13 +82,7 @@ export default function OfficerWorks() {
   const [isLoading, setIsLoading] = useState(true);
   const [wardError, setWardError] = useState(null);
 
-  useEffect(() => {
-    if (workLocation) {
-      fetchWorks(workLocation);
-    }
-  }, [workLocation]);
-
-  const fetchWorks = (loc) => {
+  const fetchWorks = React.useCallback((loc) => {
     setIsLoading(true);
     const params = new URLSearchParams({
       work_province: loc.work_province,
@@ -100,16 +94,24 @@ export default function OfficerWorks() {
     fetch(url)
       .then((res) => res.json())
       .then((data) => {
-        // Ensure data is an array
-        const worksData = Array.isArray(data) ? data : [];
-        setWorks(worksData);
+        if (data.success) {
+          setWorks(data.data || []);
+        } else {
+          setWorks([]);
+        }
         setIsLoading(false);
       })
       .catch((err) => {
         console.error("Error fetching works:", err);
         setIsLoading(false);
       });
-  };
+  }, []);
+
+  useEffect(() => {
+    if (workLocation) {
+      fetchWorks(workLocation);
+    }
+  }, [workLocation, fetchWorks]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingWork, setEditingWork] = useState(null);
@@ -184,114 +186,123 @@ export default function OfficerWorks() {
     const formDataToSend = new FormData();
     formDataToSend.append("title", formData.title);
     formDataToSend.append("description", formData.description);
-    formDataToSend.append("status", formData.status);
     formDataToSend.append("budget", formData.budget);
     formDataToSend.append("start_date", formData.startDate);
     formDataToSend.append("end_date", formData.endDate);
     formDataToSend.append("beneficiaries", formData.beneficiaries);
-    formDataToSend.append("officer_id", user?.id || "");
+    formDataToSend.append("status", formData.status);
+    formDataToSend.append("officer_id", user.id);
+
+    // Add work ID for update
+    if (editingWork) {
+      formDataToSend.append("id", editingWork.id);
+    }
+
+    if (workLocation) {
+      formDataToSend.append("work_province", workLocation.work_province || "");
+      formDataToSend.append("work_district", workLocation.work_district || "");
+      formDataToSend.append(
+        "work_municipality",
+        workLocation.work_municipality || ""
+      );
+      formDataToSend.append("work_ward", String(workLocation.work_ward || ""));
+    }
 
     if (formData.imageFile) {
       formDataToSend.append("image", formData.imageFile);
     }
 
     try {
-      const response = await fetch(API_ENDPOINTS.works.add, {
+      const url = editingWork
+        ? `${API_ENDPOINTS.works.update}`
+        : `${API_ENDPOINTS.works.add}`;
+
+      const response = await fetch(url, {
         method: "POST",
         body: formDataToSend,
       });
 
       const data = await response.json();
-      console.log("Work add response:", data);
-      console.log("Officer ID:", user?.id);
-      console.log("Ward ID:", user?.assigned_ward);
-      
+
       if (response.status === 422) {
-        setWardError(data.message || "Ward not found. Ask admin to create this ward.");
+        setWardError(
+          data.message || "Ward not found. Ask admin to create this ward."
+        );
         handleCloseForm();
         return;
       }
-      
-      if (data.status === "success") {
+
+      if (data.success) {
         setWardError(null);
-        alert("Work saved successfully!");
+        alert(editingWork ? "Work updated successfully!" : "Work saved successfully!");
         fetchWorks(workLocation);
         handleCloseForm();
       } else {
         alert("Error: " + data.message);
       }
-    } catch (err) {
-      console.error("Error submitting work:", err);
-      alert("Failed to connect to server.");
+    } catch (error) {
+      console.error("Error saving work:", error);
+      alert("Failed to save work");
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this work?")) {
+    if (
+      window.confirm("Are you sure you want to delete this development work?")
+    ) {
       try {
         const response = await fetch(API_ENDPOINTS.works.delete, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            id: id,
-            officer_id: user?.id,
-          }),
+          body: JSON.stringify({ id }),
         });
 
         const data = await response.json();
-        if (data.status === "success") {
+        if (data.success) {
           alert("Work deleted successfully!");
-          fetchWorks(); // Refresh the works list
+          fetchWorks(workLocation);
         } else {
           alert("Error: " + data.message);
         }
-      } catch (err) {
-        console.error("Error deleting work:", err);
-        alert("Failed to delete work.");
+      } catch (error) {
+        console.error("Error deleting work:", error);
+        alert("Failed to delete work");
       }
     }
   };
 
   return (
     <OfficerLayout title="Development Works">
-      {wardError && (
-        <div style={{
-          background: "linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(239, 68, 68, 0.05))",
-          border: "2px solid rgba(220, 38, 38, 0.5)",
-          borderRadius: "12px",
-          padding: "16px 20px",
-          marginBottom: "20px",
-          color: "#dc2626",
-          fontWeight: 500,
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          backdropFilter: "blur(10px)"
-        }}>
-          <span style={{ fontSize: "24px" }}>⚠️</span>
-          <div>
-            <div style={{ fontWeight: 600, marginBottom: "4px" }}>Ward Not Found</div>
-            <div style={{ fontSize: "0.9em", opacity: 0.9 }}>{wardError}</div>
-          </div>
-        </div>
-      )}
       <div className="officer-works-header">
-        <p style={{ color: "#718096", margin: 0 }}>
-          Manage development works and projects for your ward
-        </p>
+        <div className="header-info">
+          <p style={{ color: "#718096", margin: 0 }}>
+            Manage and monitor development projects in your ward
+          </p>
+          {wardError && (
+            <div
+              className="ward-error-alert"
+              style={{
+                marginTop: "8px",
+                color: "#e53e3e",
+                fontSize: "0.875rem",
+              }}
+            >
+              ⚠️ {wardError}
+            </div>
+          )}
+        </div>
         <button className="btn-create-work" onClick={() => handleOpenForm()}>
-          + Create New Work
+          + Add New Work
         </button>
       </div>
 
-      {/* Form Modal */}
       {isFormOpen && (
         <div className="work-form-overlay">
           <div className="work-form-modal">
             <div className="form-modal-header">
-              <h2>{editingWork ? "Edit Work" : "Create New Work"}</h2>
+              <h2>{editingWork ? "Edit Project" : "Add New Project"}</h2>
               <button className="btn-close-modal" onClick={handleCloseForm}>
                 ✕
               </button>
@@ -300,167 +311,103 @@ export default function OfficerWorks() {
             <form onSubmit={handleSubmit} className="work-form">
               <div className="form-row">
                 <div className="form-group">
-                  <label>
-                    Title <span className="required">*</span>
-                  </label>
+                  <label>Project Title *</label>
                   <input
                     type="text"
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g., Road Repair Work"
+                    placeholder="e.g., Ward 4 Road Maintenance"
                   />
                 </div>
-
                 <div className="form-group">
-                  <label>
-                    Status <span className="required">*</span>
-                  </label>
+                  <label>Status *</label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    required
                   >
-                    <option value="pending">Pending</option>
-                    <option value="ongoing">Ongoing</option>
-                    <option value="completed">Completed</option>
+                    <option value="Upcoming">Upcoming</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Ongoing">Ongoing</option>
+                    <option value="Completed">Completed</option>
                   </select>
                 </div>
               </div>
 
               <div className="form-group">
-                <label>
-                  Description <span className="required">*</span>
-                </label>
+                <label>Description *</label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
                   required
-                  rows="3"
-                  placeholder="Describe the work project..."
+                  placeholder="Provide project details..."
                 />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>
-                    Fiscal Year <span className="required">*</span>
-                  </label>
+                  <label>Budget (Rs.) *</label>
                   <input
-                    type="text"
-                    name="fiscalYear"
-                    value={formData.fiscalYear}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="e.g., 2023/24"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    Allocated Budget (Rs.) <span className="required">*</span>
-                  </label>
-                  <input
-                    type="text"
+                    type="number"
                     name="budget"
                     value={formData.budget}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g., 20,00,000"
                   />
                 </div>
-              </div>
-
-              <div className="form-row">
                 <div className="form-group">
-                  <label>
-                    Start Date <span className="required">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="YYYY/MM/DD"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    End Date <span className="required">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="YYYY/MM/DD"
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Contractor Name</label>
-                  <input
-                    type="text"
-                    name="contractorName"
-                    value={formData.contractorName}
-                    onChange={handleInputChange}
-                    placeholder="e.g., ABC Construction Pvt. Ltd."
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    Beneficiaries <span className="required">*</span>
-                  </label>
+                  <label>Beneficiaries *</label>
                   <input
                     type="text"
                     name="beneficiaries"
                     value={formData.beneficiaries}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g., 5,000"
+                    placeholder="e.g., 500+ households"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Start Date</label>
+                  <input
+                    type="date"
+                    name="startDate"
+                    value={formData.startDate}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>End Date</label>
+                  <input
+                    type="date"
+                    name="endDate"
+                    value={formData.endDate}
+                    onChange={handleInputChange}
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Work Image</label>
-                <div className="image-upload-container">
+                <label>Project Image</label>
+                <div className="image-upload-wrapper">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageChange}
-                    className="file-input"
-                    id="work-image-upload"
                   />
-                  <label
-                    htmlFor="work-image-upload"
-                    className="file-upload-label"
-                  >
-                    <span className="upload-icon">📷</span>
-                    <span>
-                      {formData.imageFile
-                        ? formData.imageFile.name
-                        : "Choose Image"}
-                    </span>
-                  </label>
                   {formData.image && (
-                    <div className="image-preview">
-                      <img src={formData.image} alt="Preview" />
-                    </div>
+                    <img
+                      src={formData.image}
+                      alt="Preview"
+                      className="image-preview"
+                    />
                   )}
                 </div>
-                <small style={{ color: "#718096", fontSize: "0.85rem" }}>
-                  Upload an image or leave blank for default
-                </small>
               </div>
 
               <div className="form-actions">
@@ -472,7 +419,7 @@ export default function OfficerWorks() {
                   Cancel
                 </button>
                 <button type="submit" className="btn-submit">
-                  {editingWork ? "Update Work" : "Create Work"}
+                  {editingWork ? "Update Project" : "Save Project"}
                 </button>
               </div>
             </form>
@@ -480,13 +427,12 @@ export default function OfficerWorks() {
         </div>
       )}
 
-      {/* Works List */}
-      <div className="works-list">
+      <div className="works-grid">
         {isLoading ? (
           <div className="loading-state">Loading works...</div>
         ) : works.length === 0 ? (
           <div className="empty-state">
-            <p>No works created yet. Click "Create New Work" to get started.</p>
+            <p>No development works found for your ward.</p>
           </div>
         ) : (
           works.map((work) => (

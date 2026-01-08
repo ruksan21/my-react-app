@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../db_connect.php';
-require_once '../wards/resolve_ward_id.php';
+require_once '../wards/find_ward_by_location.php';
 
 $ward_id = isset($_GET['ward_id']) ? intval($_GET['ward_id']) : null;
 $ward_number = isset($_GET['ward_number']) ? intval($_GET['ward_number']) : null;
@@ -93,7 +93,7 @@ if ($result && $result->num_rows > 0) {
     }
 }
 
-echo json_encode($works);
+echo json_encode(["success" => true, "data" => $works]);
 
 $conn->close();
 ?>

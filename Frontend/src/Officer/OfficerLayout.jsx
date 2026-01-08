@@ -6,8 +6,9 @@ import { useAuth } from "../Home/Context/AuthContext";
 
 const OfficerLayout = ({ children, title }) => {
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout, user, getOfficerWorkLocation } = useAuth();
   const navigate = useNavigate();
+  const workLocation = getOfficerWorkLocation();
 
   const handleLogout = () => {
     logout();
@@ -23,6 +24,8 @@ const OfficerLayout = ({ children, title }) => {
     { path: "/officer/assets", label: "Ward Assets", icon: "📦" },
     { path: "/officer/complaints", label: "Complaints", icon: "📢" },
     { path: "/officer/notices", label: "Notices", icon: "📌" },
+    { path: "/officer/activities", label: "Activities", icon: "📅" },
+    { path: "/officer/social-media", label: "Social Media", icon: "🌐" },
   ];
 
   return (
@@ -32,19 +35,21 @@ const OfficerLayout = ({ children, title }) => {
           <span>👮</span> Officer Panel
         </div>
         <div className="ward-info">
-          <div className="location-label">📍 Assigned Location</div>
+          <div className="location-label">📍 ASSIGNED LOCATION</div>
           <div className="location-detail">
-            {user?.province || "Bagmati Province"}
+            {workLocation?.work_province || "Province Not Set"}
           </div>
-          <div className="location-detail">{user?.district || "Kathmandu"}</div>
+          <div className="location-detail">
+            {workLocation?.work_district || "District Not Set"}
+          </div>
           <div
             className="location-detail"
             style={{ fontWeight: 600, color: "#3b82f6" }}
           >
-            {user?.city || "Kathmandu Metropolitan City"}
+            {workLocation?.work_municipality || "Municipality Not Set"}
           </div>
           <div className="location-ward">
-            Ward No. {user?.assigned_ward || user?.ward || "1"}
+            Ward No. {workLocation?.work_ward || "N/A"}
           </div>
         </div>
         <nav className="admin-nav">

@@ -23,7 +23,17 @@ const Works = ({ wardId: propWardId }) => {
     )
       .then((res) => res.json())
       .then((data) => {
-        setWorks(Array.isArray(data) ? data : []);
+        console.log("Works API Response:", data); // Debug log
+        console.log("Ward ID used:", wardId); // Debug log
+        
+        // Handle both response formats: direct array or {success: true, data: []}
+        if (data.success && Array.isArray(data.data)) {
+          setWorks(data.data);
+        } else if (Array.isArray(data)) {
+          setWorks(data);
+        } else {
+          setWorks([]);
+        }
         setLoading(false);
       })
       .catch((err) => {
