@@ -82,9 +82,12 @@ export default function Contact() {
           });
           // Only add district if it exists
           if (w.district) {
-            params.append('district', w.district);
+            params.append("district", w.district);
           }
-          console.log("Contact: Fetching social media with params:", params.toString());
+          console.log(
+            "Contact: Fetching social media with params:",
+            params.toString()
+          );
           fetch(`${API_ENDPOINTS.socialMedia.get}?${params}`)
             .then((res) => res.json())
             .then((socialData) => {
@@ -96,7 +99,10 @@ export default function Contact() {
                   twitter: socialData.data.twitter || "",
                   whatsapp: socialData.data.whatsapp || "",
                 });
-                console.log("Contact: Social media state updated:", socialData.data);
+                console.log(
+                  "Contact: Social media state updated:",
+                  socialData.data
+                );
               }
             })
             .catch((err) => console.error("Error fetching social media:", err));
@@ -123,57 +129,81 @@ export default function Contact() {
     subject: "",
     message: "",
     priority: "Medium",
+    file: null, // Add file state
   });
   const [formStatus, setFormStatus] = useState(null);
 
   function handleInputChange(e) {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, files } = e.target;
+    if (name === "file") {
+      setFormData((prev) => ({ ...prev, file: files[0] }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   }
 
   function handleSubmit(e) {
     e.preventDefault();
-    // Send to backend API (if available).
-    // If subject === 'complaint' the message should go to officer complaints endpoint.
-    // PHP endpoint examples (implement server-side):
-    // POST /api/complaints.php  { ward, municipality, fullName, email, phone, subject, message }
-    // POST /api/messages.php    { ward, municipality, fullName, email, phone, subject, message }
 
-    const payload = {
-      ward: selectedWard,
-      municipality: selectedMunicipality,
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      subject: formData.subject,
-      priority: formData.priority,
-      message: formData.message,
-      userId: user?.id,
-      created_at: new Date().toISOString(),
-    };
+    setFormStatus({
+      type: "loading",
+      message: "Sending...",
+    });
 
-    const endpoint =
-      formData.subject === "complaint"
-        ? "/api/communication/submit_complaint.php"
-        : "/api/messages.php";
-
-    setFormStatus({ type: "loading", message: "Sending..." });
-
-    // Try to POST to the backend. If no backend exists yet, falls back to frontend-only behavior.
     (async () => {
       try {
+        // Use FormData for file upload
+        const payload = new FormData();
+        payload.append("ward_id", wardId);
+        payload.append("ward", selectedWard);
+        payload.append("municipality", selectedMunicipality);
+        payload.append("fullName", formData.fullName);
+        payload.append("email", formData.email);
+        payload.append("phone", formData.phone);
+        payload.append("subject", formData.subject);
+        payload.append("priority", formData.priority);
+        payload.append("message", formData.message);
+        if (user?.id) {
+          payload.append("userId", user.id);
+        }
+        if (formData.file) {
+          payload.append("image", formData.file);
+        }
+
+        const endpoint = API_ENDPOINTS.communication.submitComplaint;
+
         const res = await fetch(endpoint, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: payload,
         });
 
         if (!res.ok) {
-          throw new Error(`Server responded ${res.status}`);
+          const errorText = await res.text();
+          throw new Error(`Server responded ${res.status}: ${errorText}`);
         }
 
-        // Optional: server may return { success: true, id: NEW_ID }
-        setFormStatus({ type: "success", message: "Message sent." });
+        const data = await res.json();
+        
+        if (!data.success) {
+          // Check if it's because no officer exists
+          if (data.no_officer) {
+            setFormStatus({
+              type: "error",
+              message: data.message || "No officer is currently assigned to this ward. Please contact the municipality office directly.",
+            });
+          } else {
+            throw new Error(data.message || "Submission failed");
+          }
+          setTimeout(() => setFormStatus(null), 5000);
+          return;
+        }
+
+        setFormStatus({
+          type: "success",
+          message: data.message || "Message sent successfully!",
+        });
+        
+        // Reset form
         setFormData({
           fullName: "",
           email: "",
@@ -181,16 +211,21 @@ export default function Contact() {
           subject: "",
           message: "",
           priority: "Medium",
+          file: null,
         });
-        setTimeout(() => setFormStatus(null), 3000);
-      } catch {
-        // If API not available, still keep frontend behavior but show warning.
+        
+        // Reset file input
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) fileInput.value = '';
+        
+        setTimeout(() => setFormStatus(null), 4000);
+      } catch (err) {
+        console.error("Contact form error:", err);
         setFormStatus({
-          type: "warning",
-          message:
-            "Could not reach server — message saved locally in frontend (no backend).",
+          type: "error",
+          message: err.message || "Error occurred. Please try again.",
         });
-        setTimeout(() => setFormStatus(null), 3500);
+        setTimeout(() => setFormStatus(null), 5000);
       }
     })();
   }
@@ -379,6 +414,49 @@ export default function Contact() {
                     {formData.message.length}/500
                   </div>
                 </div>
+                
+                {/* File Upload with better design */}
+                <div className="form-group">
+                  <label>
+                    📎 Attach Image (Optional)
+                    <small style={{ marginLeft: "8px", color: "#666", fontWeight: "normal" }}>
+                      (JPG, PNG, GIF - Max 5MB)
+                    </small>
+                  </label>
+                  <div className="file-upload-wrapper">
+                    <input
+                      type="file"
+                      name="file"
+                      id="fileInput"
+                      accept="image/jpeg,image/png,image/gif"
+                      onChange={handleInputChange}
+                      className="file-input-hidden"
+                    />
+                    <label htmlFor="fileInput" className="file-input-label">
+                      <i className="fa-solid fa-cloud-arrow-up"></i>
+                      {formData.file ? (
+                        <span className="file-selected">
+                          ✓ {formData.file.name}
+                        </span>
+                      ) : (
+                        <span>Click to upload image</span>
+                      )}
+                    </label>
+                    {formData.file && (
+                      <button
+                        type="button"
+                        className="file-remove-btn"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, file: null }));
+                          document.getElementById('fileInput').value = '';
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
                 <button
                   type="submit"
                   className="submit-btn"
@@ -389,7 +467,9 @@ export default function Contact() {
                       <span className="spinner"></span> Sending...
                     </>
                   ) : (
-                    <>✈️ Send Message</>
+                    <>
+                      <i className="fa-solid fa-paper-plane"></i> Send Message
+                    </>
                   )}
                 </button>
               </form>

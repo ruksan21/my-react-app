@@ -1,16 +1,15 @@
 import React, { createContext, useContext, useState } from "react";
 // import axios from 'axios'; // पछि axios प्रयोग गर्दा सजिलो हुन्छ
 import { API_ENDPOINTS } from "../../config/api";
+import { useAuth } from "./AuthContext";
 
 const WardContext = createContext(null);
 
 export function WardProvider({ children }) {
   // सुरुमा खाली वा डिफल्ट डाटा राख्ने
-  const [municipality, setMunicipality] = useState(
-    "Kathmandu Metropolitan City"
-  );
-  const [ward, setWard] = useState(1);
-  const [wardId, setWardId] = useState(1); // Track database ID
+  const [municipality, setMunicipality] = useState("");
+  const [ward, setWard] = useState(null);
+  const [wardId, setWardId] = useState(null); // No default - must be set explicitly
   const [stats, setStats] = useState({
     followers: 0,
     rating: 0,
@@ -20,8 +19,26 @@ export function WardProvider({ children }) {
     isFollowing: false,
   });
 
+  const { wards } = useAuth();
+
+  // Set default ward if none selected
+  React.useEffect(() => {
+    if (!wardId && wards && wards.length > 0) {
+      // Default to the first ward in the list
+      const defaultWard = wards[0];
+      setMunicipality(defaultWard.municipality);
+      setWard(defaultWard.number);
+      setWardId(defaultWard.id);
+    }
+  }, [wardId, wards]);
+
   const refreshStats = (currentWardId, followerId) => {
-    // We use the ID for fetching stats
+    // Don't fetch if no ward is selected
+    if (!currentWardId) {
+      console.warn("No ward selected, skipping stats refresh");
+      return;
+    }
+
     const followerParam = followerId ? `&follower_id=${followerId}` : "";
     fetch(
       `${API_ENDPOINTS.stats.getProfileStats}?ward_id=${currentWardId}${followerParam}`

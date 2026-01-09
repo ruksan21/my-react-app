@@ -46,7 +46,8 @@ try {
               SET facebook_url = ?, 
                   instagram_url = ?, 
                   twitter_url = ?, 
-                  whatsapp_url = ?
+                  whatsapp_url = ?,
+                  updated_at = NOW()
               WHERE province = ? 
                 AND municipality = ? 
                 AND ward_number = ?";

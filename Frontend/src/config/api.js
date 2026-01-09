@@ -41,6 +41,7 @@ export const API_ENDPOINTS = {
     toggleFollow: `${BASE_URL}/officers/toggle_follow.php`,
     getChairpersonProfile: `${BASE_URL}/officers/get_chairperson_profile.php`,
     updateChairpersonProfile: `${BASE_URL}/officers/update_chairperson_profile.php`,
+    getByWard: `${BASE_URL}/officers/get_officers_by_ward.php`,
   },
 
   // Asset & Budget Management
@@ -65,6 +66,8 @@ export const API_ENDPOINTS = {
     updateComplaintStatus: `${BASE_URL}/communication/update_complaint_status.php`,
     getFeedback: `${BASE_URL}/communication/get_feedback.php`,
     addFeedback: `${BASE_URL}/communication/add_feedback.php`,
+    getReviews: `${BASE_URL}/communication/get_reviews.php`,
+    addReview: `${BASE_URL}/communication/add_review.php`,
   },
 
   // Alerts & Notices
@@ -98,6 +101,7 @@ export const API_ENDPOINTS = {
     get: `${BASE_URL}/notifications/get_notifications.php`,
     markAsRead: `${BASE_URL}/notifications/mark_as_read.php`,
     markAllAsRead: `${BASE_URL}/notifications/mark_all_as_read.php`,
+    clear: `${BASE_URL}/notifications/clear_notifications.php`,
   },
 
   // Helper for uploads directory

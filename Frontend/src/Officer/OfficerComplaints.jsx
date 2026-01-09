@@ -5,8 +5,8 @@ import "./OfficerComplaints.css";
 import { API_ENDPOINTS } from "../config/api";
 
 const OfficerComplaints = () => {
-  const { user } = useAuth();
-  const wardId = user?.assigned_ward || user?.ward;
+  const { user, getOfficerWorkLocation } = useAuth();
+  const workLocation = getOfficerWorkLocation();
   const [complaints, setComplaints] = useState([]);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState({
@@ -39,6 +39,7 @@ const OfficerComplaints = () => {
 
   const handleReportSubmit = async (e) => {
     e.preventDefault();
+    if (!workLocation) return;
     try {
       const res = await fetch(
         `${API_ENDPOINTS.communication.submitComplaint}`,
@@ -46,9 +47,11 @@ const OfficerComplaints = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ward: wardId,
-            fullName: user.name || "Officer",
-            userId: user.id || user.officer_id,
+            province: workLocation.work_province,
+            municipality: workLocation.work_municipality,
+            ward: workLocation.work_ward,
+            fullName: user.first_name + " " + (user.last_name || ""),
+            userId: user.id,
             subject: reportData.subject,
             message: reportData.message,
             priority: reportData.priority,
@@ -68,14 +71,20 @@ const OfficerComplaints = () => {
   };
 
   useEffect(() => {
-    if (!wardId) return;
+    if (!workLocation) return;
 
     // Fetch complaints from backend
     (async () => {
       try {
-        // Filter by ward AND ensure we only see citizen complaints (not our own reports to admin)
+        const params = new URLSearchParams({
+          province: workLocation.work_province,
+          municipality: workLocation.work_municipality,
+          ward: workLocation.work_ward,
+          source: "citizen",
+        }).toString();
+
         const res = await fetch(
-          `${API_ENDPOINTS.communication.getComplaints}?ward_id=${wardId}&source=citizen`
+          `${API_ENDPOINTS.communication.getComplaints}?${params}`
         );
         if (!res.ok) return;
         const data = await res.json();
@@ -84,7 +93,7 @@ const OfficerComplaints = () => {
         console.warn("Could not fetch complaints from server");
       }
     })();
-  }, [wardId]);
+  }, [workLocation]);
 
   return (
     <OfficerLayout title="Complaints">

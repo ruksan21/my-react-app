@@ -58,10 +58,15 @@ const StarRating = ({ rating, reviews }) => {
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("Details");
-  const { ward, wardId, stats, refreshStats } = useWard(); // Get global stats and refresh function
+  const { ward, wardId, stats, refreshStats } = useWard();
   const [isFollowing, setIsFollowing] = useState(false);
-  const [profileData, setProfileData] = useState(defaultProfileData);
+  const [profileData, setProfileData] = useState({
+    ...defaultProfileData,
+    wardId: wardId,
+  });
   const [personalAssets, setPersonalAssets] = useState([]);
+  const [reviewsList, setReviewsList] = useState([]);
+  const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
 
   const handleImageError = (e) => {
     if (profileData.photoFileName && !e.target.dataset.fallbackTried) {
@@ -81,10 +86,14 @@ const Profile = () => {
   }, [stats.isFollowing]);
 
   useEffect(() => {
+    // Don't fetch if no ward is selected
+    if (!wardId) {
+      console.warn("No ward selected, skipping profile fetch");
+      return;
+    }
+
     // Fetch chairperson profile data from ward database using selected ward ID
-    fetch(
-      `${API_ENDPOINTS.officers.getChairpersonProfile}?ward_id=${wardId}`
-    )
+    fetch(`${API_ENDPOINTS.officers.getChairpersonProfile}?ward_id=${wardId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data) {
@@ -121,6 +130,7 @@ const Profile = () => {
               }`,
             },
             wardId: wardData.ward_id,
+            officerId: wardData.officer_user_id,
           });
         }
       })
@@ -131,10 +141,11 @@ const Profile = () => {
     const followerId = user ? user.id : null;
     refreshStats(wardId || 1, followerId);
 
+    // Don't fetch if no ward is selected
+    if (!wardId) return;
+
     // Fetch personal assets
-    fetch(
-      `${API_ENDPOINTS.assets.manageChairpersonAssets}?ward_id=${wardId}`
-    )
+    fetch(`${API_ENDPOINTS.assets.manageChairpersonAssets}?ward_id=${wardId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -142,7 +153,58 @@ const Profile = () => {
         }
       })
       .catch((err) => console.error("Error fetching personal assets:", err));
-  }, [wardId, refreshStats]); // Re-fetch when wardId or refreshStats changes
+  }, [wardId, refreshStats]);
+
+  useEffect(() => {
+    // Only fetch reviews if a ward is selected and Reviews tab is active
+    if (activeTab === "Reviews" && wardId) {
+      fetch(`${API_ENDPOINTS.communication.getReviews}?ward_id=${wardId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setReviewsList(data.data);
+          }
+        })
+        .catch((err) => console.error(err));
+    }
+  }, [activeTab, wardId]);
+
+  const handleReviewSubmit = (e) => {
+    e.preventDefault();
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) {
+      alert("Please login to review.");
+      return;
+    }
+
+    fetch(API_ENDPOINTS.communication.addReview, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ward_id: wardId,
+        user_id: user.id,
+        rating: newReview.rating,
+        comment: newReview.comment,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          alert("Review added!");
+          setNewReview({ rating: 5, comment: "" });
+          // Refresh reviews
+          fetch(`${API_ENDPOINTS.communication.getReviews}?ward_id=${wardId}`)
+            .then((res) => res.json())
+            .then((d) => {
+              if (d.success) setReviewsList(d.data);
+              // Refresh global stats to update rating header
+              refreshStats(wardId, user.id);
+            });
+        } else {
+          alert(data.message);
+        }
+      });
+  };
 
   const handleFollow = () => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -154,23 +216,19 @@ const Profile = () => {
     }
 
     if (user.role !== "citizen") {
-      alert("Only citizens can follow officers.");
+      alert("Only citizens can follow.");
       return;
     }
 
-    if (!profileData.officerId) {
-      alert("No officer accounts connected to this ward.");
-      return;
-    }
-
-    // Call backend API to persistence follow action
+    // Call backend API to persistence follow action (supports both Officer and Ward following)
     fetch(API_ENDPOINTS.officers.toggleFollow, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        officer_id: profileData.officerId,
+        officer_id: profileData.officerId || null,
+        ward_id: profileData.wardId || wardId,
         follower_id: user.id,
       }),
     })
@@ -179,6 +237,7 @@ const Profile = () => {
         if (data.success) {
           // Trigger global stats refresh!
           refreshStats(ward || 1, user.id);
+          setIsFollowing(!isFollowing);
         } else {
           alert(data.message || "Failed to update follow status.");
         }
@@ -336,6 +395,104 @@ const Profile = () => {
       return <Activities embedded={true} />;
     }
 
+    if (activeTab === "Reviews") {
+      return (
+        <div className="reviews-grid">
+          {/* Left Column: Write a Review Form */}
+          <div className="review-form-card">
+            <div className="review-form-header">
+              <h3>Write a Review</h3>
+            </div>
+            <form onSubmit={handleReviewSubmit}>
+              <div className="form-group">
+                <label className="form-label">Rating</label>
+                <select
+                  value={newReview.rating}
+                  onChange={(e) =>
+                    setNewReview({
+                      ...newReview,
+                      rating: parseInt(e.target.value),
+                    })
+                  }
+                  className="form-select"
+                >
+                  <option value="5">5 stars (Excellent)</option>
+                  <option value="4">4 stars (Good)</option>
+                  <option value="3">3 stars (Average)</option>
+                  <option value="2">2 stars (Poor)</option>
+                  <option value="1">1 star (Bad)</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Your Experience</label>
+                <textarea
+                  placeholder="Share your experience clearly..."
+                  value={newReview.comment}
+                  onChange={(e) =>
+                    setNewReview({ ...newReview, comment: e.target.value })
+                  }
+                  className="form-textarea"
+                  required
+                />
+              </div>
+              <button type="submit" className="submit-review-btn">
+                Submit Review
+              </button>
+            </form>
+          </div>
+
+          {/* Right Column: Reviews List */}
+          <div className="reviews-container">
+            <h3>
+              Recent Reviews
+              <span
+                style={{
+                  fontSize: "14px",
+                  color: "#6b7280",
+                  fontWeight: "normal",
+                }}
+              >
+                ({reviewsList.length})
+              </span>
+            </h3>
+
+            {reviewsList.length === 0 ? (
+              <div className="no-reviews">
+                <p>No reviews yet. Be the first to review!</p>
+              </div>
+            ) : (
+              reviewsList.map((review) => (
+                <div key={review.id} className="review-card">
+                  <div className="review-card-header">
+                    <div className="reviewer-info">
+                      <div className="reviewer-avatar">
+                        {review.first_name
+                          ? review.first_name.charAt(0).toUpperCase()
+                          : "U"}
+                      </div>
+                      <div className="reviewer-details">
+                        <h4>
+                          {review.first_name} {review.last_name}
+                        </h4>
+                        <div className="review-date">
+                          {new Date(review.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="review-stars">
+                      {"★".repeat(parseInt(review.rating))}
+                      {"☆".repeat(5 - parseInt(review.rating))}
+                    </div>
+                  </div>
+                  <p className="review-comment">{review.comment}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      );
+    }
+
     if (activeTab === "Personal Property") {
       return (
         <div className="info-section">
@@ -437,11 +594,24 @@ const Profile = () => {
     );
   };
 
+  // Show select prompt if no wardId
+  if (!wardId) {
+    return (
+      <div
+        className="profile-container"
+        style={{ textAlign: "center", padding: "50px" }}
+      >
+        <h2>Please Select a Ward</h2>
+        <p>Use the ward selector at the top right to view ward details.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="profile-container">
       {/* Notice Popup */}
       <NoticePopup />
-      
+
       {/* Profile Header */}
       <div className="profile-header">
         <div className="profile-header-left">
@@ -482,6 +652,7 @@ const Profile = () => {
             "Works",
             "Assets",
             "Activities",
+            "Reviews",
             "Dashboard",
           ].map((tab) => (
             <button

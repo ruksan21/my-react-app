@@ -29,7 +29,14 @@ $query = "SELECT
     w.chairperson_appointment_date,
     w.chairperson_bio,
     w.chairperson_photo,
-    d.name as district_name
+    d.name as district_name,
+    (SELECT u.id 
+     FROM users u 
+     WHERE u.work_ward = w.ward_number 
+     AND u.work_municipality = w.municipality
+     AND u.role = 'officer' 
+     AND u.status = 'approved'
+     LIMIT 1) as officer_user_id
 FROM wards w
 INNER JOIN districts d ON w.district_id = d.id
 WHERE w.id = $ward_id";

@@ -3,8 +3,9 @@ import Navbar from "../Nav/Navbar";
 import { useWard } from "../Context/WardContext";
 import "./Notices.css";
 import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
+import NoticePopup from "../Component/NoticePopup";
 
-const NoticeCard = ({ notice }) => {
+const NoticeCard = ({ notice, onClick }) => {
   const isExpired = (expiryDate) => {
     if (!expiryDate) return false;
     return new Date(expiryDate) < new Date();
@@ -12,138 +13,58 @@ const NoticeCard = ({ notice }) => {
 
   const expired = isExpired(notice.expiry_date);
 
-  const renderAttachment = (attachment) => {
-    if (!attachment) return null;
-    
-    let url = attachment;
-    if (attachment && attachment.startsWith("uploads")) {
-      const cleaned = attachment.replace(/^\/?uploads\/?/, "");
-      url = `${API_ENDPOINTS.uploads}/${cleaned}`;
-    }
-    
-    const lower = (attachment || "").toLowerCase();
-    const isImage = [".png", ".jpg", ".jpeg", ".gif", ".webp"].some((ext) =>
-      lower.endsWith(ext)
-    );
-    
-    return (
-      <div className="notice-attachment">
-        {isImage ? (
-          <img src={url} alt="Notice attachment" className="notice-attachment-img" />
-        ) : (
-          <a
-            href={url}
-            target="_blank"
-            rel="noreferrer"
-            className="attachment-link"
-          >
-            📎 View attachment
-          </a>
-        )}
-      </div>
-    );
-  };
-
-  const renderDocument = (document) => {
-    if (!document) return null;
-    
-    let url = document;
-    if (document && document.startsWith("uploads")) {
-      const cleaned = document.replace(/^\/?uploads\/?/, "");
-      url = `${API_ENDPOINTS.uploads}/${cleaned}`;
-    }
-    
-    return (
-      <div className="notice-document">
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="document-link"
-        >
-          📄 View document
-        </a>
-      </div>
-    );
-  };
-
   return (
-    <div className={`notice-card ${expired ? 'expired' : 'active'}`}>
-      <div className="notice-header">
-        <div>
-          <div className={`notice-label ${expired ? 'expired-label' : 'active-label'}`}>
-            {expired ? '🔴 EXPIRED NOTICE' : '🟢 ACTIVE NOTICE'}
-          </div>
-          <h3 className="notice-title">{notice.title}</h3>
-          <p className="notice-date">
-            📅 Published: {notice.published_date || new Date(notice.created_at).toLocaleDateString()}
-            {notice.expiry_date && (
-              <span className={`expiry-date ${expired ? 'expired-text' : ''}`}>
-                {' '}• {expired ? 'Expired on' : 'Expires on'}: {notice.expiry_date}
-              </span>
-            )}
-          </p>
+    <div
+      className={`notice-card-v2 ${expired ? "expired" : "active"}`}
+      onClick={() => onClick(notice)}
+    >
+      <div className="notice-card-header">
+        <div className="notice-type-tag">Official Notice</div>
+        <div className="notice-date-v2">
+          {new Date(
+            notice.published_date || notice.created_at
+          ).toLocaleDateString()}
         </div>
-        <span className="notice-badge">
-          📢
-        </span>
       </div>
 
-      {notice.attachment && renderAttachment(notice.attachment)}
-      {notice.document && renderDocument(notice.document)}
+      <h3 className="notice-card-title-v2">{notice.title}</h3>
 
-      <div className="notice-content">
-        <p>{notice.content}</p>
+      <p className="notice-card-excerpt">
+        {notice.content || notice.description}
+      </p>
+
+      <div className="notice-card-footer-v2">
+        <button className="read-more-btn">
+          View Details <span>→</span>
+        </button>
+        {expired && <span className="expired-badge-v2">Expired</span>}
       </div>
     </div>
   );
 };
 
-export default function Notices({ embedded = false, wardId }) {
+export default function Notices({ embedded = false, wardId: propWardId }) {
   const { municipality, ward } = useWard();
   const [notices, setNotices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedNotice, setSelectedNotice] = useState(null);
+
+  // Use either the provided propWardId or the ward from context
+  const targetWardId = propWardId || ward;
 
   useEffect(() => {
     setIsLoading(true);
-    let url = API_ENDPOINTS.alerts.manageNotices;
+    // Build URL with ward_id
+    const url = `${API_ENDPOINTS.alerts.manageNotices}?ward_id=${
+      targetWardId || ""
+    }`;
 
-    // Construct query parameters
-    const params = new URLSearchParams();
-
-    if (wardId) {
-      // If specific ward ID provided (e.g. Profile page), use strict ID filter
-      params.append("ward_id", wardId);
-    } else {
-      // For public pages, we'll need to resolve ward from context
-      // This might need backend support for ward_number + municipality filter
-      if (wardId) {
-        params.append("ward_id", wardId);
-      }
-    }
-
-    const queryString = params.toString();
-    if (queryString) {
-      url += "?" + queryString;
-    }
-
-    if (wardId) {
+    if (targetWardId) {
       fetch(url)
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.data) {
-            // Filter notices - show active ones and recently expired ones (within 7 days)
-            const now = new Date();
-            const filteredNotices = data.data.filter(notice => {
-              if (!notice.expiry_date) return true; // No expiry, always show
-              
-              const expiryDate = new Date(notice.expiry_date);
-              const daysSinceExpiry = (now - expiryDate) / (1000 * 60 * 60 * 24);
-              
-              // Show if not expired OR expired within last 7 days
-              return daysSinceExpiry <= 7;
-            });
-            setNotices(Array.isArray(filteredNotices) ? filteredNotices : []);
+            setNotices(data.data);
           } else {
             setNotices([]);
           }
@@ -155,33 +76,25 @@ export default function Notices({ embedded = false, wardId }) {
           setIsLoading(false);
         });
     } else {
-      // If no wardId, we can't fetch notices yet
-      setNotices([]);
       setIsLoading(false);
     }
-  }, [ward, municipality, wardId]);
+  }, [targetWardId]);
 
   return (
     <>
       {!embedded && <Navbar showHomeContent={false} />}
-      <div className={`notices-page ${embedded ? "embedded" : ""}`}>
-        {embedded && (
-          <div className="embedded-header" style={{ marginBottom: 12 }}>
-            <span className="embedded-pin">📍</span>
-            <span className="embedded-title">
-              {municipality} - Ward {ward}
-            </span>
-          </div>
-        )}
-
+      <div className={`notices-page-v2 ${embedded ? "embedded" : ""}`}>
         {!embedded && (
-          <div className="section-header">
-            <span className="section-pin">📢</span>
-            <span className="section-title">Ward Notices</span>
+          <div className="notices-hero">
+            <h1>Ward Notices & Alerts</h1>
+            <p>
+              Official announcements and updates from {municipality}, Ward{" "}
+              {ward}
+            </p>
           </div>
         )}
 
-        <div className="notices-list">
+        <div className="notices-grid">
           {isLoading ? (
             <div className="loading-state">Loading notices...</div>
           ) : notices.length === 0 ? (
@@ -189,11 +102,25 @@ export default function Notices({ embedded = false, wardId }) {
               No notices published for this ward yet.
             </div>
           ) : (
-            notices.map((notice) => <NoticeCard key={notice.id} notice={notice} />)
+            notices.map((notice) => (
+              <NoticeCard
+                key={notice.id}
+                notice={notice}
+                onClick={(n) => setSelectedNotice(n)}
+              />
+            ))
           )}
         </div>
-        <div className="notices-note">
-          These notices are officially published by Ward Officers.
+
+        {selectedNotice && (
+          <NoticePopup
+            notice={selectedNotice}
+            onClose={() => setSelectedNotice(null)}
+          />
+        )}
+
+        <div className="notices-footer-note">
+          Verified official communication from Ward {ward} Office.
         </div>
       </div>
     </>

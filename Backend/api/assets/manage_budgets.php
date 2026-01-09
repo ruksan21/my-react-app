@@ -126,7 +126,9 @@ else if ($method === 'POST') {
 
     // Verify access
     if (!verifyWardAccess($conn, $officer_id, $ward_id)) {
-        sendUnauthorizedResponse();
+        http_response_code(403);
+        echo json_encode(["success" => false, "message" => "Unauthorized access to this ward"]);
+        exit();
     }
     
     // Check if budget exists for this ward

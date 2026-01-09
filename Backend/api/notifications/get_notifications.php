@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 try {
     $userId = $_GET['user_id'] ?? null;
+    $wardId = $_GET['ward_id'] ?? null;
     
     if (!$userId) {
         echo json_encode([
@@ -22,8 +23,8 @@ try {
         exit();
     }
 
-    // Get notifications for user
-    $query = "SELECT id, title, message, type, is_read, 
+    // Build query based on whether ward_id is provided
+    $baseQuery = "SELECT id, title, message, type, is_read, 
               CASE 
                   WHEN TIMESTAMPDIFF(MINUTE, created_at, NOW()) < 60 
                       THEN CONCAT(TIMESTAMPDIFF(MINUTE, created_at, NOW()), ' minutes ago')
@@ -32,12 +33,20 @@ try {
                   ELSE CONCAT(TIMESTAMPDIFF(DAY, created_at, NOW()), ' days ago')
               END as time
               FROM notifications 
-              WHERE user_id = ? 
-              ORDER BY created_at DESC 
-              LIMIT 50";
+              WHERE ";
     
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $userId);
+    // If ward_id is provided, filter by ward_id only (for ward-specific notifications)
+    // Show only notifications for the selected ward
+    if ($wardId) {
+        $query = $baseQuery . "ward_id = ? ORDER BY created_at DESC LIMIT 50";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $wardId);
+    } else {
+        $query = $baseQuery . "user_id = ? ORDER BY created_at DESC LIMIT 50";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $userId);
+    }
+    
     $stmt->execute();
     $result = $stmt->get_result();
     

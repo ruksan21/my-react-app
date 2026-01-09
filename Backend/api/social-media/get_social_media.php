@@ -19,7 +19,7 @@ try {
     $ward = $_GET['ward'] ?? null;
 
     // Build query
-    $query = "SELECT facebook_url, instagram_url, twitter_url, whatsapp_url 
+    $query = "SELECT facebook_url, instagram_url, twitter_url, whatsapp_url, updated_at 
               FROM wards 
               WHERE 1=1";
     
@@ -29,11 +29,6 @@ try {
     if ($province) {
         $query .= " AND province = ?";
         $params[] = $province;
-        $types .= "s";
-    }
-    if ($district) {
-        $query .= " AND district = ?";
-        $params[] = $district;
         $types .= "s";
     }
     if ($municipality) {
@@ -65,7 +60,8 @@ try {
                 "facebook" => $row['facebook_url'] ?? "",
                 "instagram" => $row['instagram_url'] ?? "",
                 "twitter" => $row['twitter_url'] ?? "",
-                "whatsapp" => $row['whatsapp_url'] ?? ""
+                "whatsapp" => $row['whatsapp_url'] ?? "",
+                "updated_at" => $row['updated_at'] ?? null
             ]
         ]);
     } else {

@@ -156,10 +156,14 @@ export default function OfficerBudget() {
     setBudgetSpent("");
   }
 
+  const remaining = Number(budgetAllocated) - Number(budgetSpent) || 0;
+  const isNegative = remaining < 0;
+
   return (
     <OfficerLayout title="Budgets">
       <div className="budget-container">
-        <h2 className="budget-title">Officer Budgets</h2>
+        <h2 className="budget-title">💰 Budget Management</h2>
+        <p className="budget-subtitle">Track and manage your ward's financial allocations and beneficiaries</p>
 
         {toast.show && (
           <div className={`toast toast-${toast.type}`}>
@@ -169,100 +173,138 @@ export default function OfficerBudget() {
         )}
 
         <div className="summary">
-          <div className="summary-item">
+          <div className="summary-card allocated">
+            <div className="summary-icon">💵</div>
             <div className="summary-label">Total Allocated</div>
-            <div className="summary-value">Rs {budgetAllocated || "0"}</div>
-          </div>
-          <div className="summary-item">
-            <div className="summary-label">Total Spent</div>
-            <div className="summary-value">Rs {budgetSpent || "0"}</div>
-          </div>
-          <div className="summary-item">
-            <div className="summary-label">Remaining</div>
             <div className="summary-value">
-              Rs {Number(budgetAllocated) - Number(budgetSpent) || "0"}
+              Rs {Number(budgetAllocated || 0).toLocaleString()}
+            </div>
+          </div>
+          <div className="summary-card spent">
+            <div className="summary-icon">📊</div>
+            <div className="summary-label">Total Spent</div>
+            <div className="summary-value">
+              Rs {Number(budgetSpent || 0).toLocaleString()}
+            </div>
+          </div>
+          <div className={`summary-card remaining ${isNegative ? 'negative' : ''}`}>
+            <div className="summary-icon">{isNegative ? '⚠️' : '✨'}</div>
+            <div className="summary-label">Remaining Balance</div>
+            <div className="summary-value">
+              Rs {remaining.toLocaleString()}
             </div>
           </div>
         </div>
 
         <div className="forms-row">
-          <form
-            className="beneficiary-form"
-            onSubmit={handleBudgetSummarySubmit}
-          >
-            <label className="label">Total Allocated (Rs.)</label>
-            <input
-              className="input"
-              type="number"
-              placeholder="e.g., 30000000"
-              value={budgetAllocated}
-              onChange={(e) => setBudgetAllocated(e.target.value)}
-            />
-
-            <label className="label">Total Spent (Rs.)</label>
-            <input
-              className="input"
-              type="number"
-              placeholder="e.g., 7000000"
-              value={budgetSpent}
-              onChange={(e) => setBudgetSpent(e.target.value)}
-            />
-
-            <div className="form-actions">
-              <button className="btn primary" type="submit">
-                Save Budget
-              </button>
-              <button
-                className="btn"
-                type="button"
-                onClick={clearBudgetSummaryForm}
-              >
-                Clear
-              </button>
+          <div className="form-card">
+            <div className="form-header">
+              <div className="form-icon budget">💳</div>
+              <div>
+                <h3 className="form-title">Budget Allocation</h3>
+                <p className="form-subtitle">Set your ward's financial targets</p>
+              </div>
             </div>
-          </form>
+            <form onSubmit={handleBudgetSummarySubmit}>
+              <div className="form-group">
+                <label className="label">Total Allocated Amount</label>
+                <div className="input-with-icon">
+                  <span className="input-prefix">Rs</span>
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="0.00"
+                    value={budgetAllocated}
+                    onChange={(e) => setBudgetAllocated(e.target.value)}
+                  />
+                </div>
+              </div>
 
-          <form className="beneficiary-form" onSubmit={handleBeneficiarySubmit}>
-            <label className="label">Total Beneficiaries</label>
-            <input
-              className="input"
-              type="number"
-              placeholder="e.g., 15000"
-              value={benTotal}
-              onChange={(e) => setBenTotal(e.target.value)}
-            />
+              <div className="form-group">
+                <label className="label">Total Spent Amount</label>
+                <div className="input-with-icon">
+                  <span className="input-prefix">Rs</span>
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="0.00"
+                    value={budgetSpent}
+                    onChange={(e) => setBudgetSpent(e.target.value)}
+                  />
+                </div>
+              </div>
 
-            <label className="label">Direct</label>
-            <input
-              className="input"
-              type="number"
-              placeholder="e.g., 8000"
-              value={benDirect}
-              onChange={(e) => setBenDirect(e.target.value)}
-            />
+              <div className="form-actions">
+                <button className="btn primary" type="submit">
+                  💾 Save Budget
+                </button>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={clearBudgetSummaryForm}
+                >
+                  ↺ Clear
+                </button>
+              </div>
+            </form>
+          </div>
 
-            <label className="label">Indirect</label>
-            <input
-              className="input"
-              type="number"
-              placeholder="e.g., 7000"
-              value={benIndirect}
-              onChange={(e) => setBenIndirect(e.target.value)}
-            />
-
-            <div className="form-actions">
-              <button className="btn primary" type="submit">
-                Save
-              </button>
-              <button
-                className="btn"
-                type="button"
-                onClick={clearBeneficiaryForm}
-              >
-                Clear
-              </button>
+          <div className="form-card">
+            <div className="form-header">
+              <div className="form-icon beneficiary">👥</div>
+              <div>
+                <h3 className="form-title">Beneficiary Details</h3>
+                <p className="form-subtitle">Track the impact of your programs</p>
+              </div>
             </div>
-          </form>
+            <form onSubmit={handleBeneficiarySubmit}>
+              <div className="form-group">
+                <label className="label">Total Beneficiaries</label>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="Enter total beneficiaries..."
+                  value={benTotal}
+                  onChange={(e) => setBenTotal(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="label">Direct Beneficiaries</label>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="Enter direct beneficiaries..."
+                  value={benDirect}
+                  onChange={(e) => setBenDirect(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="label">Indirect Beneficiaries</label>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="Enter indirect beneficiaries..."
+                  value={benIndirect}
+                  onChange={(e) => setBenIndirect(e.target.value)}
+                />
+              </div>
+
+              <div className="form-actions">
+                <button className="btn primary" type="submit">
+                  💾 Save Details
+                </button>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={clearBeneficiaryForm}
+                >
+                  ↺ Clear
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </OfficerLayout>

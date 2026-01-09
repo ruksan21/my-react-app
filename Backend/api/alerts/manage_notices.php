@@ -1,4 +1,46 @@
 <?php
+// Disable error display to prevent HTML injection into JSON response
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
+// Custom error handler - captures errors and returns JSON
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    http_response_code(500);
+    echo json_encode([
+        "success" => false, 
+        "message" => "PHP Error: $errstr",
+        "file" => basename($errfile),
+        "line" => $errline
+    ]);
+    exit();
+});
+
+// Exception handler
+set_exception_handler(function($exception) {
+    http_response_code(500);
+    echo json_encode([
+        "success" => false,
+        "message" => "Exception: " . $exception->getMessage(),
+        "file" => basename($exception->getFile()),
+        "line" => $exception->getLine()
+    ]);
+    exit();
+});
+
+// Shutdown function to capture fatal errors
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        http_response_code(500);
+        echo json_encode([
+            "success" => false,
+            "message" => "Fatal Error: " . $error['message'],
+            "file" => basename($error['file']),
+            "line" => $error['line']
+        ]);
+    }
+});
+
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -120,6 +162,14 @@ else if ($method === 'POST') {
         $expiry_date = isset($data['expiry_date']) && !empty($data['expiry_date']) ? $data['expiry_date'] : null;
     }
 
+    // Check if this is an UPDATE (Post with ID)
+    $notice_id = 0;
+    if ($isMultipart) {
+        $notice_id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+    } else {
+        $notice_id = isset($data['id']) ? intval($data['id']) : 0;
+    }
+
     $published_date = date('Y-m-d');
     
     // If ward_id is 0, resolve strictly from provided work location or officer's work location
@@ -149,12 +199,6 @@ else if ($method === 'POST') {
         echo json_encode([
             "success" => false,
             "message" => "Title, content, and officer_id are required",
-            "debug" => [
-                "officer_id" => $officer_id,
-                "title_empty" => empty($title),
-                "content_empty" => empty($content),
-                "ward_id" => $ward_id
-            ]
         ]);
         exit();
     }
@@ -164,71 +208,99 @@ else if ($method === 'POST') {
         echo json_encode([
             "success" => false,
             "message" => "Ward not found for provided work location. Ask admin to create this ward.",
-            "debug" => [
-                "officer_id" => $officer_id,
-                "work_province" => $work_province,
-                "work_district" => $work_district,
-                "work_municipality" => $work_municipality,
-                "work_ward" => $work_ward
-            ]
         ]);
         exit();
     }
 
     // Verify access
     if (!verifyWardAccess($conn, $officer_id, $ward_id)) {
-        sendUnauthorizedResponse();
+        http_response_code(403);
+        echo json_encode([
+            "success" => false, 
+            "message" => "Unauthorized: You do not have access to this ward."
+        ]);
+        exit();
     }
+    
     // Handle optional file uploads (attachment image and document) for multipart only
     $attachmentPath = null;
     $documentPath = null;
+    $imagesPaths = []; // For multiple images
+    
     if ($isMultipart && isset($_FILES['attachment']) && isset($_FILES['attachment']['tmp_name']) && is_uploaded_file($_FILES['attachment']['tmp_name'])) {
         $uploadDir = realpath(__DIR__ . '/../uploads');
+        // ... (Directory creation logic same as before, simplified for brevity in diff but assuming function exists or repeated)
         if ($uploadDir === false) {
-            // Try to create the uploads directory if not exists
-            $baseDir = realpath(__DIR__ . '/..');
-            if ($baseDir !== false) {
-                $uploadsPath = $baseDir . DIRECTORY_SEPARATOR . 'uploads';
-                if (!is_dir($uploadsPath)) {
-                    @mkdir($uploadsPath, 0777, true);
-                }
-                $uploadDir = realpath($uploadsPath);
-            }
+             $baseDir = realpath(__DIR__ . '/..');
+             if ($baseDir !== false) {
+                 $uploadsPath = $baseDir . DIRECTORY_SEPARATOR . 'uploads';
+                 if (!is_dir($uploadsPath)) @mkdir($uploadsPath, 0777, true);
+                 $uploadDir = realpath($uploadsPath);
+             }
         }
-        // Create notices subdir
+        
         if ($uploadDir !== false) {
             $noticesDir = $uploadDir . DIRECTORY_SEPARATOR . 'notices';
-            if (!is_dir($noticesDir)) {
-                @mkdir($noticesDir, 0777, true);
-            }
+            if (!is_dir($noticesDir)) @mkdir($noticesDir, 0777, true);
+            
             $originalName = basename($_FILES['attachment']['name']);
             $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', $originalName);
             $ext = pathinfo($safeName, PATHINFO_EXTENSION);
-            $newFileName = 'notice_' . time() . '_' . mt_rand(1000,9999) . ($ext ? ('.' . $ext) : '');
+            $newFileName = 'notice_att_' . time() . '_' . mt_rand(1000,9999) . ($ext ? ('.' . $ext) : '');
             $targetPath = $noticesDir . DIRECTORY_SEPARATOR . $newFileName;
             if (move_uploaded_file($_FILES['attachment']['tmp_name'], $targetPath)) {
-                // Store relative path from api root
                 $attachmentPath = 'uploads/notices/' . $newFileName;
             }
         }
     }
+    
+    // Handle multiple images upload
+    if ($isMultipart && isset($_FILES['images']) && is_array($_FILES['images']['tmp_name'])) {
+        $uploadDir = realpath(__DIR__ . '/../uploads');
+        if ($uploadDir === false) {
+             $baseDir = realpath(__DIR__ . '/..');
+             if ($baseDir !== false) {
+                 $uploadsPath = $baseDir . DIRECTORY_SEPARATOR . 'uploads';
+                 if (!is_dir($uploadsPath)) @mkdir($uploadsPath, 0777, true);
+                 $uploadDir = realpath($uploadsPath);
+             }
+        }
+        
+        if ($uploadDir !== false) {
+            $noticesDir = $uploadDir . DIRECTORY_SEPARATOR . 'notices';
+            if (!is_dir($noticesDir)) @mkdir($noticesDir, 0777, true);
+            
+            // Process each uploaded image
+            foreach ($_FILES['images']['tmp_name'] as $key => $tmpName) {
+                if (is_uploaded_file($tmpName)) {
+                    $originalName = basename($_FILES['images']['name'][$key]);
+                    $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', $originalName);
+                    $ext = pathinfo($safeName, PATHINFO_EXTENSION);
+                    $newFileName = 'notice_img_' . time() . '_' . mt_rand(1000,9999) . '_' . $key . ($ext ? ('.' . $ext) : '');
+                    $targetPath = $noticesDir . DIRECTORY_SEPARATOR . $newFileName;
+                    if (move_uploaded_file($tmpName, $targetPath)) {
+                        $imagesPaths[] = 'uploads/notices/' . $newFileName;
+                    }
+                }
+            }
+        }
+    }
+    
     if ($isMultipart && isset($_FILES['document']) && isset($_FILES['document']['tmp_name']) && is_uploaded_file($_FILES['document']['tmp_name'])) {
         $uploadDir = realpath(__DIR__ . '/../uploads');
         if ($uploadDir === false) {
-            $baseDir = realpath(__DIR__ . '/..');
-            if ($baseDir !== false) {
-                $uploadsPath = $baseDir . DIRECTORY_SEPARATOR . 'uploads';
-                if (!is_dir($uploadsPath)) {
-                    @mkdir($uploadsPath, 0777, true);
-                }
-                $uploadDir = realpath($uploadsPath);
-            }
+             $baseDir = realpath(__DIR__ . '/..');
+             if ($baseDir !== false) {
+                 $uploadsPath = $baseDir . DIRECTORY_SEPARATOR . 'uploads';
+                 if (!is_dir($uploadsPath)) @mkdir($uploadsPath, 0777, true);
+                 $uploadDir = realpath($uploadsPath);
+             }
         }
+        
         if ($uploadDir !== false) {
             $noticesDir = $uploadDir . DIRECTORY_SEPARATOR . 'notices';
-            if (!is_dir($noticesDir)) {
-                @mkdir($noticesDir, 0777, true);
-            }
+            if (!is_dir($noticesDir)) @mkdir($noticesDir, 0777, true);
+            
             $originalName = basename($_FILES['document']['name']);
             $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', $originalName);
             $ext = pathinfo($safeName, PATHINFO_EXTENSION);
@@ -245,7 +317,139 @@ else if ($method === 'POST') {
     $hasAttachmentCol = $columnExists($conn, $table, 'attachment');
     $hasExpiryCol = $columnExists($conn, $table, 'expiry_date');
     $hasDocumentCol = $columnExists($conn, $table, 'document');
+    $hasImagesCol = $columnExists($conn, $table, 'images');
 
+    // UPDATE EXISTING NOTICE
+    if ($notice_id > 0) {
+        // Build SELECT query dynamically based on existing columns
+        $selectCols = ['ward_id'];
+        if ($hasAttachmentCol) $selectCols[] = 'attachment';
+        if ($hasDocumentCol) $selectCols[] = 'document';
+        if ($hasImagesCol) $selectCols[] = 'images';
+        
+        $chkSql = "SELECT " . implode(", ", $selectCols) . " FROM ward_notices WHERE id = ?";
+        $chkStmt = $conn->prepare($chkSql);
+        $chkStmt->bind_param("i", $notice_id);
+        $chkStmt->execute();
+        $chkRes = $chkStmt->get_result();
+        
+        if ($chkRow = $chkRes->fetch_assoc()) {
+            if ($chkRow['ward_id'] != $ward_id) {
+                http_response_code(403);
+                echo json_encode(["success" => false, "message" => "Unauthorized: Notice belongs to another ward."]);
+                exit();
+            }
+            
+            // Allow Update
+            $updateFields = [];
+            $updateParams = [];
+            $updateTypes = "";
+            
+            $updateFields[] = "title=?";
+            $updateParams[] = $title;
+            $updateTypes .= "s";
+            
+            $updateFields[] = "content=?";
+            $updateParams[] = $content;
+            $updateTypes .= "s";
+            
+            // Update attachment only if new one uploaded
+            if ($hasAttachmentCol && $attachmentPath) {
+                $updateFields[] = "attachment=?";
+                $updateParams[] = $attachmentPath;
+                $updateTypes .= "s";
+            }
+            
+            // Document handling: 
+            // 1. If new doc uploaded -> Replace
+            // 2. If delete_document flag set AND no new doc -> Set NULL
+            $deleteDocument = isset($_POST['delete_document']) && $_POST['delete_document'] === 'true';
+            
+            if ($hasDocumentCol) {
+                if ($documentPath) {
+                     // New document uploaded
+                     $updateFields[] = "document=?";
+                     $updateParams[] = $documentPath;
+                     $updateTypes .= "s";
+                } else if ($deleteDocument) {
+                     // Request to delete existing
+                     $updateFields[] = "document=?";
+                     $updateParams[] = null;
+                     $updateTypes .= "s";
+                }
+            }
+            
+            // Image handling:
+            // 1. existing_images provided? -> Start with that list (allows deletion of missing ones)
+            // 2. If NOT provided -> Start with current DB list (append mode / backward compat)
+            // 3. Append new uploads
+            if ($hasImagesCol) {
+                $shouldUpdateImages = false;
+                $finalImages = [];
+                
+                // Check if existing_images param is present (it might be empty array string "[]")
+                if (isset($_POST['existing_images'])) {
+                    $shouldUpdateImages = true;
+                    $decoded = json_decode($_POST['existing_images'], true);
+                    if (is_array($decoded)) {
+                        $finalImages = $decoded;
+                    }
+                } else {
+                    // Not provided, preserve existing
+                    if (!empty($chkRow['images'])) {
+                        $existing = json_decode($chkRow['images'], true);
+                        if (is_array($existing)) {
+                            $finalImages = $existing;
+                        }
+                    }
+                }
+                
+                // Append new uploads
+                if (!empty($imagesPaths)) {
+                    $shouldUpdateImages = true; // Definitely update if new files
+                    $finalImages = array_merge($finalImages, $imagesPaths);
+                }
+                
+                if ($shouldUpdateImages) {
+                    $updateFields[] = "images=?";
+                    $updateParams[] = json_encode(array_values($finalImages)); // keys reset
+                    $updateTypes .= "s";
+                }
+            }
+            
+            if ($hasExpiryCol) {
+                $updateFields[] = "expiry_date=?";
+                $updateParams[] = $expiry_date;
+                $updateTypes .= "s";
+            }
+            
+            $updateSql = "UPDATE " . $table . " SET " . implode(", ", $updateFields) . " WHERE id=?";
+            $updateParams[] = $notice_id;
+            $updateTypes .= "i";
+            
+            $upStmt = $conn->prepare($updateSql);
+            $bindParams = [];
+            $bindParams[] = & $updateTypes;
+            for ($i = 0; $i < count($updateParams); $i++) {
+                $bindParams[] = & $updateParams[$i];
+            }
+            call_user_func_array([$upStmt, 'bind_param'], $bindParams);
+            
+            if ($upStmt->execute()) {
+                echo json_encode(["success" => true, "message" => "Notice updated successfully"]);
+            } else {
+                echo json_encode(["success" => false, "message" => "Error updating notice: " . $conn->error]);
+            }
+            $upStmt->close();
+            exit(); // Exit after update
+        } else {
+            echo json_encode(["success" => false, "message" => "Notice not found"]);
+            exit();
+        }
+        $chkStmt->close();
+    } 
+
+    // INSERT NEW NOTICE
     $columns = ['ward_id', 'officer_id', 'title', 'content', 'published_date'];
     $placeholders = ['?', '?', '?', '?', '?'];
     $types = 'iisss';
@@ -262,6 +466,12 @@ else if ($method === 'POST') {
         $placeholders[] = '?';
         $types .= 's';
         $values[] = $documentPath; // can be null
+    }
+    if ($hasImagesCol && !empty($imagesPaths)) {
+        $columns[] = 'images';
+        $placeholders[] = '?';
+        $types .= 's';
+        $values[] = json_encode($imagesPaths); // Store as JSON array
     }
     if ($hasExpiryCol) {
         $columns[] = 'expiry_date';
@@ -287,6 +497,57 @@ else if ($method === 'POST') {
 
     if ($stmt->execute()) {
         $notice_id = $conn->insert_id;
+        
+        // --- AUTO NOTIFY USERS IN THE WARD ---
+        $notif_title = "📢 New Notice: " . $title;
+        $notif_message = substr($content, 0, 100) . (strlen($content) > 100 ? "..." : "");
+        $notif_type = "notice";
+        
+        if ($ward_id > 0) {
+            // Get ward details first to find residents
+            $w_sql = "SELECT d.province, d.name as district, w.municipality, w.ward_number 
+                      FROM wards w 
+                      INNER JOIN districts d ON w.district_id = d.id 
+                      WHERE w.id = ?";
+            $w_stmt = $conn->prepare($w_sql);
+            if ($w_stmt) {
+                $w_stmt->bind_param("i", $ward_id);
+                $w_stmt->execute();
+                $w_res = $w_stmt->get_result();
+                if ($w_row = $w_res->fetch_assoc()) {
+                    $p = $w_row['province'];
+                    $dist = $w_row['district'];
+                    $m = $w_row['municipality'];
+                    $wn = $w_row['ward_number'];
+                    
+                    // Find all users in this ward (by location)
+                    $user_sql = "SELECT id FROM users WHERE province = ? AND district = ? AND city = ? AND ward_number = ?";
+                    $user_stmt = $conn->prepare($user_sql);
+                    if ($user_stmt) {
+                        $user_stmt->bind_param("sssi", $p, $dist, $m, $wn);
+                        $user_stmt->execute();
+                        $user_res = $user_stmt->get_result();
+                        
+                        if ($user_res && $user_res->num_rows > 0) {
+                            $batch_notif_sql = "INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, ?, 0, NOW())";
+                            $batch_notif_stmt = $conn->prepare($batch_notif_sql);
+                            if ($batch_notif_stmt) {
+                                while ($user_row = $user_res->fetch_assoc()) {
+                                    $u_id = (int)$user_row['id'];
+                                    $batch_notif_stmt->bind_param("isss", $u_id, $notif_title, $notif_message, $notif_type);
+                                    $batch_notif_stmt->execute();
+                                }
+                                $batch_notif_stmt->close();
+                            }
+                        }
+                        $user_stmt->close();
+                    }
+                }
+                $w_stmt->close();
+            }
+        }
+        // --- END AUTO NOTIFY ---
+
         echo json_encode([
             "success" => true,
             "message" => "Notice published successfully",

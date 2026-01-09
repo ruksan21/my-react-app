@@ -14,13 +14,25 @@ require_once '../db_connect.php';
 // Fetch all users ordered by creation date (id)
 // We might want to exclude pending officers if they are shown elsewhere, but usually 'User Management' shows active users.
 // For now, fetching everything. Frontend can filter.
-$query = "SELECT id, first_name, middle_name, last_name, email, contact_number, role, status, 
+// Check if a specific ID is requested
+if (isset($_GET['id'])) {
+    $id = intval($_GET['id']);
+    $stmt = $conn->prepare("SELECT id, first_name, middle_name, last_name, email, contact_number, role, status, 
+          ward_number, officer_id, department, work_province, work_district, work_municipality, work_ward, work_office_location, gender, dob, 
+          province, district, city, citizenship_number, created_at, photo 
+          FROM users WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+} else {
+    // Fetch all users ordered by creation date (id)
+    $query = "SELECT id, first_name, middle_name, last_name, email, contact_number, role, status, 
           ward_number, officer_id, department, work_province, work_district, work_municipality, work_ward, work_office_location, gender, dob, 
           province, district, city, citizenship_number, created_at, photo 
           FROM users 
           ORDER BY id DESC";
-
-$result = $conn->query($query);
+    $result = $conn->query($query);
+}
 
 if ($result) {
     echo json_encode(array("success" => true, "data" => $result->fetch_all(MYSQLI_ASSOC)));

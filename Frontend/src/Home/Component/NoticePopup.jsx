@@ -1,203 +1,348 @@
 import { useState, useEffect } from "react";
 import "./NoticePopup.css";
-import { API_ENDPOINTS } from "../../config/api";
+import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 import { useWard } from "../Context/WardContext";
 
-const API_BASE_URL = "http://localhost/my-react-app/Backend/api";
-
-const NoticePopup = () => {
+const NoticePopup = ({ notice: propNotice, onClose }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [notices, setNotices] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [fullscreenImage, setFullscreenImage] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { wardId } = useWard();
 
+  // Handle automatic mode vs specific notice mode
   useEffect(() => {
-    if (!wardId) {
-      console.log("NoticePopup: No wardId available");
+    if (propNotice) {
+      setNotices([propNotice]);
+      setShowPopup(true);
       return;
     }
 
-    const fetchAndShowNotices = () => {
-      console.log("NoticePopup: Fetching notices for ward_id:", wardId);
-      const url = `${API_ENDPOINTS.alerts.manageNotices}?ward_id=${wardId}`;
-      console.log("NoticePopup: API URL:", url);
+    if (!wardId) return;
 
-      // Fetch all notices
+    const fetchAndShowNotices = () => {
+      const url = `${API_ENDPOINTS.alerts.manageNotices}?ward_id=${wardId}`;
+
       fetch(url)
         .then((res) => res.json())
         .then((data) => {
-          console.log("NoticePopup: API Response:", data);
           if (data.success && data.data && data.data.length > 0) {
-            console.log("NoticePopup: Found notices:", data.data.length);
-            // Filter notices not yet shown
-            const shownNotices = JSON.parse(localStorage.getItem('shownNotices') || '[]');
-            console.log("NoticePopup: Previously shown notices:", shownNotices);
-            const unshownNotices = data.data.filter(notice => !shownNotices.includes(notice.id));
-            console.log("NoticePopup: Unshown notices:", unshownNotices.length);
-            
+            const shownNotices = JSON.parse(
+              localStorage.getItem("shownNotices") || "[]"
+            );
+            const unshownNotices = data.data.filter(
+              (n) => !shownNotices.includes(n.id)
+            );
+
             if (unshownNotices.length > 0) {
               setNotices(unshownNotices);
               setShowPopup(true);
-              console.log("NoticePopup: Showing popup with", unshownNotices.length, "notices");
-            } else {
-              console.log("NoticePopup: All notices already shown");
             }
-          } else {
-            console.log("NoticePopup: No notices found or API failed");
           }
         })
-        .catch((err) => console.error("NoticePopup: Error fetching notices:", err));
+        .catch((err) =>
+          console.error("NoticePopup: Error fetching notices:", err)
+        );
     };
 
-    // Initial fetch
     fetchAndShowNotices();
-
-    // Check for new notices every 30 seconds
-    const interval = setInterval(fetchAndShowNotices, 30000);
-
+    const interval = setInterval(fetchAndShowNotices, 60000); // Check every minute
     return () => clearInterval(interval);
-  }, [wardId]);
+  }, [wardId, propNotice]);
 
   const handleClose = () => {
-    if (notices.length > 0) {
-      // Mark current notice as shown
-      const shownNotices = JSON.parse(localStorage.getItem('shownNotices') || '[]');
+    if (!propNotice && notices.length > 0) {
+      // Mark current notice as shown in localStorage only in automatic mode
+      const shownNotices = JSON.parse(
+        localStorage.getItem("shownNotices") || "[]"
+      );
       shownNotices.push(notices[currentIndex].id);
-      localStorage.setItem('shownNotices', JSON.stringify(shownNotices));
-      console.log("NoticePopup: Marked notice as shown:", notices[currentIndex].id);
+      localStorage.setItem("shownNotices", JSON.stringify(shownNotices));
     }
+
     setShowPopup(false);
+    if (onClose) onClose();
   };
 
-  const handleNext = () => {
-    if (currentIndex < notices.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+  const getFileUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+
+    // Files are stored in Backend/api/uploads/notices/
+    const uploadsBase = `${API_BASE_URL}/uploads`;
+
+    // If the path already starts with 'uploads/', strip it and build correct URL
+    if (path.startsWith("uploads/")) {
+      const cleanPath = path.replace("uploads/", "");
+      return `${uploadsBase}/${cleanPath}`;
     }
-  };
 
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+    // If path starts with 'notices/', add uploads base
+    if (path.startsWith("notices/")) {
+      return `${uploadsBase}/${path}`;
     }
+
+    // Default: assume it's just a filename in notices folder
+    return `${uploadsBase}/notices/${path}`;
   };
 
-  const handleViewAll = () => {
-    // Mark all as shown
-    const shownNotices = JSON.parse(localStorage.getItem('shownNotices') || '[]');
-    notices.forEach(notice => {
-      if (!shownNotices.includes(notice.id)) {
-        shownNotices.push(notice.id);
+  const getNoticeAssets = (notice) => {
+    const images = [];
+    const documents = [];
+    const allPaths = new Set();
+
+    // 1. Gather all potential paths
+    if (notice.images) {
+      try {
+        const parsed = JSON.parse(notice.images);
+        if (Array.isArray(parsed)) parsed.forEach((p) => allPaths.add(p));
+      } catch (e) {
+        console.error("Error parsing images JSON:", e);
+      }
+    }
+    if (notice.attachment) allPaths.add(notice.attachment);
+    if (notice.document) allPaths.add(notice.document);
+
+    // 2. Categorize based on extension
+    const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+
+    allPaths.forEach((path) => {
+      if (!path) return;
+      const lower = path.toLowerCase();
+      const isImage = imageExtensions.some((ext) => lower.endsWith(ext));
+
+      if (isImage) {
+        images.push(path);
+      } else {
+        documents.push(path);
       }
     });
-    localStorage.setItem('shownNotices', JSON.stringify(shownNotices));
-    console.log("NoticePopup: Marked all notices as shown");
-    setShowPopup(false);
-    window.location.href = '/notices';
+
+    return { images, documents };
   };
 
-  // Add function to reset shown notices (for testing)
-  useEffect(() => {
-    window.resetNoticePopup = () => {
-      localStorage.removeItem('shownNotices');
-      console.log("NoticePopup: Cleared shown notices from localStorage");
-      window.location.reload();
-    };
-  }, []);
+  const openFullscreen = (imageUrl, index) => {
+    setFullscreenImage(imageUrl);
+    setCurrentImageIndex(index);
+  };
+
+  const closeFullscreen = () => {
+    setFullscreenImage(null);
+  };
+
+  const nextImage = (images) => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = (images) => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleDocumentClick = (e, url) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Create a temporary link and trigger download
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = url.split("/").pop(); // Use filename from URL
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   if (!showPopup || notices.length === 0) return null;
 
   const currentNotice = notices[currentIndex];
-  const hasImage = currentNotice.image_file;
-  const hasDocument = currentNotice.document_file;
+  // console.log("Notice Data:", currentNotice); // Temporary debug
+  const { images, documents } = getNoticeAssets(currentNotice);
+  // console.log("Extracted Assets:", { images, documents }); // Temporary debug
 
   return (
     <>
       <div className="notice-popup-overlay" onClick={handleClose}></div>
-      <div className="notice-popup-container compact">
-        <button className="notice-popup-close" onClick={handleClose}>
-          ✕
-        </button>
-        
-        {/* Progress Indicator */}
-        {notices.length > 1 && (
-          <div className="notice-progress">
-            {currentIndex + 1} / {notices.length}
-          </div>
-        )}
-        
-        <div className="notice-card">
-          {/* Title */}
-          <h3 className="notice-card-title">{currentNotice.title}</h3>
-          
-          {/* Image Preview */}
-          {hasImage && (
-            <div className="notice-card-image">
-              <img 
-                src={`${API_BASE_URL}/uploads/notices/${currentNotice.image_file}`} 
-                alt="Notice"
-                onError={(e) => {
-                  console.error("Image failed to load:", e.target.src);
-                  e.target.parentElement.style.display = 'none';
-                }}
-                onLoad={() => console.log("Image loaded successfully:", currentNotice.image_file)}
-              />
-            </div>
-          )}
-          
-          {/* Description */}
-          {currentNotice.description && (
-            <p className="notice-card-description">{currentNotice.description}</p>
-          )}
-          
-          {/* Document Link */}
-          {hasDocument && (
-            <a 
-              href={`${API_BASE_URL}/uploads/notices/${currentNotice.document_file}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="notice-card-document"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="doc-icon">📄</span>
-              <span>View Document</span>
-            </a>
-          )}
-          
-          {/* Expiry Date */}
-          {currentNotice.expiry_date && (
-            <div className="notice-card-footer">
-              <span className="expires-label">Expires:</span>
-              <span className="expires-date">
-                {new Date(currentNotice.expiry_date).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
+      <div className="notice-popup-container">
+        <div className="notice-popup-header-bar">
+          <div className="notice-popup-badge">Public Notice</div>
+          <button
+            className="notice-popup-close"
+            onClick={handleClose}
+            title="Close"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="notice-popup-body">
+          <h2 className="notice-card-title">{currentNotice.title}</h2>
+
+          <div className="notice-meta">
+            <div className="meta-item">
+              <span>📅</span>
+              <span>
+                {new Date(
+                  currentNotice.created_at || Date.now()
+                ).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
                 })}
               </span>
             </div>
+            {currentNotice.expiry_date && (
+              <div className="meta-item">
+                <span style={{ color: "#ef4444" }}>⏳</span>
+                <span style={{ color: "#ef4444" }}>
+                  Expires:{" "}
+                  {new Date(currentNotice.expiry_date).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {images.length > 0 && (
+            <div className="notice-images-gallery">
+              {images.map((img, idx) => (
+                <div
+                  key={idx}
+                  className="notice-card-image"
+                  onClick={() => openFullscreen(getFileUrl(img), idx)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <img
+                    src={getFileUrl(img)}
+                    alt={`Notice visual ${idx + 1}`}
+                    onError={(e) => {
+                      console.error(
+                        "NoticePopup: Image failed to load:",
+                        e.target.src
+                      );
+                      e.target.parentElement.style.display = "none";
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
           )}
+
+          {currentNotice.content && (
+            <div className="notice-card-description">
+              {currentNotice.content}
+            </div>
+          )}
+
+          {documents.map((docPath, dIdx) => (
+            <a
+              key={dIdx}
+              href={getFileUrl(docPath)}
+              onClick={(e) => handleDocumentClick(e, getFileUrl(docPath))}
+              className="notice-card-document"
+              style={{
+                marginBottom: dIdx < documents.length - 1 ? "12px" : "0",
+              }}
+            >
+              <div className="doc-icon-wrapper">📄</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "14px", fontWeight: 700 }}>
+                  Attached Document {documents.length > 1 ? dIdx + 1 : ""}
+                </div>
+                <div style={{ fontSize: "12px", color: "#64748b" }}>
+                  Click to download
+                </div>
+              </div>
+              <div style={{ fontSize: "18px", color: "#6366f1" }}>↓</div>
+            </a>
+          ))}
         </div>
-        
-        {/* Navigation Arrows */}
+
         {notices.length > 1 && (
-          <div className="notice-navigation">
-            <button 
-              className="notice-nav-btn prev" 
-              onClick={handlePrevious}
-              disabled={currentIndex === 0}
-            >
-              ‹
-            </button>
-            <button 
-              className="notice-nav-btn next" 
-              onClick={handleNext}
-              disabled={currentIndex === notices.length - 1}
-            >
-              ›
-            </button>
+          <div style={{ padding: "0 24px 20px 24px" }}>
+            <div className="notice-footer-info">
+              <div className="notice-pagination">
+                {notices.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`nav-dot ${
+                      idx === currentIndex ? "active" : ""
+                    }`}
+                    onClick={() => setCurrentIndex(idx)}
+                    style={{ cursor: "pointer" }}
+                  />
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  className="notice-popup-close"
+                  onClick={() =>
+                    setCurrentIndex((prev) => Math.max(0, prev - 1))
+                  }
+                  disabled={currentIndex === 0}
+                  style={{ opacity: currentIndex === 0 ? 0.3 : 1 }}
+                >
+                  ←
+                </button>
+                <button
+                  className="notice-popup-close"
+                  onClick={() =>
+                    setCurrentIndex((prev) =>
+                      Math.min(notices.length - 1, prev + 1)
+                    )
+                  }
+                  disabled={currentIndex === notices.length - 1}
+                  style={{
+                    opacity: currentIndex === notices.length - 1 ? 0.3 : 1,
+                  }}
+                >
+                  →
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Fullscreen Image Viewer */}
+      {fullscreenImage && (
+        <div className="fullscreen-overlay" onClick={closeFullscreen}>
+          <button className="fullscreen-close" onClick={closeFullscreen}>
+            ✕
+          </button>
+          {images.length > 1 && (
+            <>
+              <button
+                className="fullscreen-nav fullscreen-prev"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevImage(images);
+                }}
+              >
+                ←
+              </button>
+              <button
+                className="fullscreen-nav fullscreen-next"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextImage(images);
+                }}
+              >
+                →
+              </button>
+            </>
+          )}
+          <img
+            src={getFileUrl(images[currentImageIndex])}
+            alt="Fullscreen view"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {images.length > 1 && (
+            <div className="fullscreen-counter">
+              {currentImageIndex + 1} / {images.length}
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 };

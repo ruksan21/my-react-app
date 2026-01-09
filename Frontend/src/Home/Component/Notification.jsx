@@ -10,34 +10,31 @@ const Notification = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (wardId) {
+    if (user?.id) {
       fetchNotifications();
     }
-  }, [wardId]);
+  }, [user?.id, wardId]);
 
   const fetchNotifications = async () => {
-    if (!wardId) return;
-    
+    if (!user?.id) return;
+
     setLoading(true);
     try {
-      // Fetch ward notices as notifications
-      const response = await fetch(`${API_ENDPOINTS.alerts.manageNotices}?ward_id=${wardId}`);
-      const data = await response.json();
+      // Include ward_id in the request if available
+      let url = `${API_ENDPOINTS.notifications.get}?user_id=${user.id}`;
+      if (wardId) {
+        url += `&ward_id=${wardId}`;
+      }
       
+      const response = await fetch(url);
+      const data = await response.json();
+
       if (data.success && data.data) {
-        // Convert notices to notification format
-        const noticeNotifications = data.data.map(notice => ({
-          id: notice.id,
-          title: "📢 New Notice",
-          message: notice.title,
-          type: 'notice',
-          created_at: notice.created_at,
-          read: false
-        }));
-        
-        setNotifications(noticeNotifications);
+        setNotifications(data.data);
+        setUnreadCount(data.unread_count || 0);
       }
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -46,40 +43,77 @@ const Notification = () => {
     }
   };
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
   const toggleNotification = () => {
     setIsOpen(!isOpen);
+    if (!isOpen) {
+      fetchNotifications();
+    }
   };
 
   const markAsRead = async (id) => {
-    // Mark notification as read in state
-    setNotifications(
-      notifications.map((notif) =>
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(API_ENDPOINTS.notifications.markAsRead, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notification_id: id, user_id: user.id }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error("Error marking as read:", error);
+    }
   };
 
   const markAllAsRead = async () => {
-    // Mark all notifications as read in state
-    setNotifications(notifications.map((notif) => ({ ...notif, read: true })));
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(API_ENDPOINTS.notifications.markAllAsRead, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
   };
 
-  const clearAll = () => {
-    // Optionally add API call to delete all notifications
-    setNotifications([]);
-    setIsOpen(false);
+  const clearAll = async () => {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(API_ENDPOINTS.notifications.clear, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setNotifications([]);
+        setUnreadCount(0);
+        setIsOpen(false);
+      }
+    } catch (error) {
+      console.error("Error clearing notifications:", error);
+    }
   };
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case "work":
-        return "🏗️";
-      case "meeting":
-        return "📅";
-      case "info":
-        return "ℹ️";
+      case "notice":
+        return "📢";
       case "complaint":
         return "📝";
       default:
@@ -120,7 +154,9 @@ const Notification = () => {
             </div>
 
             <div className="notification-list">
-              {notifications.length === 0 ? (
+              {loading && notifications.length === 0 ? (
+                <div className="loading-notifications">Loading...</div>
+              ) : notifications.length === 0 ? (
                 <div className="no-notifications">
                   <span className="no-notif-icon">🔕</span>
                   <p>No notifications</p>
@@ -132,7 +168,7 @@ const Notification = () => {
                     className={`notification-item ${
                       !notif.read ? "unread" : ""
                     }`}
-                    onClick={() => markAsRead(notif.id)}
+                    onClick={() => !notif.read && markAsRead(notif.id)}
                   >
                     <div className="notif-icon">
                       {getNotificationIcon(notif.type)}

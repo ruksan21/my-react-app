@@ -8,7 +8,7 @@ const Status = () => {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     const followerId = user ? user.id : null;
-    refreshStats(wardId || 1, followerId);
+    refreshStats(wardId, followerId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wardId]);
 
