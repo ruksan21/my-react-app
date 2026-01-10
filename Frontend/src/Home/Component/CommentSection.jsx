@@ -12,6 +12,10 @@ const CommentSection = ({ workId }) => {
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState(null);
   const [errors, setErrors] = useState({});
+  const [expandedComments, setExpandedComments] = useState({});
+  const [replies, setReplies] = useState({});
+  const [replyText, setReplyText] = useState({});
+  const [replyLoading, setReplyLoading] = useState({});
 
   useEffect(() => {
     if (workId) {
@@ -30,6 +34,79 @@ const CommentSection = ({ workId }) => {
   const showNotification = (type, message) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 4000);
+  };
+
+  // Toggle expanded comment
+  const toggleExpandComment = (commentId) => {
+    setExpandedComments((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
+
+    // Load replies if not already loaded
+    if (!replies[commentId] && expandedComments[commentId] !== true) {
+      fetchReplies(commentId);
+    }
+  };
+
+  // Fetch replies for a comment
+  const fetchReplies = (commentId) => {
+    fetch(`${API_ENDPOINTS.communication.getReplies}?feedback_id=${commentId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setReplies((prev) => ({
+            ...prev,
+            [commentId]: data.replies || [],
+          }));
+        }
+      })
+      .catch((err) => console.error("Error fetching replies:", err));
+  };
+
+  // Submit reply
+  const handleReplySubmit = async (commentId) => {
+    const reply = replyText[commentId]?.trim();
+
+    if (!user || user.role !== "officer") {
+      showNotification("error", "Only officers can reply");
+      return;
+    }
+
+    if (!reply || reply.length < 5) {
+      showNotification("error", "Reply must be at least 5 characters");
+      return;
+    }
+
+    setReplyLoading((prev) => ({ ...prev, [commentId]: true }));
+
+    try {
+      const response = await fetch(API_ENDPOINTS.communication.addReply, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          feedback_id: commentId,
+          officer_id: user.id,
+          reply_text: reply,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showNotification("success", "✓ Reply posted successfully!");
+        setReplyText((prev) => ({ ...prev, [commentId]: "" }));
+        // Reload replies
+        fetchReplies(commentId);
+      } else {
+        showNotification("error", "Error: " + data.message);
+      }
+    } catch (err) {
+      console.error("Reply error:", err);
+      showNotification("error", "Network error. Please try again.");
+    } finally {
+      setReplyLoading((prev) => ({ ...prev, [commentId]: false }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -68,7 +145,6 @@ const CommentSection = ({ workId }) => {
         body: JSON.stringify({
           work_id: workId,
           user_id: user.id || null,
-          user_name: user.name || "Anonymous",
           rating: rating,
           comment: comment,
         }),
@@ -255,6 +331,84 @@ const CommentSection = ({ workId }) => {
                 {renderStars(c.rating, false)}
               </div>
               <p className="comment-text">{c.comment}</p>
+
+              {/* Replies Section */}
+              <div className="replies-section">
+                <button
+                  className="expand-replies-btn"
+                  onClick={() => toggleExpandComment(c.id)}
+                >
+                  {expandedComments[c.id] ? "▼" : "▶"} Officer Responses (
+                  {replies[c.id]?.length || 0})
+                </button>
+
+                {expandedComments[c.id] && (
+                  <div className="replies-container">
+                    {/* Display existing replies */}
+                    {replies[c.id] && replies[c.id].length > 0 && (
+                      <div className="replies-list">
+                        {replies[c.id].map((reply) => (
+                          <div key={reply.id} className="reply-card">
+                            <div className="reply-user">
+                              <img
+                                src={reply.officer_photo}
+                                alt={reply.officer_name}
+                                className="reply-avatar"
+                              />
+                              <div className="reply-user-info">
+                                <span className="reply-user-name">
+                                  🔸 {reply.officer_name}
+                                </span>
+                                <span className="reply-date">
+                                  {formatDate(reply.created_at)}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="reply-text">{reply.reply_text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Reply form for officers only */}
+                    {user && user.role === "officer" && (
+                      <div className="reply-form">
+                        <textarea
+                          className="reply-textarea"
+                          placeholder="Write officer response..."
+                          value={replyText[c.id] || ""}
+                          onChange={(e) =>
+                            setReplyText((prev) => ({
+                              ...prev,
+                              [c.id]: e.target.value,
+                            }))
+                          }
+                          rows="2"
+                          maxLength="300"
+                        />
+                        <div className="reply-form-footer">
+                          <span className="char-counter">
+                            {(replyText[c.id] || "").length}/300
+                          </span>
+                          <button
+                            className="reply-submit-btn"
+                            onClick={() => handleReplySubmit(c.id)}
+                            disabled={replyLoading[c.id]}
+                          >
+                            {replyLoading[c.id] ? "Posting..." : "Reply"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {user && user.role !== "officer" && (
+                      <p className="officer-only-message">
+                        Only officers can reply to comments
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           ))
         )}

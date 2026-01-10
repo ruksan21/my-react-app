@@ -23,26 +23,29 @@ try {
         exit();
     }
 
-    // Build query based on whether ward_id is provided
-    $baseQuery = "SELECT id, title, message, type, is_read, 
+    // Build query with LEFT JOIN to ward_notices to hide expired notices
+    $baseQuery = "SELECT n.id, n.title, n.message, n.type, n.is_read,
               CASE 
-                  WHEN TIMESTAMPDIFF(MINUTE, created_at, NOW()) < 60 
-                      THEN CONCAT(TIMESTAMPDIFF(MINUTE, created_at, NOW()), ' minutes ago')
-                  WHEN TIMESTAMPDIFF(HOUR, created_at, NOW()) < 24 
-                      THEN CONCAT(TIMESTAMPDIFF(HOUR, created_at, NOW()), ' hours ago')
-                  ELSE CONCAT(TIMESTAMPDIFF(DAY, created_at, NOW()), ' days ago')
+                  WHEN TIMESTAMPDIFF(MINUTE, n.created_at, NOW()) < 60 
+                      THEN CONCAT(TIMESTAMPDIFF(MINUTE, n.created_at, NOW()), ' minutes ago')
+                  WHEN TIMESTAMPDIFF(HOUR, n.created_at, NOW()) < 24 
+                      THEN CONCAT(TIMESTAMPDIFF(HOUR, n.created_at, NOW()), ' hours ago')
+                  ELSE CONCAT(TIMESTAMPDIFF(DAY, n.created_at, NOW()), ' days ago')
               END as time
-              FROM notifications 
+              FROM notifications n
+              LEFT JOIN ward_notices wn ON n.related_notice_id = wn.id
               WHERE ";
     
     // If ward_id is provided, filter by ward_id only (for ward-specific notifications)
     // Show only notifications for the selected ward
+    // Exclude expired notices: keep if type != 'notice' OR expiry_date is NULL OR in future
+    $expiryClause = "(n.type <> 'notice' OR wn.expiry_date IS NULL OR wn.expiry_date >= NOW())";
     if ($wardId) {
-        $query = $baseQuery . "ward_id = ? ORDER BY created_at DESC LIMIT 50";
+        $query = $baseQuery . "n.ward_id = ? AND " . $expiryClause . " ORDER BY n.created_at DESC LIMIT 50";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $wardId);
     } else {
-        $query = $baseQuery . "user_id = ? ORDER BY created_at DESC LIMIT 50";
+        $query = $baseQuery . "n.user_id = ? AND " . $expiryClause . " ORDER BY n.created_at DESC LIMIT 50";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $userId);
     }

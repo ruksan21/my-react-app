@@ -20,9 +20,21 @@ if (!$data) {
 
 $work_id = isset($data['work_id']) ? intval($data['work_id']) : 0;
 $user_id = isset($data['user_id']) ? intval($data['user_id']) : null;
-$user_name = isset($data['user_name']) ? $conn->real_escape_string($data['user_name']) : 'Anonymous';
 $rating = isset($data['rating']) ? intval($data['rating']) : 0;
 $comment = isset($data['comment']) ? $conn->real_escape_string($data['comment']) : '';
+
+// Get user name from database if user_id is provided
+$user_name = 'Anonymous';
+if ($user_id) {
+    $user_stmt = $conn->prepare("SELECT full_name FROM users WHERE id = ?");
+    $user_stmt->bind_param("i", $user_id);
+    $user_stmt->execute();
+    $user_result = $user_stmt->get_result();
+    if ($user_row = $user_result->fetch_assoc()) {
+        $user_name = $user_row['full_name'];
+    }
+    $user_stmt->close();
+}
 
 if ($work_id === 0 || $rating < 1 || $rating > 5 || empty($comment)) {
     echo json_encode(["success" => false, "message" => "Invalid input data."]);

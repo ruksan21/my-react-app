@@ -14,8 +14,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../db_connect.php';
-require_once '../wards/find_ward_by_location.php';
-require_once '../wards/verify_ward_access.php';
+
+// Helper function to resolve ward ID
+function resolveWardIdStrict($conn, $province, $district, $municipality, $ward_number) {
+    $stmt = $conn->prepare("SELECT id FROM wards WHERE province = ? AND district = ? AND municipality = ? AND ward_number = ? LIMIT 1");
+    $stmt->bind_param("sssi", $province, $district, $municipality, $ward_number);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result && $row = $result->fetch_assoc()) {
+        $ward_id = $row['id'];
+    } else {
+        $ward_id = 0;
+    }
+    $stmt->close();
+    return $ward_id;
+}
+
+// Helper function to verify ward access
+function verifyWardAccess($conn, $officer_id, $ward_id) {
+    $stmt = $conn->prepare("SELECT id FROM users WHERE id = ? AND ward_id = ? AND role = 'officer' AND status = 'approved'");
+    $stmt->bind_param("ii", $officer_id, $ward_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $has_access = $result->num_rows > 0;
+    $stmt->close();
+    return $has_access;
+}
 
 $method = $_SERVER['REQUEST_METHOD'];
 

@@ -10,7 +10,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../db_connect.php';
-require_once '../wards/verify_ward_access.php';
+
+// Helper function to verify ward access
+function verifyWardAccess($conn, $officer_id, $ward_id) {
+    $stmt = $conn->prepare("SELECT id FROM users WHERE id = ? AND ward_id = ? AND role = 'officer' AND status = 'approved'");
+    $stmt->bind_param("ii", $officer_id, $ward_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $has_access = $result->num_rows > 0;
+    $stmt->close();
+    return $has_access;
+}
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -162,6 +172,16 @@ else if ($method === 'POST') {
     }
     
     if ($stmt->execute()) {
+        // Create ward-level notification for budget updates/creation
+        $notif_title = "💰 Budget Update";
+        $notif_msg = $fiscal_year ? ("Budget saved for fiscal year: " . $fiscal_year) : "Budget details updated.";
+        $notif_sql = "INSERT INTO notifications (ward_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'budget', 0, NOW())";
+        if ($notif_stmt = $conn->prepare($notif_sql)) {
+            $notif_stmt->bind_param("iss", $ward_id, $notif_title, $notif_msg);
+            $notif_stmt->execute();
+            $notif_stmt->close();
+        }
+
         echo json_encode(["success" => true, "message" => "Budget saved successfully"]);
     } else {
         echo json_encode(["success" => false, "message" => "Error saving budget: " . $conn->error]);

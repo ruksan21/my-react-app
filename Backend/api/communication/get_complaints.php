@@ -57,7 +57,11 @@ if ($result && $result->num_rows > 0) {
     }
 }
 
-echo json_encode($complaints);
+echo json_encode([
+    "success" => true,
+    "data" => $complaints,
+    "total" => count($complaints)
+]);
 
 $conn->close();
 ?>

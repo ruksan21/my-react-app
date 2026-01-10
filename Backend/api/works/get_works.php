@@ -10,7 +10,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../db_connect.php';
-require_once '../wards/find_ward_by_location.php';
+
+// Helper function to resolve ward ID
+function resolveWardIdStrict($conn, $province, $district, $municipality, $ward_number) {
+    $stmt = $conn->prepare("SELECT id FROM wards WHERE province = ? AND district = ? AND municipality = ? AND ward_number = ? LIMIT 1");
+    $stmt->bind_param("sssi", $province, $district, $municipality, $ward_number);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result && $row = $result->fetch_assoc()) {
+        $ward_id = $row['id'];
+    } else {
+        $ward_id = 0;
+    }
+    $stmt->close();
+    return $ward_id;
+}
 
 $ward_id = isset($_GET['ward_id']) ? intval($_GET['ward_id']) : null;
 $ward_number = isset($_GET['ward_number']) ? intval($_GET['ward_number']) : null;

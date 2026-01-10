@@ -5,7 +5,21 @@ header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 require_once '../db_connect.php';
-require_once '../wards/find_ward_by_location.php';
+
+// Helper function to resolve ward ID
+function resolveWardIdStrict($conn, $province, $district, $municipality, $ward_number) {
+    $stmt = $conn->prepare("SELECT id FROM wards WHERE province = ? AND district = ? AND municipality = ? AND ward_number = ? LIMIT 1");
+    $stmt->bind_param("sssi", $province, $district, $municipality, $ward_number);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result && $row = $result->fetch_assoc()) {
+        $ward_id = $row['id'];
+    } else {
+        $ward_id = 0;
+    }
+    $stmt->close();
+    return $ward_id;
+}
 
 $data = json_decode(file_get_contents("php://input"));
 
@@ -88,6 +102,16 @@ if (!empty($data->title) && !empty($data->officer_id)) {
             $stmt_o = $conn->prepare($sql_alert_officer);
             $stmt_o->bind_param("issss", $ward_id, $type, $alert_title, $msg_user, $status);
             $stmt_o->execute();
+
+            // Also add to notifications table for ward feed
+            $notif_title = "📅 Work Activity";
+            $notif_msg = "New activity added: " . $title;
+            $notif_sql = "INSERT INTO notifications (ward_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'activity', 0, NOW())";
+            if ($notif_stmt = $conn->prepare($notif_sql)) {
+                $notif_stmt->bind_param("iss", $ward_id, $notif_title, $notif_msg);
+                $notif_stmt->execute();
+                $notif_stmt->close();
+            }
 
             echo json_encode(["success" => true, "message" => "Activity added and notifications sent.", "id" => $activity_id]);
         } else {

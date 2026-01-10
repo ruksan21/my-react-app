@@ -3,7 +3,21 @@ header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
 require_once '../db_connect.php';
-require_once '../wards/find_ward_by_location.php';
+
+// Helper function to resolve ward ID
+function resolveWardIdStrict($conn, $province, $district, $municipality, $ward_number) {
+    $stmt = $conn->prepare("SELECT id FROM wards WHERE province = ? AND district = ? AND municipality = ? AND ward_number = ? LIMIT 1");
+    $stmt->bind_param("sssi", $province, $district, $municipality, $ward_number);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result && $row = $result->fetch_assoc()) {
+        $ward_id = $row['id'];
+    } else {
+        $ward_id = 0;
+    }
+    $stmt->close();
+    return $ward_id;
+}
 
 // Check if ward_id is provided directly or via location params
 $ward_id = 0;

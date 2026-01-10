@@ -225,24 +225,26 @@
 
 .input-with-icon {
   position: relative;
-}
-
-.input-with-icon .input {
-  padding-left: 52px;
+  display: flex;
+  align-items: center;
 }
 
 .input-prefix {
   position: absolute;
-  left: 16px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   font-weight: 600;
   color: #3b82f6;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   pointer-events: none;
-  background: #e0e7ff;
-  padding: 4px 8px;
-  border-radius: 6px;
+  z-index: 1;
+}
+
+.input-with-icon .input {
+  padding-left: 48px;
+  padding-right: 12px;
+  width: 100%;
 }
 
 .form-actions {

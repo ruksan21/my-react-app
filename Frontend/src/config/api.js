@@ -68,6 +68,8 @@ export const API_ENDPOINTS = {
     addFeedback: `${BASE_URL}/communication/add_feedback.php`,
     getReviews: `${BASE_URL}/communication/get_reviews.php`,
     addReview: `${BASE_URL}/communication/add_review.php`,
+    getReplies: `${BASE_URL}/communication/get_replies.php`,
+    addReply: `${BASE_URL}/communication/add_reply.php`,
   },
 
   // Alerts & Notices

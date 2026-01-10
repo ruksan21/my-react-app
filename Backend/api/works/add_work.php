@@ -10,7 +10,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../db_connect.php';
-require_once '../wards/find_ward_by_location.php';
+
+// Helper function to resolve ward ID
+function resolveWardIdStrict($conn, $province, $district, $municipality, $ward_number) {
+    $stmt = $conn->prepare("SELECT id FROM wards WHERE province = ? AND district = ? AND municipality = ? AND ward_number = ? LIMIT 1");
+    $stmt->bind_param("sssi", $province, $district, $municipality, $ward_number);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result && $row = $result->fetch_assoc()) {
+        $ward_id = $row['id'];
+    } else {
+        $ward_id = 0;
+    }
+    $stmt->close();
+    return $ward_id;
+}
 
 // Check if it's a POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -114,6 +128,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("sssssssssii", $title, $description, $budget, $location, $start_date, $end_date, $beneficiaries, $status, $image_path, $officer_id, $ward_id);
 
     if ($stmt->execute()) {
+        // Create ward-level notification
+        $notif_title = "🏗️ Work Update";
+        $notif_msg = "New work added: " . $title;
+        $notif_sql = "INSERT INTO notifications (ward_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'work', 0, NOW())";
+        if ($notif_stmt = $conn->prepare($notif_sql)) {
+            $notif_stmt->bind_param("iss", $ward_id, $notif_title, $notif_msg);
+            $notif_stmt->execute();
+            $notif_stmt->close();
+        }
+
         echo json_encode(["success" => true, "message" => "Work added successfully"]);
     } else {
         echo json_encode(["success" => false, "message" => "Failed to add work: " . $stmt->error]);

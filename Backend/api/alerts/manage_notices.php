@@ -52,8 +52,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../db_connect.php';
-require_once '../wards/verify_ward_access.php';
-require_once '../wards/find_ward_by_location.php';
+
+// Helper function to resolve ward ID
+function resolveWardIdStrict($conn, $province, $district, $municipality, $ward_number) {
+    $stmt = $conn->prepare("SELECT id FROM wards WHERE province = ? AND district = ? AND municipality = ? AND ward_number = ? LIMIT 1");
+    $stmt->bind_param("sssi", $province, $district, $municipality, $ward_number);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result && $row = $result->fetch_assoc()) {
+        $ward_id = $row['id'];
+    } else {
+        $ward_id = 0;
+    }
+    $stmt->close();
+    return $ward_id;
+}
+
+// Helper function to verify ward access
+function verifyWardAccess($conn, $officer_id, $ward_id) {
+    $stmt = $conn->prepare("SELECT id FROM users WHERE id = ? AND ward_id = ? AND role = 'officer' AND status = 'approved'");
+    $stmt->bind_param("ii", $officer_id, $ward_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $has_access = $result->num_rows > 0;
+    $stmt->close();
+    return $has_access;
+}
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -499,6 +523,17 @@ else if ($method === 'POST') {
         $notice_id = $conn->insert_id;
         
         // --- AUTO NOTIFY USERS IN THE WARD ---
+        // Ensure notifications table has necessary columns
+        $notifTable = 'notifications';
+        $hasNotifWardCol = $columnExists($conn, $notifTable, 'ward_id');
+        if (!$hasNotifWardCol) {
+            $conn->query("ALTER TABLE notifications ADD COLUMN ward_id INT NULL");
+        }
+        $hasRelatedNoticeCol = $columnExists($conn, $notifTable, 'related_notice_id');
+        if (!$hasRelatedNoticeCol) {
+            $conn->query("ALTER TABLE notifications ADD COLUMN related_notice_id INT NULL");
+        }
+
         $notif_title = "📢 New Notice: " . $title;
         $notif_message = substr($content, 0, 100) . (strlen($content) > 100 ? "..." : "");
         $notif_type = "notice";
@@ -529,12 +564,12 @@ else if ($method === 'POST') {
                         $user_res = $user_stmt->get_result();
                         
                         if ($user_res && $user_res->num_rows > 0) {
-                            $batch_notif_sql = "INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, ?, 0, NOW())";
+                            $batch_notif_sql = "INSERT INTO notifications (user_id, ward_id, related_notice_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, NOW())";
                             $batch_notif_stmt = $conn->prepare($batch_notif_sql);
                             if ($batch_notif_stmt) {
                                 while ($user_row = $user_res->fetch_assoc()) {
                                     $u_id = (int)$user_row['id'];
-                                    $batch_notif_stmt->bind_param("isss", $u_id, $notif_title, $notif_message, $notif_type);
+                                    $batch_notif_stmt->bind_param("iiisss", $u_id, $ward_id, $notice_id, $notif_title, $notif_message, $notif_type);
                                     $batch_notif_stmt->execute();
                                 }
                                 $batch_notif_stmt->close();

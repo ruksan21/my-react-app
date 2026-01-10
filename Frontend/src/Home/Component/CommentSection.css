@@ -397,6 +397,151 @@
   white-space: pre-wrap;
 }
 
+/* Replies Section */
+.replies-section {
+  margin-top: 15px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 15px;
+}
+
+.expand-replies-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s;
+}
+
+.expand-replies-btn:hover {
+  color: var(--primary-dark);
+}
+
+.replies-container {
+  margin-top: 15px;
+  padding: 15px;
+  background: var(--light-bg);
+  border-radius: 8px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.replies-list {
+  margin-bottom: 15px;
+}
+
+.reply-card {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.reply-user {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.reply-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.reply-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reply-user-name {
+  font-weight: 600;
+  color: var(--primary-color);
+  font-size: 13px;
+}
+
+.reply-date {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.reply-text {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+/* Reply Form */
+.reply-form {
+  margin-top: 15px;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid var(--primary-color);
+}
+
+.reply-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.reply-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.reply-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reply-submit-btn {
+  padding: 8px 16px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.reply-submit-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.reply-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.officer-only-message {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: 10px 0 0 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .comment-section {
@@ -420,5 +565,13 @@
 
   .comment-textarea {
     font-size: 14px;
+  }
+
+  .replies-container {
+    padding: 12px;
+  }
+
+  .reply-card {
+    padding: 10px;
   }
 }
