@@ -133,7 +133,7 @@ $sql = "INSERT INTO users (
 ) VALUES (
     '$first_name', '$middle_name', '$last_name', '$email', '$password_hash', '$contact_number', $dob_val, '$gender', 
     '$province', '$district', '$city', $ward_number, '$citizenship_number', $issue_date_val, '$citizenship_issue_district', 
-    '$citizenship_photo', 'officer', '$officer_id', '$department', '$work_province', '$work_district', '$work_municipality', $work_ward, '$work_office_location', '$id_card_photo', 'approved', '$profile_photo'
+    '$citizenship_photo', 'officer', '$officer_id', '$department', '$work_province', '$work_district', '$work_municipality', $work_ward, '$work_office_location', '$id_card_photo', 'active', '$profile_photo'
 )";
 
 if ($conn->query($sql)) {

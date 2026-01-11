@@ -10,17 +10,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../db_connect.php';
+require_once '../utils/ward_utils.php';
 
-// Helper function to verify ward access
-function verifyWardAccess($conn, $officer_id, $ward_id) {
-    $stmt = $conn->prepare("SELECT id FROM users WHERE id = ? AND ward_id = ? AND role = 'officer' AND status = 'approved'");
-    $stmt->bind_param("ii", $officer_id, $ward_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $has_access = $result->num_rows > 0;
-    $stmt->close();
-    return $has_access;
-}
+// Local verifyWardAccess removed, using version from ward_utils.php instead
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if it's FormData (with file upload) or JSON

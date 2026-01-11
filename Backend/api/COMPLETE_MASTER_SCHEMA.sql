@@ -100,6 +100,9 @@ CREATE TABLE IF NOT EXISTS `ward_budgets` (
     `total_allocated` decimal(15, 2) DEFAULT 0.00,
     `total_spent` decimal(15, 2) DEFAULT 0.00,
     `remaining_balance` decimal(15, 2) DEFAULT 0.00,
+    `total_beneficiaries` int(11) DEFAULT 0,
+    `direct_beneficiaries` int(11) DEFAULT 0,
+    `indirect_beneficiaries` int(11) DEFAULT 0,
     `fiscal_year` varchar(20) DEFAULT NULL,
     `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
     `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -148,7 +151,7 @@ CREATE TABLE IF NOT EXISTS `ward_assets` (
 CREATE TABLE IF NOT EXISTS `chairperson_personal_assets` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
     `ward_id` int(11) NOT NULL,
-    `officer_id` int(11) NOT NULL,
+    `officer_id` int(11) DEFAULT NULL,
     -- Chairperson's user ID
     `asset_type` varchar(100) NOT NULL,
     `asset_name` varchar(255) NOT NULL,
@@ -251,7 +254,6 @@ CREATE TABLE IF NOT EXISTS `notifications` (
         'alert',
         'system'
     ) DEFAULT 'system',
-    -- Denormalized location data for historical accuracy and explicit visibility
     `source_province` varchar(100) DEFAULT NULL,
     `source_district` varchar(100) DEFAULT NULL,
     `source_municipality` varchar(100) DEFAULT NULL,
@@ -317,4 +319,8 @@ CREATE TABLE IF NOT EXISTS `reviews` (
     FOREIGN KEY (`ward_id`) REFERENCES `wards` (`id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+-- --------------------------------------------------------
+-- 18. Default User (Optional - Remove if not needed)
+-- INSERT INTO `users` (`full_name`, `email`, `password`, `role`, `status`) VALUES
+-- ('Admin User', 'admin@example.com', '$2y$10$YourHashedPasswordHere', 'admin', 'active');
 COMMIT;

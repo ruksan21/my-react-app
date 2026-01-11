@@ -8,6 +8,7 @@ import AlertCentre from "./AlertCentre";
 import AdminSettings from "./AdminSettings";
 import Reports from "./Reports";
 import AdminComplaints from "./AdminComplaints";
+import AdminNotifications from "./AdminNotifications";
 
 const AdminRoutes = () => {
   return (
@@ -17,6 +18,7 @@ const AdminRoutes = () => {
       <Route path="officers" element={<OfficerManagement />} />
       <Route path="users" element={<UserManagement />} />
       <Route path="alerts" element={<AlertCentre />} />
+      <Route path="notifications" element={<AdminNotifications />} />
       <Route path="settings" element={<AdminSettings />} />
       <Route path="reports" element={<Reports />} />
       <Route path="complaints" element={<AdminComplaints />} />

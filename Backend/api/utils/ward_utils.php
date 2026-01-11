@@ -31,55 +31,80 @@ function resolveWardIdStrict($conn, $province, $district, $municipality, $ward_n
 }
 
 function resolveWardIdFlexible($conn, $province, $district, $municipality, $ward_number) {
-    $province = $conn->real_escape_string(trim($province ?? ''));
-    $district = $conn->real_escape_string(trim($district ?? ''));
-    $municipality = $conn->real_escape_string(trim($municipality ?? ''));
+    $province = trim($province ?? '');
+    $district = trim($district ?? '');
+    $municipality = trim($municipality ?? '');
     $ward_number = intval($ward_number ?? 0);
-    if (!$municipality || !$ward_number) return 0;
+    
+    if (!$province || !$district || !$municipality || !$ward_number) return 0;
 
+    // EXACT MATCH: All 4 fields must match (case-insensitive, whitespace-tolerant)
+    // province, district, municipality, ward_number
     $sql = "SELECT w.id
             FROM wards w
             LEFT JOIN districts d ON w.district_id = d.id
-            WHERE w.ward_number = $ward_number
+            WHERE w.ward_number = ?
+              AND LOWER(TRIM(w.municipality)) = LOWER(TRIM(?))
               AND (
-                  d.province IS NULL OR d.province = '' 
-                  OR TRIM(d.province) LIKE TRIM('$province')
-                  OR TRIM(d.province) LIKE CONCAT('%', TRIM('$province'), '%')
-                  OR '$province' LIKE CONCAT('%', TRIM(d.province), '%')
+                  LOWER(TRIM(COALESCE(w.district_name, ''))) = LOWER(TRIM(?))
+                  OR LOWER(TRIM(COALESCE(d.name, ''))) = LOWER(TRIM(?))
               )
               AND (
-                  d.name IS NULL OR d.name = '' 
-                  OR TRIM(d.name) LIKE TRIM('$district')
-                  OR TRIM(d.name) LIKE CONCAT('%', TRIM('$district'), '%')
-                  OR '$district' LIKE CONCAT('%', TRIM(d.name), '%')
-              )
-              AND (
-                  TRIM(w.municipality) LIKE TRIM('$municipality')
-                  OR TRIM(w.municipality) LIKE CONCAT('%', TRIM('$municipality'), '%')
-                  OR '$municipality' LIKE CONCAT('%', TRIM(w.municipality), '%')
+                  LOWER(TRIM(COALESCE(w.province, ''))) = LOWER(TRIM(?))
+                  OR LOWER(TRIM(COALESCE(d.province, ''))) = LOWER(TRIM(?))
               )
             LIMIT 1";
-    $res = $conn->query($sql);
-    return ($res && $row = $res->fetch_assoc()) ? intval($row['id']) : 0;
+
+    $stmt = $conn->prepare($sql);
+    if ($stmt) {
+        $stmt->bind_param("isssss", $ward_number, $municipality, $district, $district, $province, $province);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && $row = $res->fetch_assoc()) {
+            $stmt->close();
+            return intval($row['id']);
+        }
+        $stmt->close();
+    }
+
+    return 0;
 }
 
 function verifyWardAccess($conn, $officer_id, $ward_id) {
     $officer_id = intval($officer_id);
     $ward_id = intval($ward_id);
     if ($officer_id <= 0 || $ward_id <= 0) return false;
-    $stmt = $conn->prepare("SELECT id FROM users WHERE id = ? AND role = 'officer' AND status = 'approved'");
+    
+    // 1. Check if officer is active
+    $stmt = $conn->prepare("SELECT id, assigned_ward_id, work_province, work_district, work_municipality, work_ward 
+                            FROM users WHERE id = ? AND role = 'officer' AND status = 'active'");
     if (!$stmt) return false;
     $stmt->bind_param("i", $officer_id);
     $stmt->execute();
     $res = $stmt->get_result();
-    $exists = $res && $res->num_rows > 0;
+    
+    if (!$res || $res->num_rows === 0) {
+        $stmt->close();
+        return false;
+    }
+    
+    $officer = $res->fetch_assoc();
     $stmt->close();
-    return $exists;
+    
+    // 2. Check if assigned_ward_id matches
+    if (isset($officer['assigned_ward_id']) && intval($officer['assigned_ward_id']) === $ward_id) {
+        return true;
+    }
+    
+    // 3. Fallback: Resolve ward_id from location and check if it matches
+    $resolved_ward_id = resolveWardIdFlexible($conn, $officer['work_province'], $officer['work_district'], $officer['work_municipality'], intval($officer['work_ward']));
+    
+    return $resolved_ward_id === $ward_id;
 }
 
 function getOfficerWardIdOrError($conn, $officer_id, $useFlexible = true) {
     $officer_id = intval($officer_id);
-    $q = "SELECT work_province, work_district, work_municipality, work_ward 
+    $q = "SELECT work_province, work_district, work_municipality, work_ward, assigned_ward_id 
           FROM users WHERE id = ? AND role = 'officer' LIMIT 1";
     $stmt = $conn->prepare($q);
     if (!$stmt) {
@@ -95,6 +120,11 @@ function getOfficerWardIdOrError($conn, $officer_id, $useFlexible = true) {
     }
     $o = $res->fetch_assoc();
     $stmt->close();
+
+    // If already assigned in DB, return that immediately
+    if (!empty($o['assigned_ward_id'])) {
+        return intval($o['assigned_ward_id']);
+    }
 
     if (empty($o['work_municipality']) || empty($o['work_ward'])) {
         http_response_code(422);

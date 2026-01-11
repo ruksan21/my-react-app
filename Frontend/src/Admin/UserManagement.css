@@ -20,6 +20,26 @@
   width: 500px;
   max-width: 90%;
   animation: modalFadeIn 0.3s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.user-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.user-modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.user-modal-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.user-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 @keyframes modalFadeIn {
@@ -111,6 +131,30 @@
 /* User Profile Modal Specifics */
 .user-profile-content {
   width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.user-profile-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.user-profile-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.user-profile-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.user-profile-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .profile-avatar-large {
@@ -239,6 +283,22 @@
 .status-badge-active {
   background-color: #dcfce7;
   color: #166534;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.status-badge-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.status-badge-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.8rem;

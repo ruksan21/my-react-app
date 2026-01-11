@@ -1,4 +1,7 @@
 <?php
+// Prevent warnings/notices from breaking JSON
+ob_start();
+
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -6,11 +9,15 @@ header("Content-Type: application/json; charset=UTF-8");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
+    ob_end_flush();
     exit();
 }
 
 require_once '../db_connect.php';
 require_once '../utils/ward_utils.php';
+
+// Clear any prior output
+ob_clean();
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -29,11 +36,15 @@ if ($method === 'GET') {
             $ward_id = resolveWardIdFlexible($conn, $work_province, $work_district, $work_municipality, $work_ward);
             if ($ward_id === 0) {
                 http_response_code(422);
+                ob_clean();
                 echo json_encode(["success" => false, "message" => "Ward not found for work location."]);
+                ob_end_flush();
                 exit();
             }
         } else {
+            ob_clean();
             echo json_encode(["success" => false, "message" => "Ward ID or work location required"]);
+            ob_end_flush();
             exit();
         }
     }
@@ -49,6 +60,7 @@ if ($method === 'GET') {
         $departments[] = $row;
     }
     
+    ob_clean();
     echo json_encode(["success" => true, "data" => $departments, "ward_id" => $ward_id]);
     $stmt->close();
 }
@@ -69,7 +81,7 @@ else if ($method === 'POST') {
             $work_municipality = $data['work_municipality'] ?? null;
             $work_ward = $data['work_ward'] ?? null;
             
-            if ($work_province && $work_district && $work_municipality && $work_ward) {
+            if ($work_province && $work_municipality && $work_ward) {
                 $ward_id = resolveWardIdFlexible($conn, $work_province, $work_district, $work_municipality, $work_ward);
             }
         }
@@ -82,7 +94,19 @@ else if ($method === 'POST') {
     $icon = isset($data['icon']) ? $conn->real_escape_string($data['icon']) : '🏢';
     
     if ($ward_id === 0 || $officer_id === 0 || empty($name)) {
-        echo json_encode(["success" => false, "message" => "Ward ID/location, Officer ID, and Department Name are required"]);
+        ob_clean();
+        echo json_encode([
+            "success" => false,
+            "message" => "Ward ID/location, Officer ID, and Department Name are required",
+            "debug" => [
+                "ward_id" => $ward_id,
+                "work_province" => $data['work_province'] ?? null,
+                "work_district" => $data['work_district'] ?? null,
+                "work_municipality" => $data['work_municipality'] ?? null,
+                "work_ward" => $data['work_ward'] ?? null
+            ]
+        ]);
+        ob_end_flush();
         exit();
     }
     
@@ -93,12 +117,14 @@ else if ($method === 'POST') {
     
     if ($stmt->execute()) {
         $dept_id = $conn->insert_id;
+        ob_clean();
         echo json_encode([
             "success" => true, 
             "message" => "Department added successfully",
             "id" => $dept_id
         ]);
     } else {
+        ob_clean();
         echo json_encode(["success" => false, "message" => "Error adding department: " . $conn->error]);
     }
     
@@ -118,7 +144,9 @@ else if ($method === 'PUT') {
     $icon = isset($data['icon']) ? $conn->real_escape_string($data['icon']) : '🏢';
     
     if ($id === 0 || $officer_id === 0 || empty($name)) {
+        ob_clean();
         echo json_encode(["success" => false, "message" => "Department ID, Officer ID, and Name are required"]);
+        ob_end_flush();
         exit();
     }
 
@@ -132,14 +160,18 @@ else if ($method === 'PUT') {
     $stmt_w->close();
 
     if ($ward_id === 0) {
+        ob_clean();
         echo json_encode(["success" => false, "message" => "Department not found."]);
+        ob_end_flush();
         exit();
     }
 
     // Verify access
     if (!verifyWardAccess($conn, $officer_id, $ward_id)) {
         http_response_code(403);
+        ob_clean();
         echo json_encode(["success" => false, "message" => "Unauthorized access to this ward."]);
+        ob_end_flush();
         exit();
     }
     
@@ -148,8 +180,10 @@ else if ($method === 'PUT') {
     $stmt->bind_param("sssssi", $name, $head_name, $phone, $email, $icon, $id);
     
     if ($stmt->execute()) {
+        ob_clean();
         echo json_encode(["success" => true, "message" => "Department updated successfully"]);
     } else {
+        ob_clean();
         echo json_encode(["success" => false, "message" => "Error updating department: " . $conn->error]);
     }
     
@@ -163,7 +197,9 @@ else if ($method === 'DELETE') {
     $officer_id = isset($data['officer_id']) ? intval($data['officer_id']) : 0;
     
     if ($dept_id === 0 || $officer_id === 0) {
+        ob_clean();
         echo json_encode(["success" => false, "message" => "Department ID and Officer ID required"]);
+        ob_end_flush();
         exit();
     }
 
@@ -179,7 +215,9 @@ else if ($method === 'DELETE') {
     if ($ward_id > 0) {
         if (!verifyWardAccess($conn, $officer_id, $ward_id)) {
             http_response_code(403);
+            ob_clean();
             echo json_encode(["success" => false, "message" => "Unauthorized access to this ward."]);
+            ob_end_flush();
             exit();
         }
     }
@@ -189,8 +227,10 @@ else if ($method === 'DELETE') {
     $stmt->bind_param("i", $dept_id);
     
     if ($stmt->execute()) {
+        ob_clean();
         echo json_encode(["success" => true, "message" => "Department deleted successfully"]);
     } else {
+        ob_clean();
         echo json_encode(["success" => false, "message" => "Error deleting department: " . $conn->error]);
     }
     
@@ -198,4 +238,5 @@ else if ($method === 'DELETE') {
 }
 
 $conn->close();
+ob_end_flush();
 ?>

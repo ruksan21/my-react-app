@@ -5,7 +5,7 @@ import { API_ENDPOINTS } from "../config/api";
 import "./UserManagement.css";
 
 const UserManagement = () => {
-  const { allUsers, deleteUser } = useAuth();
+  const { allUsers, deleteUser, addNotification } = useAuth();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -14,6 +14,7 @@ const UserManagement = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isViewing, setIsViewing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Edit Form State
   const [editForm, setEditForm] = useState({
@@ -21,7 +22,23 @@ const UserManagement = () => {
     middleName: "",
     lastName: "",
     email: "",
+    contactNumber: "",
     role: "",
+    status: "",
+    gender: "",
+    dob: "",
+    province: "",
+    district: "",
+    city: "",
+    wardNumber: "",
+    citizenshipNumber: "",
+    officerId: "",
+    department: "",
+    workProvince: "",
+    workDistrict: "",
+    workMunicipality: "",
+    workWard: "",
+    workOfficeLocation: "",
   });
 
   // Helper to get display name from user object
@@ -83,7 +100,23 @@ const UserManagement = () => {
       middleName: user.middle_name || "",
       lastName: user.last_name || "",
       email: user.email || "",
+      contactNumber: user.contact_number || "",
       role: user.role || "",
+      status: user.status || "active",
+      gender: user.gender || "",
+      dob: user.dob || "",
+      province: user.province || "",
+      district: user.district || "",
+      city: user.city || "",
+      wardNumber: user.ward_number || "",
+      citizenshipNumber: user.citizenship_number || "",
+      officerId: user.officer_id || "",
+      department: user.department || "",
+      workProvince: user.work_province || "",
+      workDistrict: user.work_district || "",
+      workMunicipality: user.work_municipality || "",
+      workWard: user.work_ward || "",
+      workOfficeLocation: user.work_office_location || "",
     });
     setIsEditing(true);
   };
@@ -95,12 +128,71 @@ const UserManagement = () => {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    // In a real app, call API to update user
-    // For now, just alert and close
-    alert("Update feature would call API here.");
-    // Example: await updateUser(selectedUser.id, editForm);
-    setIsEditing(false);
-    setSelectedUser(null);
+    setIsUpdating(true);
+    try {
+      const updateData = {
+        id: selectedUser.id,
+        first_name: editForm.firstName,
+        middle_name: editForm.middleName,
+        last_name: editForm.lastName,
+        contact_number: editForm.contactNumber || null,
+        role: editForm.role,
+        status: editForm.status,
+        gender: editForm.gender || null,
+        dob: editForm.dob || null,
+        province: editForm.province || null,
+        district: editForm.district || null,
+        city: editForm.city || null,
+        ward_number: editForm.wardNumber ? parseInt(editForm.wardNumber) : null,
+        citizenship_number: editForm.citizenshipNumber || null,
+        officer_id: editForm.officerId || null,
+        department: editForm.department || null,
+        work_province: editForm.workProvince || null,
+        work_district: editForm.workDistrict || null,
+        work_municipality: editForm.workMunicipality || null,
+        work_ward: editForm.workWard ? parseInt(editForm.workWard) : null,
+        work_office_location: editForm.workOfficeLocation || null,
+      };
+
+      const response = await fetch(API_ENDPOINTS.users.update, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Refresh users list
+        const refreshResponse = await fetch(API_ENDPOINTS.users.getAll);
+        const refreshData = await refreshResponse.json();
+        if (refreshData.success) {
+          setUsers(refreshData.data);
+          setFilteredUsers(refreshData.data);
+          if (addNotification) {
+            addNotification("success", "User updated successfully!");
+          } else {
+            alert("User updated successfully!");
+          }
+        }
+        setIsEditing(false);
+        setSelectedUser(null);
+      } else {
+        if (addNotification) {
+          addNotification("error", data.message || "Failed to update user.");
+        } else {
+          alert(data.message || "Failed to update user.");
+        }
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+      if (addNotification) {
+        addNotification("error", "Failed to update user. Please try again.");
+      } else {
+        alert("Failed to update user. Please try again.");
+      }
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const closeModals = () => {
@@ -158,11 +250,49 @@ const UserManagement = () => {
             <div className="profile-details-grid">
               <div className="detail-item">
                 <span className="detail-label">Email Address</span>
-                <span className="detail-value">{selectedUser.email}</span>
+                <span className="detail-value">{selectedUser.email || "N/A"}</span>
               </div>
               <div className="detail-item">
                 <span className="detail-label">User ID</span>
                 <span className="detail-value">#{selectedUser.id}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Contact Number</span>
+                <span className="detail-value">{selectedUser.contact_number || "N/A"}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Status</span>
+                <span className={`status-badge-${selectedUser.status || "active"}`} style={{ display: "inline-block" }}>
+                  {(selectedUser.status || "active").charAt(0).toUpperCase() + (selectedUser.status || "active").slice(1)}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Gender</span>
+                <span className="detail-value">{selectedUser.gender || "N/A"}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Date of Birth</span>
+                <span className="detail-value">{selectedUser.dob || "N/A"}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Province</span>
+                <span className="detail-value">{selectedUser.province || "N/A"}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">District</span>
+                <span className="detail-value">{selectedUser.district || "N/A"}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">City</span>
+                <span className="detail-value">{selectedUser.city || "N/A"}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Ward Number</span>
+                <span className="detail-value">{selectedUser.ward_number || "N/A"}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Citizenship Number</span>
+                <span className="detail-value">{selectedUser.citizenship_number || "N/A"}</span>
               </div>
               <div className="detail-item">
                 <span className="detail-label">Joined Date</span>
@@ -170,11 +300,58 @@ const UserManagement = () => {
                   {selectedUser.created_at || "N/A"}
                 </span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">Status</span>
-                <span className="status-badge-active">Active</span>
-              </div>
             </div>
+
+            {/* Officer Specific Fields */}
+            {(selectedUser.role === "officer" || selectedUser.officer_id || selectedUser.department) && (
+              <div style={{ marginTop: "24px" }}>
+                <h4 style={{ marginBottom: "16px", fontSize: "1.1rem", fontWeight: 600 }}>Officer Details</h4>
+                <div className="profile-details-grid">
+                  {selectedUser.officer_id && (
+                    <div className="detail-item">
+                      <span className="detail-label">Officer ID</span>
+                      <span className="detail-value">{selectedUser.officer_id}</span>
+                    </div>
+                  )}
+                  {selectedUser.department && (
+                    <div className="detail-item">
+                      <span className="detail-label">Department</span>
+                      <span className="detail-value">{selectedUser.department}</span>
+                    </div>
+                  )}
+                  {selectedUser.work_province && (
+                    <div className="detail-item">
+                      <span className="detail-label">Work Province</span>
+                      <span className="detail-value">{selectedUser.work_province}</span>
+                    </div>
+                  )}
+                  {selectedUser.work_district && (
+                    <div className="detail-item">
+                      <span className="detail-label">Work District</span>
+                      <span className="detail-value">{selectedUser.work_district}</span>
+                    </div>
+                  )}
+                  {selectedUser.work_municipality && (
+                    <div className="detail-item">
+                      <span className="detail-label">Work Municipality</span>
+                      <span className="detail-value">{selectedUser.work_municipality}</span>
+                    </div>
+                  )}
+                  {selectedUser.work_ward && (
+                    <div className="detail-item">
+                      <span className="detail-label">Work Ward</span>
+                      <span className="detail-value">{selectedUser.work_ward}</span>
+                    </div>
+                  )}
+                  {selectedUser.work_office_location && (
+                    <div className="detail-item" style={{ gridColumn: "1 / -1" }}>
+                      <span className="detail-label">Office Location</span>
+                      <span className="detail-value">{selectedUser.work_office_location}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="user-modal-actions">
               <button onClick={closeModals} className="btn-cancel">
@@ -188,7 +365,7 @@ const UserManagement = () => {
       {/* Edit User Modal */}
       {isEditing && selectedUser && (
         <div className="user-modal-overlay">
-          <div className="user-modal-content">
+          <div className="user-modal-content" style={{ maxHeight: "90vh", overflowY: "auto", width: "700px" }}>
             <div className="user-modal-header">
               <h3 className="user-modal-title">Edit User</h3>
               <button onClick={closeModals} className="user-close-btn">
@@ -196,15 +373,11 @@ const UserManagement = () => {
               </button>
             </div>
             <form onSubmit={handleEditSubmit} className="user-form-grid">
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: "10px",
-                }}
-              >
+              {/* Basic Information */}
+              <h4 style={{ marginBottom: "12px", fontSize: "1rem", fontWeight: 600, color: "#475569" }}>Basic Information</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
                 <div>
-                  <label className="stat-label">First Name</label>
+                  <label className="stat-label">First Name *</label>
                   <input
                     type="text"
                     value={editForm.firstName}
@@ -212,6 +385,7 @@ const UserManagement = () => {
                       setEditForm({ ...editForm, firstName: e.target.value })
                     }
                     className="user-input"
+                    required
                   />
                 </div>
                 <div>
@@ -226,7 +400,7 @@ const UserManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="stat-label">Last Name</label>
+                  <label className="stat-label">Last Name *</label>
                   <input
                     type="text"
                     value={editForm.lastName}
@@ -234,44 +408,261 @@ const UserManagement = () => {
                       setEditForm({ ...editForm, lastName: e.target.value })
                     }
                     className="user-input"
+                    required
+                  />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label className="stat-label">Email</label>
+                  <input
+                    type="email"
+                    value={editForm.email}
+                    disabled
+                    className="user-input"
+                    style={{ backgroundColor: "#f1f5f9", cursor: "not-allowed" }}
+                  />
+                </div>
+                <div>
+                  <label className="stat-label">Contact Number</label>
+                  <input
+                    type="text"
+                    value={editForm.contactNumber}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, contactNumber: e.target.value })
+                    }
+                    className="user-input"
+                  />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label className="stat-label">Role *</label>
+                  <select
+                    value={editForm.role}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, role: e.target.value })
+                    }
+                    className="user-select"
+                    required
+                  >
+                    <option value="citizen">Citizen</option>
+                    <option value="officer">Officer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="stat-label">Status *</label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, status: e.target.value })
+                    }
+                    className="user-select"
+                    required
+                  >
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Personal Information */}
+              <h4 style={{ marginTop: "24px", marginBottom: "12px", fontSize: "1rem", fontWeight: 600, color: "#475569" }}>Personal Information</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label className="stat-label">Gender</label>
+                  <select
+                    value={editForm.gender}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, gender: e.target.value })
+                    }
+                    className="user-select"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="stat-label">Date of Birth</label>
+                  <input
+                    type="date"
+                    value={editForm.dob}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, dob: e.target.value })
+                    }
+                    className="user-input"
                   />
                 </div>
               </div>
               <div>
-                <label className="stat-label">Email</label>
+                <label className="stat-label">Citizenship Number</label>
                 <input
-                  type="email"
-                  value={editForm.email}
-                  disabled
+                  type="text"
+                  value={editForm.citizenshipNumber}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, citizenshipNumber: e.target.value })
+                  }
                   className="user-input"
-                  style={{ backgroundColor: "#f1f5f9", cursor: "not-allowed" }}
                 />
               </div>
-              <div>
-                <label className="stat-label">Role</label>
-                <select
-                  value={editForm.role}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, role: e.target.value })
-                  }
-                  className="user-select"
-                >
-                  <option value="citizen">Citizen</option>
-                  <option value="officer">Officer</option>
-                  <option value="admin">Admin</option>
-                </select>
+
+              {/* Address Information */}
+              <h4 style={{ marginTop: "24px", marginBottom: "12px", fontSize: "1rem", fontWeight: 600, color: "#475569" }}>Address Information</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label className="stat-label">Province</label>
+                  <input
+                    type="text"
+                    value={editForm.province}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, province: e.target.value })
+                    }
+                    className="user-input"
+                  />
+                </div>
+                <div>
+                  <label className="stat-label">District</label>
+                  <input
+                    type="text"
+                    value={editForm.district}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, district: e.target.value })
+                    }
+                    className="user-input"
+                  />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label className="stat-label">City</label>
+                  <input
+                    type="text"
+                    value={editForm.city}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, city: e.target.value })
+                    }
+                    className="user-input"
+                  />
+                </div>
+                <div>
+                  <label className="stat-label">Ward Number</label>
+                  <input
+                    type="number"
+                    value={editForm.wardNumber}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, wardNumber: e.target.value })
+                    }
+                    className="user-input"
+                  />
+                </div>
               </div>
 
-              <div className="user-modal-actions">
+              {/* Officer Information */}
+              {(editForm.role === "officer" || selectedUser.role === "officer") && (
+                <>
+                  <h4 style={{ marginTop: "24px", marginBottom: "12px", fontSize: "1rem", fontWeight: 600, color: "#475569" }}>Officer Information</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div>
+                      <label className="stat-label">Officer ID</label>
+                      <input
+                        type="text"
+                        value={editForm.officerId}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, officerId: e.target.value })
+                        }
+                        className="user-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="stat-label">Department</label>
+                      <input
+                        type="text"
+                        value={editForm.department}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, department: e.target.value })
+                        }
+                        className="user-input"
+                      />
+                    </div>
+                  </div>
+                  <h5 style={{ marginTop: "16px", marginBottom: "8px", fontSize: "0.9rem", fontWeight: 600, color: "#64748b" }}>Work Location</h5>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div>
+                      <label className="stat-label">Work Province</label>
+                      <input
+                        type="text"
+                        value={editForm.workProvince}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, workProvince: e.target.value })
+                        }
+                        className="user-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="stat-label">Work District</label>
+                      <input
+                        type="text"
+                        value={editForm.workDistrict}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, workDistrict: e.target.value })
+                        }
+                        className="user-input"
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div>
+                      <label className="stat-label">Work Municipality</label>
+                      <input
+                        type="text"
+                        value={editForm.workMunicipality}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, workMunicipality: e.target.value })
+                        }
+                        className="user-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="stat-label">Work Ward</label>
+                      <input
+                        type="number"
+                        value={editForm.workWard}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, workWard: e.target.value })
+                        }
+                        className="user-input"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="stat-label">Office Location</label>
+                    <input
+                      type="text"
+                      value={editForm.workOfficeLocation}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, workOfficeLocation: e.target.value })
+                      }
+                      className="user-input"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="user-modal-actions" style={{ marginTop: "24px" }}>
                 <button
                   type="button"
                   onClick={closeModals}
                   className="btn-cancel"
+                  disabled={isUpdating}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn-save-user">
-                  Save Changes
+                <button type="submit" className="btn-save-user" disabled={isUpdating}>
+                  {isUpdating ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </form>

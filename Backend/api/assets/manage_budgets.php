@@ -1,4 +1,7 @@
 <?php
+// Prevent warnings/notices from breaking JSON
+ob_start();
+
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -6,11 +9,15 @@ header("Content-Type: application/json; charset=UTF-8");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
+    ob_end_flush();
     exit();
 }
 
 require_once '../db_connect.php';
 require_once '../utils/ward_utils.php';
+
+// Clear any prior output
+ob_clean();
 
 // Using shared verifyWardAccess from utils
 
@@ -106,7 +113,9 @@ else if ($method === 'POST') {
     }
 
     if ($ward_id === 0 || $officer_id === 0) {
+        ob_clean();
         echo json_encode(["success" => false, "message" => "Ward ID/Work location and Officer ID required"]);
+        ob_end_flush();
         exit();
     }
     
@@ -141,18 +150,31 @@ else if ($method === 'POST') {
     }
     
     if ($stmt->execute()) {
-        // Create ward-level notification for budget updates/creation
+        // Fetch location details for the notification source safely
+        $w_sql = "SELECT province, district_name, municipality, ward_number FROM wards WHERE id = ?";
+        $w_stmt = $conn->prepare($w_sql);
+        $w_stmt->bind_param("i", $ward_id);
+        $w_stmt->execute();
+        $w_res = $w_stmt->get_result();
+        $w_data = $w_res ? $w_res->fetch_assoc() : null;
+        $w_stmt->close();
+
         $notif_title = "💰 Budget Update";
         $notif_msg = $fiscal_year ? ("Budget saved for fiscal year: " . $fiscal_year) : "Budget details updated.";
-        $notif_sql = "INSERT INTO notifications (ward_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'budget', 0, NOW())";
-        if ($notif_stmt = $conn->prepare($notif_sql)) {
-            $notif_stmt->bind_param("iss", $ward_id, $notif_title, $notif_msg);
-            $notif_stmt->execute();
-            $notif_stmt->close();
+
+        if ($w_data) {
+            $notif_sql = "INSERT INTO notifications (ward_id, title, message, type, source_province, source_district, source_municipality, source_ward, is_read, created_at) VALUES (?, ?, ?, 'budget', ?, ?, ?, ?, 0, NOW())";
+            if ($notif_stmt = $conn->prepare($notif_sql)) {
+                $notif_stmt->bind_param("isssssi", $ward_id, $notif_title, $notif_msg, $w_data['province'], $w_data['district_name'], $w_data['municipality'], $w_data['ward_number']);
+                $notif_stmt->execute();
+                $notif_stmt->close();
+            }
         }
 
+        ob_clean();
         echo json_encode(["success" => true, "message" => "Budget saved successfully"]);
     } else {
+        ob_clean();
         echo json_encode(["success" => false, "message" => "Error saving budget: " . $conn->error]);
     }
     
@@ -161,4 +183,5 @@ else if ($method === 'POST') {
 }
 
 $conn->close();
+ob_end_flush();
 ?>

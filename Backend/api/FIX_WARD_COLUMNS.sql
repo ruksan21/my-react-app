@@ -1,0 +1,13 @@
+-- RUN THIS IN phpMyAdmin -> SQL tab to fix the Ward columns
+ALTER TABLE wards
+ADD COLUMN IF NOT EXISTS district_name VARCHAR(100) DEFAULT NULL
+AFTER district_id;
+ALTER TABLE wards
+ADD COLUMN IF NOT EXISTS province VARCHAR(100) DEFAULT NULL
+AFTER district_name;
+ALTER TABLE wards
+ADD COLUMN IF NOT EXISTS google_map_link VARCHAR(255) DEFAULT NULL
+AFTER contact_email;
+ALTER TABLE wards
+ADD COLUMN IF NOT EXISTS telephone VARCHAR(20) DEFAULT NULL
+AFTER google_map_link;

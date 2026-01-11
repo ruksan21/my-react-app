@@ -57,7 +57,7 @@ if (!$ward_id || !$full_name || !$subject || !$message) {
 }
 
 // Check if officer exists in the ward
-$officer_check = $conn->prepare("SELECT u.id, u.full_name, u.email FROM users u WHERE u.ward_id = ? AND u.role = 'officer' AND u.status = 'approved' LIMIT 1");
+$officer_check = $conn->prepare("SELECT u.id, u.full_name, u.email FROM users u WHERE u.ward_id = ? AND u.role = 'officer' AND u.status = 'active' LIMIT 1");
 $officer_check->bind_param("i", $ward_id);
 $officer_check->execute();
 $officer_result = $officer_check->get_result();
@@ -137,9 +137,17 @@ if ($stmt->execute()) {
     $notif_title = "New Complaint: " . $subject;
     $notif_message = $full_name . " has submitted a complaint. Subject: " . $subject;
     
-    $notif_query = "INSERT INTO notifications (user_id, ward_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, ?, 'complaint', 0, NOW())";
+    // Fetch location details for the notification source
+    $w_sql = "SELECT province, district_name, municipality, ward_number FROM wards WHERE id = ?";
+    $w_stmt = $conn->prepare($w_sql);
+    $w_stmt->bind_param("i", $ward_id);
+    $w_stmt->execute();
+    $w_res = $w_stmt->get_result();
+    $w_data = $w_res->fetch_assoc();
+    
+    $notif_query = "INSERT INTO notifications (user_id, ward_id, title, message, type, source_province, source_district, source_municipality, source_ward, is_read, created_at) VALUES (?, ?, ?, ?, 'complaint', ?, ?, ?, ?, 0, NOW())";
     $notif_stmt = $conn->prepare($notif_query);
-    $notif_stmt->bind_param("iiss", $officer_id, $ward_id, $notif_title, $notif_message);
+    $notif_stmt->bind_param("iisssssi", $officer_id, $ward_id, $notif_title, $notif_message, $w_data['province'], $w_data['district_name'], $w_data['municipality'], $w_data['ward_number']);
     $notif_stmt->execute();
 
     // Create System Alert

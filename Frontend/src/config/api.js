@@ -101,6 +101,9 @@ export const API_ENDPOINTS = {
   // Notifications
   notifications: {
     get: `${BASE_URL}/notifications/get_notifications.php`,
+    getAll: `${BASE_URL}/notifications/get_all_notifications.php`,
+    create: `${BASE_URL}/notifications/create_notification.php`,
+    manage: `${BASE_URL}/notifications/manage_notification.php`,
     markAsRead: `${BASE_URL}/notifications/mark_as_read.php`,
     markAllAsRead: `${BASE_URL}/notifications/mark_all_as_read.php`,
     clear: `${BASE_URL}/notifications/clear_notifications.php`,

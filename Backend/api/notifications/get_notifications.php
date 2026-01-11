@@ -24,7 +24,8 @@ try {
     }
 
     // Build query with LEFT JOIN to ward_notices to hide expired notices
-    $baseQuery = "SELECT n.id, n.title, n.message, n.type, n.is_read,
+    $baseQuery = "SELECT n.id, n.title, n.message, n.type, n.is_read, 
+              n.source_province, n.source_district, n.source_municipality, n.source_ward,
               CASE 
                   WHEN TIMESTAMPDIFF(MINUTE, n.created_at, NOW()) < 60 
                       THEN CONCAT(TIMESTAMPDIFF(MINUTE, n.created_at, NOW()), ' minutes ago')
@@ -36,16 +37,35 @@ try {
               LEFT JOIN ward_notices wn ON n.related_notice_id = wn.id
               WHERE ";
     
-    // If ward_id is provided, filter by ward_id only (for ward-specific notifications)
-    // Show only notifications for the selected ward
-    // Exclude expired notices: keep if type != 'notice' OR expiry_date is NULL OR in future
-    $expiryClause = "(n.type <> 'notice' OR wn.expiry_date IS NULL OR wn.expiry_date >= NOW())";
+// If ward_id is provided, strict filtering for that ward
+    // This handles the user's request: "jun wada ko notification officer la create garxa tai wada ma dakhinu paro"
+    
     if ($wardId) {
+        // Show notifications specifically for this ward
         $query = $baseQuery . "n.ward_id = ? AND " . $expiryClause . " ORDER BY n.created_at DESC LIMIT 50";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $wardId);
     } else {
-        $query = $baseQuery . "n.user_id = ? AND " . $expiryClause . " ORDER BY n.created_at DESC LIMIT 50";
+        // For user-specific notifications (dashboard feed)
+        // Ensure we only show notifications for the user's ward or global ones
+        // Also fetch the source location details if available
+        $query = "SELECT n.id, n.title, n.message, n.type, n.is_read, n.ward_id,
+              n.source_province, n.source_district, n.source_municipality, n.source_ward,
+              w.municipality, w.ward_number, w.district_name, w.province,
+              CASE 
+                  WHEN TIMESTAMPDIFF(MINUTE, n.created_at, NOW()) < 60 
+                      THEN CONCAT(TIMESTAMPDIFF(MINUTE, n.created_at, NOW()), ' minutes ago')
+                  WHEN TIMESTAMPDIFF(HOUR, n.created_at, NOW()) < 24 
+                      THEN CONCAT(TIMESTAMPDIFF(HOUR, n.created_at, NOW()) , ' hours ago')
+                  ELSE CONCAT(TIMESTAMPDIFF(DAY, n.created_at, NOW()), ' days ago')
+              END as time
+              FROM notifications n
+              LEFT JOIN ward_notices wn ON n.related_notice_id = wn.id
+              LEFT JOIN wards w ON n.ward_id = w.id
+              WHERE n.user_id = ? 
+              AND " . $expiryClause . " 
+              ORDER BY n.created_at DESC LIMIT 50";
+              
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $userId);
     }
@@ -55,13 +75,26 @@ try {
     
     $notifications = [];
     while ($row = $result->fetch_assoc()) {
+        // Construct source string if data available
+        // Prefer DB columns (denormalized) if present, else fallback to JOINed values
+        $p = $row['source_province'] ?? $row['province'];
+        $d = $row['source_district'] ?? $row['district_name'];
+        $m = $row['source_municipality'] ?? $row['municipality'];
+        $w = $row['source_ward'] ?? $row['ward_number'];
+        
+        $source = '';
+        if (!empty($m) && !empty($w)) {
+             $source = $m . '-' . $w . ', ' . $d;
+        }
+        
         $notifications[] = [
             'id' => (int)$row['id'],
             'title' => $row['title'],
             'message' => $row['message'],
             'type' => $row['type'],
             'read' => (bool)$row['is_read'],
-            'time' => $row['time']
+            'time' => $row['time'],
+            'source' => $source
         ];
     }
     

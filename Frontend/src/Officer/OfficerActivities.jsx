@@ -86,8 +86,8 @@ export default function OfficerActivities() {
     try {
       const payload = {
         ...formData,
-        ...workLocation,
-        officer_id: user.id,
+        ward_id: user?.assigned_ward_id || null,
+        officer_id: user?.id || null,
       };
 
       // If editing, add the id
@@ -100,10 +100,18 @@ export default function OfficerActivities() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
 
       if (data.success) {
-        setMessage({ type: "success", text: isEditing ? "Activity updated!" : "Activity added & published!" });
+        setMessage({
+          type: "success",
+          text: isEditing ? "Activity updated!" : "Activity added & published!",
+        });
         resetForm();
         fetchActivities();
         setTimeout(() => {
@@ -111,11 +119,14 @@ export default function OfficerActivities() {
           setMessage({ type: "", text: "" });
         }, 1500);
       } else {
-        setMessage({ type: "error", text: data.message });
+        setMessage({ type: "error", text: data.message || "Failed to save activity." });
       }
     } catch (error) {
-      console.error(error);
-      setMessage({ type: "error", text: "Failed to save activity." });
+      console.error("Error saving activity:", error);
+      setMessage({ 
+        type: "error", 
+        text: error.message || "Failed to save activity. Please check your connection and try again." 
+      });
     }
     setLoading(false);
   };
@@ -203,7 +214,13 @@ export default function OfficerActivities() {
                       </div>
                     </td>
                     <td>
-                      <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          justifyContent: "center",
+                        }}
+                      >
                         <button
                           onClick={() => handleEdit(act)}
                           title="Edit Activity"
@@ -211,7 +228,8 @@ export default function OfficerActivities() {
                             padding: "8px 14px",
                             borderRadius: "8px",
                             border: "none",
-                            background: "linear-gradient(135deg, #3b82f6, #2563eb)",
+                            background:
+                              "linear-gradient(135deg, #3b82f6, #2563eb)",
                             color: "white",
                             fontWeight: 600,
                             fontSize: "0.85rem",
@@ -220,7 +238,7 @@ export default function OfficerActivities() {
                             alignItems: "center",
                             gap: "6px",
                             transition: "all 0.2s",
-                            boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)"
+                            boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
                           }}
                         >
                           ✏️ Edit
@@ -240,7 +258,7 @@ export default function OfficerActivities() {
                             display: "flex",
                             alignItems: "center",
                             gap: "6px",
-                            transition: "all 0.2s"
+                            transition: "all 0.2s",
                           }}
                         >
                           🗑️ Delete
@@ -259,7 +277,9 @@ export default function OfficerActivities() {
           <div className="modal-overlay">
             <div className="modal-content">
               <div className="modal-header">
-                <h2>{isEditing ? "✏️ Edit Activity" : "📅 Add New Activity"}</h2>
+                <h2>
+                  {isEditing ? "✏️ Edit Activity" : "📅 Add New Activity"}
+                </h2>
                 <button
                   className="close-btn"
                   onClick={() => {
@@ -383,7 +403,11 @@ export default function OfficerActivities() {
                       className="btn-primary"
                       disabled={loading}
                     >
-                      {loading ? "Saving..." : isEditing ? "💾 Update Activity" : "📅 Add Activity"}
+                      {loading
+                        ? "Saving..."
+                        : isEditing
+                        ? "💾 Update Activity"
+                        : "📅 Add Activity"}
                     </button>
                   </div>
                 </form>

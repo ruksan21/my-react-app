@@ -25,7 +25,11 @@ if (!empty($data->id)) {
     $allowed_fields = [
         'first_name' => 's', 'middle_name' => 's', 'last_name' => 's',
         'email' => 's', 'contact_number' => 's', 'role' => 's', 'status' => 's',
-        'ward_number' => 'i', 'department' => 's', 'assigned_ward' => 'i'
+        'ward_number' => 'i', 'department' => 's', 'assigned_ward_id' => 'i',
+        'gender' => 's', 'dob' => 's', 'province' => 's', 'district' => 's',
+        'city' => 's', 'citizenship_number' => 's', 'officer_id' => 's',
+        'work_province' => 's', 'work_district' => 's', 'work_municipality' => 's',
+        'work_ward' => 'i', 'work_office_location' => 's'
     ];
 
     foreach ($data as $key => $value) {

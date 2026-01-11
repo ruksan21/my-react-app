@@ -72,8 +72,13 @@ if ($method === 'GET') {
         exit();
     }
     
-    if ($ward_id > 0) {
-        $sql = "SELECT * FROM ward_notices WHERE ward_id = ? ORDER BY created_at DESC";
+            if ($ward_id > 0) {
+        // Join with wards to get source location details
+        $sql = "SELECT n.*, w.municipality, w.ward_number, w.district_name, w.province 
+                FROM ward_notices n
+                LEFT JOIN wards w ON n.ward_id = w.id
+                WHERE n.ward_id = ? 
+                ORDER BY n.created_at DESC";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("i", $ward_id);
         $stmt->execute();
@@ -95,7 +100,12 @@ if ($method === 'GET') {
                 ]);
                 exit();
             }
-            $sql = "SELECT * FROM ward_notices WHERE ward_id = ? ORDER BY created_at DESC";
+            // Join with wards to get source location details
+            $sql = "SELECT n.*, w.municipality, w.ward_number, w.district_name, w.province 
+                    FROM ward_notices n
+                    LEFT JOIN wards w ON n.ward_id = w.id
+                    WHERE n.ward_id = ? 
+                    ORDER BY n.created_at DESC";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $resolvedWardId);
             $stmt->execute();
@@ -109,6 +119,12 @@ if ($method === 'GET') {
     $notices = [];
     if ($result && $result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
+            // Construct source string if data available
+            $source = '';
+            if (!empty($row['province']) && !empty($row['municipality'])) {
+                 $source = $row['municipality'] . '-' . $row['ward_number'] . ', ' . $row['district_name'];
+            }
+            $row['source'] = $source;
             $notices[] = $row;
         }
     }
@@ -527,12 +543,14 @@ else if ($method === 'POST') {
                         $user_res = $user_stmt->get_result();
                         
                         if ($user_res && $user_res->num_rows > 0) {
-                            $batch_notif_sql = "INSERT INTO notifications (user_id, ward_id, related_notice_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, NOW())";
+                            // Prepare INSERT with new location columns
+                            $batch_notif_sql = "INSERT INTO notifications (user_id, ward_id, related_notice_id, title, message, type, source_province, source_district, source_municipality, source_ward, is_read, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())";
                             $batch_notif_stmt = $conn->prepare($batch_notif_sql);
                             if ($batch_notif_stmt) {
                                 while ($user_row = $user_res->fetch_assoc()) {
                                     $u_id = (int)$user_row['id'];
-                                    $batch_notif_stmt->bind_param("iiisss", $u_id, $ward_id, $notice_id, $notif_title, $notif_message, $notif_type);
+                                    // p, dist, m, wn come from the ward details fetched earlier
+                                    $batch_notif_stmt->bind_param("iiissssssi", $u_id, $ward_id, $notice_id, $notif_title, $notif_message, $notif_type, $p, $dist, $m, $wn);
                                     $batch_notif_stmt->execute();
                                 }
                                 $batch_notif_stmt->close();

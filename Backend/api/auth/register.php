@@ -150,7 +150,7 @@ $query = "INSERT INTO users (
     '$first_name', '$middle_name', '$last_name', '$email', '$password', '$contact_number', $dob_val, '$gender', 
     '$province', '$district', '$city', $ward_number, '$citizenship_number', $issue_date_val, '$citizenship_issue_district', 
     '$citizenship_photo', '$role', '$officer_id', '$department', '$work_province', '$work_district', '$work_municipality', $work_ward, '$work_office_location', '$id_card_photo', 
-    " . ($role === 'officer' ? "'pending'" : "'active'") . ", '$profile_photo'
+    'active', '$profile_photo'
 )";
 
 try {

@@ -240,33 +240,37 @@
   display: none;
 }
 
-/* Mobile Adjustments */
-@media (max-width: 480px) {
+/* Tablet Adjustments - Compact button */
+@media (max-width: 768px) {
   .ward-selector-container {
-    max-width: 150px;
-    min-width: 0;
+    width: auto;
+    max-width: none;
   }
 
   .ward-selector-button {
-    padding: 6px 10px;
-    font-size: 12px;
-    height: 36px;
-    border-radius: 6px;
+    width: auto;
+    min-width: 44px;
+    padding: 10px 12px;
+    font-size: 14px;
+    height: 44px;
+  }
+
+  .ward-selector-button .ward-text {
+    display: none; /* Hide text on tablet and below */
   }
 
   .ward-selector-button .icon-map-pin {
-    margin-right: 4px;
-    font-size: 12px;
+    margin-right: 0;
+    font-size: 18px;
   }
 
   .ward-selector-button .arrow-icon {
-    margin-left: 4px;
-    font-size: 10px;
+    display: none; /* Hide arrow on mobile, icon is enough */
   }
 
   .ward-selector-dropdown {
     position: fixed;
-    top: 60px; /* Aligned with typical navbar height */
+    top: 64px;
     left: 10px !important;
     right: 10px !important;
     width: calc(100% - 20px) !important;
@@ -299,18 +303,45 @@
     margin-bottom: 20px;
     padding-right: 30px;
   }
+}
+
+/* Mobile Adjustments - Icon only */
+@media (max-width: 480px) {
+  .ward-selector-container {
+    max-width: none;
+    min-width: 0;
+    width: auto;
+  }
+
+  .ward-selector-button {
+    padding: 8px 10px;
+    min-width: 40px;
+    height: 40px;
+    border-radius: 8px;
+  }
+
+  .ward-selector-button .icon-map-pin {
+    font-size: 16px;
+  }
+
+  .ward-selector-dropdown {
+    top: 60px;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .dropdown-title {
+    font-size: 16px;
+    margin-bottom: 20px;
+    padding-right: 30px;
+  }
 
   .search-box {
     margin-bottom: 12px;
   }
 
   .search-input {
-    padding: 10px 12px 10px 38px;
-    font-size: 14px;
-  }
-
-  .search-box .icon-search {
-    left: 12px;
+    padding: 10px 12px;
     font-size: 14px;
   }
 

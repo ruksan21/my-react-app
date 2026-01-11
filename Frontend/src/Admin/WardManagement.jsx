@@ -206,7 +206,6 @@ const WardManagement = () => {
     // Comprehensive Validation - Required fields only
     const requiredFields = {
       ward_number: "Ward Number",
-      district_id: "District",
       municipality: "Municipality",
       chairperson_name: "Chairperson Name",
       chairperson_phone: "Chairperson Phone",
@@ -218,6 +217,12 @@ const WardManagement = () => {
       if (!formData[field] || !formData[field].toString().trim()) {
         missingFields.push(label);
       }
+    }
+
+    // Check district - either district_id OR district_name must be provided
+    if ((!formData.district_id || !formData.district_id.toString().trim()) && 
+        (!formDistrictName || !formDistrictName.trim())) {
+      missingFields.push("District");
     }
 
     if (missingFields.length > 0) {

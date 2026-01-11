@@ -69,6 +69,14 @@ const AdminLayout = ({ children, title }) => {
             💬 Complaints
           </Link>
           <Link
+            to="/admin/notifications"
+            className={`admin-nav-item ${
+              isActive("/admin/notifications") ? "active" : ""
+            }`}
+          >
+            🔔 Notifications
+          </Link>
+          <Link
             to="/admin/settings"
             className={`admin-nav-item ${
               isActive("/admin/settings") ? "active" : ""

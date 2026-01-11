@@ -337,7 +337,11 @@
     order: 2;
     margin-left: auto;
     flex-shrink: 1;
-    gap: 8px; /* Slightly tighter on mobile */
+    gap: 6px; /* Tighter spacing for mobile */
+  }
+
+  .navbar-right > * {
+    flex-shrink: 0; /* Prevent items from shrinking */
   }
 
   .navbar-center {
@@ -364,7 +368,7 @@
   }
 
   .navbar-right {
-    gap: 5px;
+    gap: 4px; /* Even tighter on small mobile */
   }
 
   .navbar-left .logo {

@@ -33,7 +33,11 @@ if ($ward_id === 0) {
     exit;
 }
 
-$sql = "SELECT * FROM ward_activities WHERE ward_id = ? ORDER BY activity_date DESC, activity_time DESC";
+$sql = "SELECT a.*, w.municipality, w.ward_number, w.district_name, w.province 
+        FROM ward_activities a
+        LEFT JOIN wards w ON a.ward_id = w.id
+        WHERE a.ward_id = ? 
+        ORDER BY a.activity_date DESC, a.activity_time DESC";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $ward_id);
 $stmt->execute();
@@ -41,6 +45,12 @@ $result = $stmt->get_result();
 
 $activities = [];
 while ($row = $result->fetch_assoc()) {
+    // Construct source string if data available
+    $source = '';
+    if (!empty($row['province']) && !empty($row['municipality'])) {
+            $source = $row['municipality'] . '-' . $row['ward_number'] . ', ' . $row['district_name'];
+    }
+    $row['source'] = $source;
     $activities[] = $row;
 }
 
