@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../Context/AuthContext";
 import NotificationPanel from "../Component/NotificationPanel";
+import { API_ENDPOINTS } from "../../config/api";
 import "./ProfileSection.css";
 
 const ProfileSection = () => {
@@ -13,6 +14,8 @@ const ProfileSection = () => {
   } = useAuth();
   const [activeTab, setActiveTab] = useState("personal");
   const [isEditing, setIsEditing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -22,18 +25,23 @@ const ProfileSection = () => {
     occupation: "",
     municipality: "",
     ward: "",
+    profileImage: null,
   });
 
   // Initialize form data when user data is available or when entering edit mode
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       setFormData({
         name: user.name || "",
         email: user.email || "",
-        phone: user.phone || "",
+        phone: user.contact_number || user.phone || "",
         occupation: user.occupation || "",
-        municipality: user.municipality || "Kathmandu Metropolitan City",
-        ward: user.ward || "Ward No. 1",
+        municipality:
+          user.municipality ||
+          user.work_municipality ||
+          "Kathmandu Metropolitan City",
+        ward: user.ward_number || user.ward || "1",
+        profileImage: user.photoUrl || user.profileImage || null,
       });
     }
   }, [user]);
@@ -49,10 +57,14 @@ const ProfileSection = () => {
       setFormData({
         name: user.name || "",
         email: user.email || "",
-        phone: user.phone || "",
+        phone: user.contact_number || user.phone || "",
         occupation: user.occupation || "",
-        municipality: user.municipality || "Kathmandu Metropolitan City",
-        ward: user.ward || "Ward No. 1",
+        municipality:
+          user.municipality ||
+          user.work_municipality ||
+          "Kathmandu Metropolitan City",
+        ward: user.ward_number || user.ward || "1",
+        profileImage: user.photoUrl || user.profileImage || null,
       });
     }
   };
@@ -63,39 +75,55 @@ const ProfileSection = () => {
   };
 
   const handleSaveClick = async () => {
-    // TODO: Backend integration - Update user profile
+    if (!user?.id) return;
+
+    setIsSaving(true);
     try {
-      /* Example API call:
-      const response = await fetch('http://localhost/ward-portal/api/update_profile.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // Split name into first and last for backend if needed
+      const nameParts = formData.name.split(" ");
+      const firstName = nameParts[0];
+      const lastName =
+        nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+
+      const response = await fetch(API_ENDPOINTS.users.update, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: user.id,
-          ...formData
-        })
+          id: user.id,
+          first_name: firstName,
+          last_name: lastName,
+          email: formData.email,
+          contact_number: formData.phone,
+          occupation: formData.occupation,
+          // Only users can change their ward/municipality here, officers are locked.
+          ...(user.role !== "officer"
+            ? {
+                municipality: formData.municipality,
+                ward_number: formData.ward,
+              }
+            : {}),
+        }),
       });
-      
+
       const data = await response.json();
-      
-      if (data.status === 'success') {
+
+      if (data.success) {
         // Update local context
-        updateUser(formData);
+        updateUser({
+          ...formData,
+          name: formData.name, // Keep as combined name for frontend
+          contact_number: formData.phone,
+        });
         setIsEditing(false);
-        alert("Profile updated successfully!");
+        addNotification("success", "Profile updated successfully!");
       } else {
-        alert("Error: " + data.message);
+        addNotification("error", data.message || "Error updating profile");
       }
-      */
-
-      // Mock implementation
-      // Update user context with new data
-      updateUser(formData);
-
-      addNotification("success", "Profile updated successfully!");
-      setIsEditing(false);
     } catch (error) {
       console.error("Error updating profile:", error);
-      addNotification("error", "Failed to update profile.");
+      addNotification("error", "Failed to update profile. Connection error.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -112,9 +140,18 @@ const ProfileSection = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // In a real app, upload file here
-      const imageUrl = URL.createObjectURL(file);
-      setFormData({ ...formData, profileImage: imageUrl });
+      setIsUploading(true);
+      // Simulating upload for demo - in real app use FormData and a separate photo upload API
+      setTimeout(() => {
+        const imageUrl = URL.createObjectURL(file);
+        setFormData({ ...formData, profileImage: imageUrl });
+        // updateProfilePhoto(imageUrl); // This updates local context immediately
+        setIsUploading(false);
+        addNotification(
+          "info",
+          "Photo selected. Save changes to update profile."
+        );
+      }, 1000);
     }
   };
 
@@ -210,8 +247,16 @@ const ProfileSection = () => {
                           className="form-control file-input"
                         />
                         <div className="file-upload-icon">
-                          <i className="fa-solid fa-camera"></i>
-                          <span>Change Profile Picture</span>
+                          <i
+                            className={`fa-solid ${
+                              isUploading ? "fa-spinner fa-spin" : "fa-camera"
+                            }`}
+                          ></i>
+                          <span>
+                            {isUploading
+                              ? "Uploading..."
+                              : "Change Profile Picture"}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -283,7 +328,10 @@ const ProfileSection = () => {
                             disabled
                             className="form-input disabled"
                           />
-                          <p className="lock-message">🔒 Your ward has been assigned by admin and cannot be changed</p>
+                          <p className="lock-message">
+                            🔒 Your ward has been assigned by admin and cannot
+                            be changed
+                          </p>
                         </div>
                       ) : (
                         <input
@@ -300,11 +348,16 @@ const ProfileSection = () => {
                       <button
                         className="btn-secondary"
                         onClick={handleCancelClick}
+                        disabled={isSaving}
                       >
                         Cancel
                       </button>
-                      <button className="btn-primary" onClick={handleSaveClick}>
-                        Save Changes
+                      <button
+                        className="btn-primary"
+                        onClick={handleSaveClick}
+                        disabled={isSaving}
+                      >
+                        {isSaving ? "Saving..." : "Save Changes"}
                       </button>
                     </div>
                   </div>
@@ -350,37 +403,68 @@ const ProfileSection = () => {
                 <div className="activities-list">
                   <div className="activity-item">
                     <div className="activity-left">
-                      <span className="activity-icon">💬</span>
+                      <span className="activity-icon blue-bg">📝</span>
                       <div className="activity-texts">
                         <div className="activity-title">
-                          Commented on: Ward Assembly Meeting
+                          Submitted a Complaint:{" "}
+                          <strong>Road Repair Needed</strong>
                         </div>
                         <div className="activity-desc">
-                          "Ramro kaam gareko cha!"
+                          Status:{" "}
+                          <span className="status-badge pending">
+                            Pending Review
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <div className="activity-date">2025/11/23</div>
+                    <div className="activity-date">2 hours ago</div>
                   </div>
+
                   <div className="activity-item">
                     <div className="activity-left">
-                      <span className="activity-icon">⭐</span>
+                      <span className="activity-icon green-bg">⭐</span>
                       <div className="activity-texts">
                         <div className="activity-title">
-                          Reviewed: Road Construction Progress
+                          Reviewed: <strong>Ward Chairperson's Office</strong>
                         </div>
                         <div className="activity-desc">
-                          4 stars - "Satisfactory work."
+                          "Dherai ramro service payeo, dhanyabaad!"
                         </div>
                       </div>
                     </div>
-                    <div className="activity-date">2025/11/22</div>
+                    <div className="activity-date">Yesterday</div>
                   </div>
-                  {/*
-                    TODO: Fetch user's recent comments/reviews from backend API
-                    Example PHP endpoint: /api/user-activity.php?user_id=USER_ID
-                    Map over the returned array to render each activity here.
-                  */}
+
+                  <div className="activity-item">
+                    <div className="activity-left">
+                      <span className="activity-icon purple-bg">👤</span>
+                      <div className="activity-texts">
+                        <div className="activity-title">
+                          Followed:{" "}
+                          <strong>Ward Chairperson - Kanchha Maharjan</strong>
+                        </div>
+                        <div className="activity-desc">
+                          You are now getting updates from Ward 19.
+                        </div>
+                      </div>
+                    </div>
+                    <div className="activity-date">3 days ago</div>
+                  </div>
+
+                  <div className="activity-item">
+                    <div className="activity-left">
+                      <span className="activity-icon orange-bg">💬</span>
+                      <div className="activity-texts">
+                        <div className="activity-title">
+                          Commented on: <strong>New Park Opening Notice</strong>
+                        </div>
+                        <div className="activity-desc">
+                          "Yasto kaam sabaile garnu parcha."
+                        </div>
+                      </div>
+                    </div>
+                    <div className="activity-date">1 week ago</div>
+                  </div>
                 </div>
               </div>
             </div>

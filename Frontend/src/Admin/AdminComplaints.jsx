@@ -107,7 +107,15 @@ const AdminComplaints = () => {
                           color: "var(--text-muted)",
                         }}
                       >
-                        {complaint.ward ? `Ward ${complaint.ward}` : "N/A"}
+                        {complaint.municipality
+                          ? `${complaint.municipality}${
+                              complaint.ward_number
+                                ? `, Ward ${complaint.ward_number}`
+                                : ""
+                            }`
+                          : complaint.ward_number
+                          ? `Ward ${complaint.ward_number}`
+                          : "N/A"}
                       </div>
                     </td>
                     <td>

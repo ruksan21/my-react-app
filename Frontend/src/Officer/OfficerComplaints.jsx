@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../Home/Context/AuthContext";
 import OfficerLayout from "./OfficerLayout";
 import "./OfficerComplaints.css";
@@ -8,6 +8,8 @@ const OfficerComplaints = () => {
   const { user, getOfficerWorkLocation } = useAuth();
   const workLocation = getOfficerWorkLocation();
   const [complaints, setComplaints] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [activeTab, setActiveTab] = useState("citizen"); // "citizen" or "admin"
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState({
     subject: "",
@@ -16,12 +18,20 @@ const OfficerComplaints = () => {
   });
 
   const handleResolve = (id) => {
-    // Optimistic UI update; also attempt to notify backend to update status.
-    setComplaints(
-      complaints.map((complaint) =>
-        complaint.id === id ? { ...complaint, status: "Resolved" } : complaint
-      )
-    );
+    // Optimistic UI update
+    if (activeTab === "citizen") {
+      setComplaints(
+        complaints.map((complaint) =>
+          complaint.id === id ? { ...complaint, status: "Resolved" } : complaint
+        )
+      );
+    } else {
+      setReports(
+        reports.map((report) =>
+          report.id === id ? { ...report, status: "Resolved" } : report
+        )
+      );
+    }
 
     // Update complaint status in backend
     (async () => {
@@ -58,46 +68,78 @@ const OfficerComplaints = () => {
           }),
         }
       );
-      if (res.ok) {
-        alert("Report submitted to Admin successfully.");
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert(data.message || "Report submitted successfully.");
         setShowReportModal(false);
         setReportData({ subject: "", message: "", priority: "Medium" });
+        // Refresh reports if on admin tab
+        if (activeTab === "admin") fetchComplaints();
       } else {
-        alert("Failed to submit report.");
+        alert(data.message || "Failed to submit report.");
       }
     } catch {
       alert("Error submitting report.");
     }
   };
 
-  useEffect(() => {
+  const fetchComplaints = useCallback(async () => {
     if (!workLocation) return;
+    try {
+      const queryParams = {
+        province: workLocation.work_province,
+        municipality: workLocation.work_municipality,
+        ward: workLocation.work_ward,
+      };
 
-    // Fetch complaints from backend
-    (async () => {
-      try {
-        const params = new URLSearchParams({
-          province: workLocation.work_province,
-          municipality: workLocation.work_municipality,
-          ward: workLocation.work_ward,
-          source: "citizen",
-        }).toString();
-
-        const res = await fetch(
-          `${API_ENDPOINTS.communication.getComplaints}?${params}`
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        if (Array.isArray(data)) setComplaints(data);
-      } catch {
-        console.warn("Could not fetch complaints from server");
+      if (activeTab === "citizen") {
+        queryParams.source = "citizen";
+      } else {
+        queryParams.source = "officer";
+        queryParams.user_id = user.id;
       }
-    })();
-  }, [workLocation]);
+
+      const params = new URLSearchParams(queryParams).toString();
+
+      const res = await fetch(
+        `${API_ENDPOINTS.communication.getComplaints}?${params}`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        if (activeTab === "citizen") {
+          setComplaints(data.data);
+        } else {
+          setReports(data.data);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch complaints/reports from server", err);
+    }
+  }, [workLocation, activeTab, user.id]);
+
+  useEffect(() => {
+    fetchComplaints();
+  }, [fetchComplaints]);
 
   return (
     <OfficerLayout title="Complaints">
       <div className="recent-activity">
+        <div className="complaints-tabs" style={{ marginBottom: "20px" }}>
+          <button
+            className={`tab-btn ${activeTab === "citizen" ? "active" : ""}`}
+            onClick={() => setActiveTab("citizen")}
+          >
+            Citizen Complaints
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "admin" ? "active" : ""}`}
+            onClick={() => setActiveTab("admin")}
+          >
+            My Reports to Admin
+          </button>
+        </div>
+
         <div
           style={{
             display: "flex",
@@ -106,7 +148,11 @@ const OfficerComplaints = () => {
             marginBottom: "20px",
           }}
         >
-          <h2 className="section-title">Citizen Complaints</h2>
+          <h2 className="section-title">
+            {activeTab === "citizen"
+              ? "Citizen Complaints"
+              : "Self Reported Issues"}
+          </h2>
           <button
             className="btn-primary"
             onClick={() => setShowReportModal(true)}
@@ -118,7 +164,7 @@ const OfficerComplaints = () => {
         <table className="complaints-table">
           <thead>
             <tr>
-              <th>Complainant</th>
+              <th>{activeTab === "citizen" ? "Complainant" : "Recipient"}</th>
               <th>Subject</th>
               <th>Date</th>
               <th>Status</th>
@@ -126,40 +172,57 @@ const OfficerComplaints = () => {
             </tr>
           </thead>
           <tbody>
-            {complaints.map((complaint) => {
-              return (
-                <tr key={complaint.id}>
-                  <td className="complaint-complainant">
-                    {complaint.complainant}
-                  </td>
-                  <td>{complaint.subject}</td>
-                  <td>{complaint.date}</td>
-                  <td>
-                    <span
-                      className={`status-badge ${
-                        complaint.status === "Resolved" ? "resolved" : "open"
-                      }`}
-                    >
-                      {complaint.status}
-                    </span>
-                  </td>
-                  <td>
-                    {complaint.status === "Open" ? (
-                      <button
-                        onClick={() => handleResolve(complaint.id)}
-                        className="resolve-btn"
+            {(activeTab === "citizen" ? complaints : reports).map(
+              (complaint) => {
+                return (
+                  <tr key={complaint.id}>
+                    <td className="complaint-complainant">
+                      {activeTab === "citizen"
+                        ? complaint.complainant
+                        : "System Admin"}
+                    </td>
+                    <td>{complaint.subject}</td>
+                    <td>
+                      {complaint.date ||
+                        new Date(complaint.created_at).toLocaleDateString()}
+                    </td>
+                    <td>
+                      <span
+                        className={`status-badge ${
+                          complaint.status === "Resolved" ? "resolved" : "open"
+                        }`}
                       >
-                        Mark as Resolved
-                      </button>
-                    ) : (
-                      <span className="resolved-text">
-                        <span>✅</span> Resolved
+                        {complaint.status}
                       </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+                    </td>
+                    <td>
+                      {complaint.status === "Open" ? (
+                        <button
+                          onClick={() => handleResolve(complaint.id)}
+                          className="resolve-btn"
+                        >
+                          Mark as Resolved
+                        </button>
+                      ) : (
+                        <span className="resolved-text">
+                          <span>✅</span> Resolved
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              }
+            )}
+            {(activeTab === "citizen" ? complaints : reports).length === 0 && (
+              <tr>
+                <td
+                  colSpan="5"
+                  style={{ textAlign: "center", padding: "20px" }}
+                >
+                  No {activeTab === "citizen" ? "complaints" : "reports"} found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

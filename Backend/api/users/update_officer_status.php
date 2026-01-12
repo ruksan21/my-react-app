@@ -31,10 +31,14 @@ if (!empty($data->id) && !empty($data->status)) {
             $work_district = $officer['work_district'];
             $work_municipality = $officer['work_municipality'];
             $work_ward = $officer['work_ward'];
+            // Extract number from ward string (e.g., "Ward 1" -> 1)
+            $work_ward_num = intval(preg_replace('/[^0-9]/', '', $work_ward));
+            if ($work_ward_num == 0 && is_numeric($work_ward)) $work_ward_num = intval($work_ward);
             
             // Check if ward exists with robust matching (handle NULLs and fuzzy match)
+            // STRICT MATCH
             $ward_query = "SELECT id FROM wards 
-                          WHERE ward_number = $work_ward
+                          WHERE ward_number = $work_ward_num
                           AND (
                               province IS NULL OR province = '' 
                               OR TRIM(province) LIKE TRIM('$work_province')
@@ -54,6 +58,20 @@ if (!empty($data->id) && !empty($data->status)) {
                           )
                           LIMIT 1";
             $ward_result = $conn->query($ward_query);
+
+            // RELAXED MATCH (Fallback)
+            if (!$ward_result || $ward_result->num_rows == 0) {
+                 $ward_query = "SELECT id FROM wards 
+                                  WHERE ward_number = $work_ward_num
+                                  AND (
+                                      TRIM(municipality) LIKE TRIM('$work_municipality')
+                                      OR TRIM(municipality) LIKE CONCAT('%', TRIM('$work_municipality'), '%')
+                                      OR '$work_municipality' LIKE CONCAT('%', TRIM(municipality), '%')
+                                  )
+                                  LIMIT 1";
+                 $ward_result = $conn->query($ward_query);
+            }
+
             
             if ($ward_result && $ward_result->num_rows > 0) {
                 // Ward exists - approve officer and assign ward_id
@@ -80,8 +98,9 @@ if (!empty($data->id) && !empty($data->status)) {
                 // Ward doesn't exist - cannot approve
                 echo json_encode([
                     "success" => false, 
-                    "message" => "Cannot approve officer. Ward $work_ward in $work_municipality, $work_district has not been created yet. Please create the ward first.",
-                    "ward_missing" => true
+                    "message" => "Cannot approve officer. Ward $work_ward ($work_ward_num) in $work_municipality, $work_district has not been created yet. Please create the ward first. DB Error: " . $conn->error,
+                    "ward_missing" => true,
+                    "debug_query" => $ward_query
                 ]);
             }
         } else {

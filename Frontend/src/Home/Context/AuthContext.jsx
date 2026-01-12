@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [allUsers, setAllUsers] = useState([]);
   const [pendingOfficers, setPendingOfficers] = useState([]);
   const [wards, setWards] = useState([]);
+  const [wardsLoading, setWardsLoading] = useState(false);
 
   // Data Fetching Functions
   const fetchAllUsers = async () => {
@@ -49,6 +50,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshWards = async () => {
+    setWardsLoading(true);
     try {
       const response = await fetch(API_ENDPOINTS.wards.getAll);
       const data = await response.json();
@@ -70,6 +72,8 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Error fetching wards:", error);
+    } finally {
+      setWardsLoading(false);
     }
   };
 
@@ -82,17 +86,25 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
       if (data.success && data.data && data.data.length > 0) {
         const dbUser = data.data[0];
+        if (dbUser.first_name && dbUser.last_name) {
+          dbUser.name = `${dbUser.first_name} ${dbUser.last_name}`;
+        }
+        if (dbUser.photo) {
+          dbUser.photoUrl = `${API_ENDPOINTS.authUploads}/${dbUser.photo}`;
+        }
+
         // Only update if there's a meaningful change in location or ID
         if (
           dbUser.work_province !== user.work_province ||
           dbUser.work_district !== user.work_district ||
           dbUser.work_municipality !== user.work_municipality ||
-          dbUser.work_ward !== user.work_ward
+          dbUser.work_ward !== user.work_ward ||
+          dbUser.photo !== user.photo
         ) {
           const updatedUser = { ...user, ...dbUser };
           setUser(updatedUser);
           localStorage.setItem("user", JSON.stringify(updatedUser));
-          console.log("Session refreshed with latest DB location.");
+          console.log("Session refreshed with latest DB data.");
         }
       }
     } catch (error) {
@@ -109,6 +121,15 @@ export const AuthProvider = ({ children }) => {
 
     if (storedUser && loggedIn === "true") {
       const userData = JSON.parse(storedUser);
+
+      // Fix for missing name or photoUrl in stored data
+      if (!userData.name && userData.first_name && userData.last_name) {
+        userData.name = `${userData.first_name} ${userData.last_name}`;
+      }
+      if (!userData.photoUrl && userData.photo) {
+        userData.photoUrl = `${API_ENDPOINTS.authUploads}/${userData.photo}`;
+      }
+
       setUser(userData);
       setIsLoggedIn(true);
 
@@ -138,10 +159,17 @@ export const AuthProvider = ({ children }) => {
   // --- Auth Functions ---
 
   const login = (userData, workLocation = null) => {
-    // In a real app, we'd verify against `allUsers` database here.
-    // For now, we trust the `userData` passed from Login component or check mock.
-
     const userWithLocation = { ...userData };
+
+    // Map DB fields to frontend standard fields
+    if (userData.first_name && userData.last_name) {
+      userWithLocation.name = `${userData.first_name} ${userData.last_name}`;
+    }
+
+    if (userData.photo) {
+      userWithLocation.photoUrl = `${API_ENDPOINTS.authUploads}/${userData.photo}`;
+    }
+
     if (workLocation) {
       userWithLocation.workLocation = workLocation;
     }
@@ -468,6 +496,7 @@ export const AuthProvider = ({ children }) => {
     allUsers, // Exposed for Admin
     pendingOfficers, // Exposed for Admin
     wards, // Exposed for Admin
+    wardsLoading,
     login,
     logout,
     updateUser,

@@ -120,7 +120,7 @@ const CommentSection = ({ workId }) => {
 
     // Validation
     const newErrors = {};
-    if (rating === 0) {
+    if (user.role === "citizen" && rating === 0) {
       newErrors.rating = "Please select a rating";
     }
     if (comment.trim() === "") {
@@ -237,18 +237,19 @@ const CommentSection = ({ workId }) => {
               Rating: {renderStars(0, false)}
             </div>
             <p className="login-message">
-              Please log in first to save feedback.
+              Please log in as a Citizen or Officer to join the discussion.
             </p>
           </div>
-        ) : user.role !== "citizen" ? (
+        ) : user.role !== "citizen" && user.role !== "officer" ? (
           <div className="role-restricted-message">
             <span className="info-icon">ℹ️</span>
             <p>
-              Only registered <strong>Citizens</strong> can submit reviews and
-              ratings for development works.
+              Only registered <strong>Citizens</strong> or{" "}
+              <strong>Officers</strong> can participate in development work
+              discussions.
             </p>
             <p className="sub-text">
-              As an {user.role}, you can view all community feedback below.
+              As a {user.role}, you can view all community feedback below.
             </p>
           </div>
         ) : (
@@ -259,26 +260,41 @@ const CommentSection = ({ workId }) => {
                 alt={user.name}
                 className="user-avatar"
               />
-              <span className="user-name">{user.name}</span>
+              <span className="user-name">
+                {user.name}{" "}
+                {user.role === "officer" && (
+                  <span className="officer-badge">Official</span>
+                )}
+              </span>
             </div>
 
-            <div className="rating-input">
-              <label>
-                Rating:{" "}
-                {rating > 0 && (
-                  <span className="rating-value">({rating}/5)</span>
+            {user.role === "citizen" ? (
+              <div className="rating-input">
+                <label>
+                  Rating:{" "}
+                  {rating > 0 && (
+                    <span className="rating-value">({rating}/5)</span>
+                  )}
+                </label>
+                {renderStars(rating, true)}
+                {errors.rating && (
+                  <span className="error-message">{errors.rating}</span>
                 )}
-              </label>
-              {renderStars(rating, true)}
-              {errors.rating && (
-                <span className="error-message">{errors.rating}</span>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="officer-comment-info">
+                <p>Posting as Ward Officer</p>
+              </div>
+            )}
 
             <div className="textarea-wrapper">
               <textarea
                 className={`comment-textarea ${errors.comment ? "error" : ""}`}
-                placeholder="Write your comment (minimum 10 characters)..."
+                placeholder={
+                  user.role === "officer"
+                    ? "Write an official update or comment..."
+                    : "Write your comment (minimum 10 characters)..."
+                }
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows="4"
@@ -321,99 +337,115 @@ const CommentSection = ({ workId }) => {
                   className="comment-avatar"
                 />
                 <div className="comment-user-info">
-                  <span className="comment-user-name">{c.user_name}</span>
+                  <span className="comment-user-name">
+                    {c.user_name}
+                    {c.user_role === "officer" && (
+                      <span className="officer-badge">Official</span>
+                    )}
+                  </span>
                   <span className="comment-date">
                     {formatDate(c.created_at)}
                   </span>
                 </div>
               </div>
-              <div className="comment-rating">
-                {renderStars(c.rating, false)}
-              </div>
+              {c.rating > 0 && (
+                <div className="comment-rating">
+                  {renderStars(c.rating, false)}
+                </div>
+              )}
               <p className="comment-text">{c.comment}</p>
 
               {/* Replies Section */}
-              <div className="replies-section">
-                <button
-                  className="expand-replies-btn"
-                  onClick={() => toggleExpandComment(c.id)}
-                >
-                  {expandedComments[c.id] ? "▼" : "▶"} Officer Responses (
-                  {replies[c.id]?.length || 0})
-                </button>
+              {(replies[c.id]?.length > 0 || user?.role === "officer") && (
+                <div className="replies-section">
+                  <button
+                    className="expand-replies-btn"
+                    onClick={() => toggleExpandComment(c.id)}
+                  >
+                    <span className="reply-toggle-icon">
+                      {expandedComments[c.id] ? "💬" : "🗨️"}
+                    </span>
+                    {replies[c.id]?.length > 0
+                      ? `Official Replies (${replies[c.id].length})`
+                      : "Add Official Response"}
+                    <span
+                      className={`reply-arrow ${
+                        expandedComments[c.id] ? "up" : ""
+                      }`}
+                    >
+                      ▼
+                    </span>
+                  </button>
 
-                {expandedComments[c.id] && (
-                  <div className="replies-container">
-                    {/* Display existing replies */}
-                    {replies[c.id] && replies[c.id].length > 0 && (
-                      <div className="replies-list">
-                        {replies[c.id].map((reply) => (
-                          <div key={reply.id} className="reply-card">
-                            <div className="reply-user">
-                              <img
-                                src={reply.officer_photo}
-                                alt={reply.officer_name}
-                                className="reply-avatar"
-                              />
-                              <div className="reply-user-info">
-                                <span className="reply-user-name">
-                                  🔸 {reply.officer_name}
-                                </span>
-                                {reply.officer_location && (
-                                  <span className="reply-user-location">
-                                    {reply.officer_location}
+                  {expandedComments[c.id] && (
+                    <div className="replies-container">
+                      {/* Display existing replies */}
+                      {replies[c.id] && replies[c.id].length > 0 && (
+                        <div className="replies-list">
+                          {replies[c.id].map((reply) => (
+                            <div key={reply.id} className="reply-card">
+                              <div className="reply-user">
+                                <img
+                                  src={reply.officer_photo}
+                                  alt={reply.officer_name}
+                                  className="reply-avatar"
+                                />
+                                <div className="reply-user-info">
+                                  <span className="reply-user-name">
+                                    🔸 {reply.officer_name}
                                   </span>
-                                )}
-                                <span className="reply-date">
-                                  {formatDate(reply.created_at)}
-                                </span>
+                                  {reply.officer_location && (
+                                    <span className="reply-user-location">
+                                      {reply.officer_location}
+                                    </span>
+                                  )}
+                                  <span className="reply-date">
+                                    {formatDate(reply.created_at)}
+                                  </span>
+                                </div>
                               </div>
+                              <p className="reply-text">{reply.reply_text}</p>
                             </div>
-                            <p className="reply-text">{reply.reply_text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Reply form for officers only */}
-                    {user && user.role === "officer" && (
-                      <div className="reply-form">
-                        <textarea
-                          className="reply-textarea"
-                          placeholder="Write officer response..."
-                          value={replyText[c.id] || ""}
-                          onChange={(e) =>
-                            setReplyText((prev) => ({
-                              ...prev,
-                              [c.id]: e.target.value,
-                            }))
-                          }
-                          rows="2"
-                          maxLength="300"
-                        />
-                        <div className="reply-form-footer">
-                          <span className="char-counter">
-                            {(replyText[c.id] || "").length}/300
-                          </span>
-                          <button
-                            className="reply-submit-btn"
-                            onClick={() => handleReplySubmit(c.id)}
-                            disabled={replyLoading[c.id]}
-                          >
-                            {replyLoading[c.id] ? "Posting..." : "Reply"}
-                          </button>
+                          ))}
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {user && user.role !== "officer" && (
-                      <p className="officer-only-message">
-                        Only officers can reply to comments
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
+                      {/* Reply form for officers only */}
+                      {user && user.role === "officer" && (
+                        <div className="reply-form">
+                          <textarea
+                            className="reply-textarea"
+                            placeholder="Write an official response..."
+                            value={replyText[c.id] || ""}
+                            onChange={(e) =>
+                              setReplyText((prev) => ({
+                                ...prev,
+                                [c.id]: e.target.value,
+                              }))
+                            }
+                            rows="2"
+                            maxLength="300"
+                          />
+                          <div className="reply-form-footer">
+                            <span className="char-counter">
+                              {(replyText[c.id] || "").length}/300
+                            </span>
+                            <button
+                              className="reply-submit-btn"
+                              onClick={() => handleReplySubmit(c.id)}
+                              disabled={replyLoading[c.id]}
+                            >
+                              {replyLoading[c.id]
+                                ? "Posting..."
+                                : "Post Response"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))
         )}

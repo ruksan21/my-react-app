@@ -5,6 +5,7 @@ import Login from "./Home/Auth/Login";
 import RoleSelection from "./Home/Auth/RoleSelection";
 import Register from "./Home/Auth/Register";
 import Forget from "./Home/Auth/Forget";
+import ResetPassword from "./Home/Auth/ResetPassword";
 import About from "./Home/Pages/About";
 import Documents from "./Home/Pages/Documents";
 import ProfileSection from "./Home/Pages/ProfileSection";
@@ -19,6 +20,8 @@ import Departments from "./Home/Pages/Departments";
 import ProtectedRoute from "./Home/utils/ProtectedRoute";
 import AdminRoutes from "./Admin/AdminRoutes";
 import OfficerRoutes from "./Officer/OfficerRoutes";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Simple wrapper for pages that need navbar
 const PageWithNavbar = ({ children }) => {
@@ -60,9 +63,16 @@ function App() {
           />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<RoleSelection />} />
-          <Route path="/register/citizen" element={<Register initialRole="citizen" hideRoleSelector={true} />} />
-          <Route path="/register/officer" element={<Register initialRole="officer" hideRoleSelector={true} />} />
+          <Route
+            path="/register/citizen"
+            element={<Register initialRole="citizen" hideRoleSelector={true} />}
+          />
+          <Route
+            path="/register/officer"
+            element={<Register initialRole="officer" hideRoleSelector={true} />}
+          />
           <Route path="/forgot-password" element={<Forget />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/help" element={<HelpSupport />} />
           <Route path="/assets" element={<Assets />} />
           <Route path="/activities" element={<Activities />} />
@@ -91,6 +101,7 @@ function App() {
             }
           />
         </Routes>
+        <ToastContainer position="top-right" autoClose={3000} />
       </Router>
     </WardProvider>
   );

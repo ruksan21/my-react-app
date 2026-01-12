@@ -63,3 +63,32 @@
   align-items: center;
   gap: 4px;
 }
+
+/* Tabs Styling */
+.complaints-tabs {
+  display: flex;
+  gap: 15px;
+  border-bottom: 2px solid #edf2f7;
+  padding-bottom: 2px;
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+  color: #718096;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.tab-btn:hover {
+  color: #4a90e2;
+}
+
+.tab-btn.active {
+  color: #4a90e2;
+  border-bottom-color: #4a90e2;
+}

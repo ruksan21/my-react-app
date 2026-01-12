@@ -183,13 +183,15 @@ export default function Contact() {
         }
 
         const data = await res.json();
-        
+
         if (!data.success) {
           // Check if it's because no officer exists
           if (data.no_officer) {
             setFormStatus({
               type: "error",
-              message: data.message || "No officer is currently assigned to this ward. Please contact the municipality office directly.",
+              message:
+                data.message ||
+                "No officer is currently assigned to this ward. Please contact the municipality office directly.",
             });
           } else {
             throw new Error(data.message || "Submission failed");
@@ -202,7 +204,7 @@ export default function Contact() {
           type: "success",
           message: data.message || "Message sent successfully!",
         });
-        
+
         // Reset form
         setFormData({
           fullName: "",
@@ -213,11 +215,11 @@ export default function Contact() {
           priority: "Medium",
           file: null,
         });
-        
+
         // Reset file input
         const fileInput = document.querySelector('input[type="file"]');
-        if (fileInput) fileInput.value = '';
-        
+        if (fileInput) fileInput.value = "";
+
         setTimeout(() => setFormStatus(null), 4000);
       } catch (err) {
         console.error("Contact form error:", err);
@@ -414,12 +416,18 @@ export default function Contact() {
                     {formData.message.length}/500
                   </div>
                 </div>
-                
+
                 {/* File Upload with better design */}
                 <div className="form-group">
                   <label>
                     📎 Attach Image (Optional)
-                    <small style={{ marginLeft: "8px", color: "#666", fontWeight: "normal" }}>
+                    <small
+                      style={{
+                        marginLeft: "8px",
+                        color: "#667085",
+                        fontWeight: "normal",
+                      }}
+                    >
                       (JPG, PNG, GIF - Max 5MB)
                     </small>
                   </label>
@@ -447,8 +455,8 @@ export default function Contact() {
                         type="button"
                         className="file-remove-btn"
                         onClick={() => {
-                          setFormData(prev => ({ ...prev, file: null }));
-                          document.getElementById('fileInput').value = '';
+                          setFormData((prev) => ({ ...prev, file: null }));
+                          document.getElementById("fileInput").value = "";
                         }}
                       >
                         ✕
@@ -456,7 +464,7 @@ export default function Contact() {
                     )}
                   </div>
                 </div>
-                
+
                 <button
                   type="submit"
                   className="submit-btn"
@@ -490,8 +498,8 @@ export default function Contact() {
                       title="Ward Office Location"
                       src={`https://maps.google.com/maps?q=${wardInfo.location}&z=15&output=embed`}
                       width="100%"
-                      height="300"
-                      style={{ border: 0, borderRadius: "8px" }}
+                      height="400"
+                      style={{ border: 0, borderRadius: "12px" }}
                       allowFullScreen=""
                       loading="lazy"
                     ></iframe>

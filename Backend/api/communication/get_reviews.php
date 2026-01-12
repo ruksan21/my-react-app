@@ -2,6 +2,8 @@
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: GET");
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 
 require_once '../db_connect.php';
 

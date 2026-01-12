@@ -4,7 +4,7 @@ header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 header("Content-Type: application/json; charset=UTF-8");
 
-require_once '../db_connect.php';
+require_once __DIR__ . '/../db_connect.php';
 
 $response = array("success" => false, "message" => "Unknown error");
 
@@ -56,25 +56,60 @@ if (!$ward_id || !$full_name || !$subject || !$message) {
     exit();
 }
 
-// Check if officer exists in the ward
-$officer_check = $conn->prepare("SELECT u.id, u.full_name, u.email FROM users u WHERE u.ward_id = ? AND u.role = 'officer' AND u.status = 'active' LIMIT 1");
-$officer_check->bind_param("i", $ward_id);
-$officer_check->execute();
-$officer_result = $officer_check->get_result();
-
-if ($officer_result->num_rows === 0) {
-    echo json_encode([
-        "success" => false, 
-        "message" => "No officer is currently assigned to this ward. Please contact the municipality office directly.",
-        "no_officer" => true
-    ]);
-    exit();
+// Check if reporter is an officer (Admin Report)
+$is_officer_report = false;
+if ($user_id) {
+    $check_role = $conn->prepare("SELECT role FROM users WHERE id = ?");
+    $check_role->bind_param("i", $user_id);
+    $check_role->execute();
+    $role_res = $check_role->get_result();
+    if ($role_res && $role_res->num_rows > 0) {
+        if ($role_res->fetch_assoc()['role'] === 'officer') {
+            $is_officer_report = true;
+        }
+    }
 }
 
-$officer = $officer_result->fetch_assoc();
-$officer_id = $officer['id'];
-$officer_name = $officer['full_name'];
-$officer_email = $officer['email'];
+$officer_id = null;
+$officer_name = 'Admin';
+
+if (!$is_officer_report) {
+    // Check if officer exists in the ward (for Citizen Complaint)
+    // FIX: Using assigned_ward_id and concat name because users table doesn't have full_name or ward_id
+    $officer_check = $conn->prepare("SELECT id, CONCAT(first_name, ' ', last_name) as full_name, email FROM users WHERE (assigned_ward_id = ? OR work_ward = ?) AND role = 'officer' AND status = 'active' LIMIT 1");
+    // We try both assigned_ward_id and work_ward (for older records)
+    $stmt_ward_num = 0;
+    if ($ward_number) $stmt_ward_num = intval($ward_number);
+    
+    $officer_check->bind_param("ii", $ward_id, $stmt_ward_num);
+    $officer_check->execute();
+    $officer_result = $officer_check->get_result();
+
+    if ($officer_result->num_rows === 0) {
+        echo json_encode([
+            "success" => false, 
+            "message" => "No officer is currently assigned to this ward. Please contact the municipality office directly.",
+            "no_officer" => true
+        ]);
+        exit();
+    }
+
+    $officer = $officer_result->fetch_assoc();
+    $officer_id = $officer['id'];
+    $officer_name = $officer['full_name'];
+    $officer_email = $officer['email'];
+} else {
+    // It's an officer report, find an admin to notify
+    $admin_check = $conn->query("SELECT id, CONCAT(first_name, ' ', last_name) as full_name FROM users WHERE role = 'admin' AND status = 'active' LIMIT 1");
+    if ($admin_check && $admin_check->num_rows > 0) {
+        $admin = $admin_check->fetch_assoc();
+        $officer_id = $admin['id']; // We reuse officer_id as recipient_id
+        $officer_name = "System Admin";
+    } else {
+        $officer_id = 1; // Fallback to first user
+        $officer_name = "System Admin";
+    }
+}
 
 // Handle File Upload
 $image_url = null;
@@ -99,7 +134,6 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         if (move_uploaded_file($fileTmpPath, $dest_path)) {
             $image_url = $newFileName;
         } else {
-            // File upload failed
             error_log("Complaint image upload failed: Could not move file to $dest_path");
         }
     } else {
@@ -118,12 +152,6 @@ $stmt = $conn->prepare($query);
 if ($user_id) {
     $stmt->bind_param("iisssss", $ward_id, $user_id, $full_name, $subject, $message, $priority, $image_url);
 } else {
-    // If no user_id, bind NULL for it. This requires flexible binding logic or separate query.
-    // Simplest approach: Use separate query if binding failure.
-    // But bind_param cannot handle literal NULL for integer types easily in dynamic bindings.
-    // Let's use the same trick as before or use dynamic construction.
-    
-    // Easier approach: Use a separate prepared statement for NULL user_id
     $query_no_user = "INSERT INTO complaints (ward_id, complainant, subject, message, priority, image_url, status, created_at) 
                       VALUES (?, ?, ?, ?, ?, ?, 'Open', NOW())";
     $stmt = $conn->prepare($query_no_user);
@@ -133,36 +161,49 @@ if ($user_id) {
 if ($stmt->execute()) {
     $complaint_id = $conn->insert_id;
 
-    // Create notification for the ward officer
-    $notif_title = "New Complaint: " . $subject;
-    $notif_message = $full_name . " has submitted a complaint. Subject: " . $subject;
+    // Create notification for the recipient (Officer or Admin)
+    $notif_title = ($is_officer_report ? "Officer Report: " : "New Complaint: ") . $subject;
+    $notif_message = $full_name . " has submitted a " . ($is_officer_report ? "report" : "complaint") . ". Subject: " . $subject;
     
     // Fetch location details for the notification source
-    $w_sql = "SELECT province, district_name, municipality, ward_number FROM wards WHERE id = ?";
-    $w_stmt = $conn->prepare($w_sql);
-    $w_stmt->bind_param("i", $ward_id);
-    $w_stmt->execute();
-    $w_res = $w_stmt->get_result();
-    $w_data = $w_res->fetch_assoc();
+    $province_val = $province;
+    $municipality_val = $municipality;
+    $ward_num_val = $ward_number;
+
+    if ($ward_id) {
+        $w_sql = "SELECT province, district_name, municipality, ward_number FROM wards WHERE id = ?";
+        $w_stmt = $conn->prepare($w_sql);
+        $w_stmt->bind_param("i", $ward_id);
+        $w_stmt->execute();
+        $w_res = $w_stmt->get_result();
+        if ($w_res && $w_res->num_rows > 0) {
+            $w_data = $w_res->fetch_assoc();
+            $province_val = $w_data['province'];
+            $municipality_val = $w_data['municipality'];
+            $ward_num_val = $w_data['ward_number'];
+        }
+    }
     
-    $notif_query = "INSERT INTO notifications (user_id, ward_id, title, message, type, source_province, source_district, source_municipality, source_ward, is_read, created_at) VALUES (?, ?, ?, ?, 'complaint', ?, ?, ?, ?, 0, NOW())";
+    $notif_type = $is_officer_report ? 'system' : 'complaint';
+    $notif_query = "INSERT INTO notifications (user_id, ward_id, title, message, type, source_province, source_municipality, source_ward, is_read, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())";
     $notif_stmt = $conn->prepare($notif_query);
-    $notif_stmt->bind_param("iisssssi", $officer_id, $ward_id, $notif_title, $notif_message, $w_data['province'], $w_data['district_name'], $w_data['municipality'], $w_data['ward_number']);
+    $notif_stmt->bind_param("iissssss", $officer_id, $ward_id, $notif_title, $notif_message, $notif_type, $province_val, $municipality_val, $ward_num_val);
     $notif_stmt->execute();
 
     // Create System Alert
-    $alert_title = "New Complaint: " . $subject;
+    $alert_title = $notif_title;
     $alert_snippet = substr($message, 0, 50) . (strlen($message) > 50 ? "..." : "");
-    $alert_message = "New complaint from $full_name: $alert_snippet";
+    $alert_message = "From $full_name: $alert_snippet";
     
-    $alert_query = "INSERT INTO system_alerts (ward_id, type, title, message, status, created_at) VALUES (?, 'warning', ?, ?, 'unread', NOW())";
+    $alert_query = "INSERT INTO system_alerts (ward_id, type, title, message, status, created_at) VALUES (?, ?, ?, ?, 'unread', NOW())";
     $alert_stmt = $conn->prepare($alert_query);
-    $alert_stmt->bind_param("iss", $ward_id, $alert_title, $alert_message);
+    $a_type = $is_officer_report ? 'info' : 'warning';
+    $alert_stmt->bind_param("isss", $ward_id, $a_type, $alert_title, $alert_message);
     $alert_stmt->execute();
 
     echo json_encode([
         "success" => true, 
-        "message" => "Complaint submitted successfully! Your message has been sent to " . $officer_name . ".", 
+        "message" => "Successfully submitted! Your message has been sent to " . $officer_name . ".", 
         "id" => $complaint_id,
         "officer_name" => $officer_name
     ]);

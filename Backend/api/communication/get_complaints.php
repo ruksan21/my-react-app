@@ -11,7 +11,8 @@ $ward_id = isset($_GET['ward_id']) ? intval($_GET['ward_id']) : null;
 $province = $_GET['province'] ?? null;
 $municipality = $_GET['municipality'] ?? null;
 $ward_number = $_GET['ward'] ?? null;
-$source_role = isset($_GET['source']) ? $_GET['source'] : null; // 'citizen' or 'officer'
+$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
+$source_role = isset($_GET['source']) ? $_GET['source'] : null; // 'citizen', 'officer', 'admin_view'
 
 $sql = "SELECT c.*, u.role as user_role, w.municipality, w.ward_number, w.province
         FROM complaints c 
@@ -21,6 +22,10 @@ $sql = "SELECT c.*, u.role as user_role, w.municipality, w.ward_number, w.provin
 
 if ($ward_id) {
     $sql .= " AND c.ward_id = $ward_id";
+}
+
+if ($user_id) {
+    $sql .= " AND c.complainant_user_id = $user_id";
 }
 
 if ($province) {
@@ -36,13 +41,13 @@ if ($ward_number) {
 }
 
 if ($source_role === 'officer') {
-    // Complaints MADE BY officers (for Admin to see)
-    // Assuming officers have role='officer' in users table
+    // Reports MADE BY officers (for Admin to see)
     $sql .= " AND u.role = 'officer'";
 } elseif ($source_role === 'citizen') {
     // Complaints MADE BY citizens (for Officer to see)
-    // Either user is null (guest) or role is citizen
     $sql .= " AND (u.role = 'citizen' OR u.role IS NULL)";
+} elseif ($source_role === 'admin_view') {
+    // Admin sees everything, but can filter by role in frontend
 }
 
 $sql .= " ORDER BY c.created_at DESC";

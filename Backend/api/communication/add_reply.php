@@ -4,6 +4,9 @@ header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json");
 
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
 require_once '../db_connect.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -24,7 +27,7 @@ if ($feedback_id === 0 || $officer_id === 0 || empty($reply_text)) {
 }
 
 // Verify officer exists and has proper role
-$officer_check = $conn->prepare("SELECT id, full_name FROM users WHERE id = ? AND role = 'officer'");
+$officer_check = $conn->prepare("SELECT id, first_name, last_name FROM users WHERE id = ? AND role = 'officer'");
 $officer_check->bind_param("i", $officer_id);
 $officer_check->execute();
 $officer_result = $officer_check->get_result();
@@ -36,7 +39,7 @@ if ($officer_result->num_rows === 0) {
 }
 
 $officer_row = $officer_result->fetch_assoc();
-$officer_name = $officer_row['full_name'];
+$officer_name = $officer_row['first_name'] . ' ' . $officer_row['last_name'];
 $officer_check->close();
 
 // Check if feedback exists

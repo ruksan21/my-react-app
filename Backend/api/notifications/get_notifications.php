@@ -3,6 +3,8 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json");
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 
 require_once "../db_connect.php";
 
@@ -14,6 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 try {
     $userId = $_GET['user_id'] ?? null;
     $wardId = $_GET['ward_id'] ?? null;
+    
+    // Define expiry clause to hide expired related notices
+    $expiryClause = "(wn.expiry_date IS NULL OR wn.expiry_date >= CURDATE())";
     
     if (!$userId) {
         echo json_encode([

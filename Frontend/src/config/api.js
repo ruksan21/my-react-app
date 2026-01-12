@@ -6,6 +6,7 @@ export const API_ENDPOINTS = {
     login: `${BASE_URL}/auth/login.php`,
     register: `${BASE_URL}/auth/register.php`,
     resetPassword: `${BASE_URL}/auth/reset_password.php`,
+    sendResetLink: `${BASE_URL}/auth/send_reset_link.php`,
   },
 
   // User Management
@@ -13,12 +14,14 @@ export const API_ENDPOINTS = {
     getAll: `${BASE_URL}/users/get_users.php`,
     delete: `${BASE_URL}/users/delete_user.php`,
     update: `${BASE_URL}/users/update_user.php`,
+    changePassword: `${BASE_URL}/users/change_password.php`,
     getPendingOfficers: `${BASE_URL}/users/get_pending_officers.php`,
     updateOfficerStatus: `${BASE_URL}/users/update_officer_status.php`,
   },
 
   // Ward Management
   wards: {
+    base: `${BASE_URL}/wards`,
     getAll: `${BASE_URL}/wards/list_all_wards.php`,
     getDetails: `${BASE_URL}/wards/fetch_ward_full_details.php`,
     add: `${BASE_URL}/wards/add_ward.php`,

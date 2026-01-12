@@ -142,6 +142,8 @@ $dob_val = $dob ? "'$dob'" : "NULL";
 $issue_date_val = $citizenship_issue_date ? "'$citizenship_issue_date'" : "NULL";
 
 // Database ma user ko sabai info insert gareko
+
+$user_status = ($role === 'officer' ? 'pending' : 'active');
 $query = "INSERT INTO users (
     first_name, middle_name, last_name, email, password, contact_number, dob, gender, 
     province, district, city, ward_number, citizenship_number, citizenship_issue_date, citizenship_issue_district, 
@@ -150,7 +152,7 @@ $query = "INSERT INTO users (
     '$first_name', '$middle_name', '$last_name', '$email', '$password', '$contact_number', $dob_val, '$gender', 
     '$province', '$district', '$city', $ward_number, '$citizenship_number', $issue_date_val, '$citizenship_issue_district', 
     '$citizenship_photo', '$role', '$officer_id', '$department', '$work_province', '$work_district', '$work_municipality', $work_ward, '$work_office_location', '$id_card_photo', 
-    'active', '$profile_photo'
+    '$user_status', '$profile_photo'
 )";
 
 try {
@@ -158,8 +160,8 @@ try {
         
         // Create System Alert
         // Create System Alert
-        $alert_type = $role === 'officer' ? "info" : "success";
-        $alert_title = $role === 'officer' ? "New Officer Application" : "New User Registration";
+        $alert_type = $role === 'officer' ? "alert" : "success";
+        $alert_title = $role === 'officer' ? "New Officer Pending Approval" : "New User Registration";
         $alert_message = "A new " . $role . " (" . $first_name . " " . $last_name . ") has registered.";
         
         // Determine Ward ID for the alert
@@ -180,19 +182,35 @@ try {
              }
         }
         
-        $alert_query = "INSERT INTO system_alerts (ward_id, type, title, message, status, created_at) VALUES ($alert_ward_id, '$alert_type', '$alert_title', '$alert_message', 'unread', NOW())";
-        $conn->query($alert_query); 
+        // Administrative Tasks (Alerts and Notifications)
+        // Wrapped in try-catch to ensure registration success even if non-critical tasks fail
+        try {
+            $alert_query = "INSERT INTO system_alerts (ward_id, type, title, message, status, created_at) VALUES ($alert_ward_id, '$alert_type', '$alert_title', '$alert_message', 'unread', NOW())";
+            $conn->query($alert_query); 
+
+            $notif_type = $role === 'officer' ? 'alert' : 'system';
+            $notif_message = "New " . ucfirst($role) . ": " . $first_name . " " . $last_name;
+            
+            // For admin notifications, find an admin user ID or default to 1 if not found
+            $admin_res = $conn->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+            $target_admin_id = ($admin_res && $admin_res->num_rows > 0) ? $admin_res->fetch_assoc()['id'] : 1;
+            
+            $conn->query("INSERT INTO notifications (user_id, type, title, message, is_read, created_at) VALUES ($target_admin_id, '$notif_type', '$alert_title', '$notif_message', 0, NOW())");
+        } catch (Exception $e) {
+            // Log the error but don't fail the registration response
+            error_log("Non-critical registration tasks failed: " . $e->getMessage());
+        }
 
         echo json_encode(array("success" => true, "message" => "Registration successful!"));
+    }
+} catch (mysqli_sql_exception $e) {
+    // Catch specific MySQL errors
+    if ($e->getCode() == 1062) { // Duplicate entry
+         echo json_encode(array("success" => false, "message" => "This email is already registered. Please login or use a different email."));
     } else {
-        // Check for duplicate email error
-        if (strpos($conn->error, 'Duplicate entry') !== false && strpos($conn->error, 'email') !== false) {
-            echo json_encode(array("success" => false, "message" => "This email is already registered. Please use a different email or login."));
-        } else {
-            echo json_encode(array("success" => false, "message" => "Database Error: " . $conn->error));
-        }
+         echo json_encode(array("success" => false, "message" => "Database Error: " . $e->getMessage()));
     }
 } catch (Exception $e) {
-    echo json_encode(array("success" => false, "message" => "Fatal Error: " . $e->getMessage()));
+    echo json_encode(array("success" => false, "message" => "System Error: " . $e->getMessage()));
 }
 ?>

@@ -3,13 +3,16 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/AuthContext";
 import "./Login.css";
 import { API_ENDPOINTS } from "../../config/api";
+import { toast } from "react-toastify";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState({ email: "", password: "" });
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+  });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -55,11 +58,13 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        // Handle error response
-        setErrors({
-          email: "",
-          password: data.message || "Login failed. Please try again.",
-        });
+        // Handle specific account status errors (403)
+        if (response.status === 403) {
+          toast.error(data.message || "Account access denied.");
+        } else {
+          // Handle normal validation errors (401, 404, etc.)
+          toast.error(data.message || "Login failed. Please try again.");
+        }
         setIsLoading(false);
         return;
       }
@@ -75,18 +80,15 @@ export default function LoginPage() {
 
       // Update context with work location
       login(userData, workLocation);
-      setShowSuccess(true);
+      toast.success("Login successful!");
 
       // Redirect after showing success
       setTimeout(() => {
-        navigate("/");
+        navigate("/", { replace: true });
       }, 1500);
     } catch (error) {
       console.error("Login error:", error);
-      setErrors({
-        email: "",
-        password: "Network error. Please check your connection and try again.",
-      });
+      toast.error("Network error. Please check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -98,10 +100,6 @@ export default function LoginPage() {
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
       />
-
-      {showSuccess && (
-        <div className="success-notification show">Login successful!</div>
-      )}
 
       <div className="login-container">
         <div className="login-header">

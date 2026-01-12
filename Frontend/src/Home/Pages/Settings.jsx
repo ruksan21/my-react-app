@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { useAuth } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import NotificationPanel from "../Component/NotificationPanel";
+import { API_ENDPOINTS } from "../../config/api";
 import "./ProfileSection.css";
 import "./Settings.css";
 
 const Settings = () => {
-  const { logout, addNotification, notifications, removeNotification } =
+  const { user, logout, addNotification, notifications, removeNotification } =
     useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("security");
@@ -28,6 +29,8 @@ const Settings = () => {
 
   // Modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Toggle handler
   const handleToggle = (key) => {
@@ -45,81 +48,90 @@ const Settings = () => {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
 
+    if (!user?.id) {
+      addNotification("error", "User not found. Please log in again.");
+      return;
+    }
+
     // Frontend validation
+    if (passwordData.newPassword.length < 6) {
+      addNotification(
+        "error",
+        "New password must be at least 6 characters long."
+      );
+      return;
+    }
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       addNotification("error", "Passwords do not match!");
       return;
     }
 
-    // TODO: Backend integration - Verify old password and update new password
+    setIsChangingPassword(true);
     try {
-      /* Example API call:
-      const response = await fetch('http://localhost/ward-portal/api/change_password.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(API_ENDPOINTS.users.changePassword, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user.id,
           oldPassword: passwordData.oldPassword,
-          newPassword: passwordData.newPassword
-        })
+          newPassword: passwordData.newPassword,
+        }),
       });
-      
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        addNotification("success", "Password changed successfully!");
-        setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
-      } else {
-        addNotification("error", "Error: " + data.message); // e.g., "Old password is incorrect"
-      }
-      */
 
-      // Current mock implementation
-      addNotification("success", "Password changed successfully!");
-      setPasswordData({
-        oldPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
+      const data = await response.json();
+
+      if (data.success) {
+        addNotification("success", "Password changed successfully!");
+        setPasswordData({
+          oldPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        addNotification("error", data.message || "Failed to change password.");
+      }
     } catch (error) {
       console.error("Error changing password:", error);
-      addNotification("error", "Failed to change password. Please try again.");
+      addNotification("error", "Connection error. Please try again.");
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
   // Delete account handler
   const handleDeleteAccount = async () => {
-    // TODO: Backend integration - Delete user from database
+    if (!user?.id) {
+      addNotification("error", "User session not found.");
+      return;
+    }
+
+    setIsDeletingAccount(true);
     try {
-      /* Example API call:
-      const response = await fetch('http://localhost/ward-portal/api/delete_account.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id })
+      const response = await fetch(API_ENDPOINTS.users.delete, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id }),
       });
-      
+
       const data = await response.json();
-      
-      if (data.status === 'success') {
-        // Account deleted successfully
+
+      if (data.success) {
         addNotification("success", "Account deleted successfully!");
-        logout(); // Logout user
-        navigate("/login"); // Redirect to login
+        setShowDeleteModal(false);
+        // Delay logout and redirect to show notification
+        setTimeout(() => {
+          logout();
+          navigate("/login");
+        }, 1500);
       } else {
-        addNotification("error", "Error: " + data.message);
+        addNotification("error", data.message || "Failed to delete account.");
       }
-      */
-
-      // Current mock implementation
-      addNotification("success", "Account deleted successfully!");
-      setShowDeleteModal(false);
-
-      // Logout user after deleting account
-      logout();
-      navigate("/login");
     } catch (error) {
       console.error("Error deleting account:", error);
-      addNotification("error", "Failed to delete account. Please try again.");
+      addNotification("error", "Network error. Please try again.");
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
@@ -311,8 +323,12 @@ const Settings = () => {
                         required
                       />
                     </div>
-                    <button type="submit" className="btn-primary mt-2">
-                      Change Password
+                    <button
+                      type="submit"
+                      className="btn-primary mt-2"
+                      disabled={isChangingPassword}
+                    >
+                      {isChangingPassword ? "Changing..." : "Change Password"}
                     </button>
                   </form>
                 </div>
@@ -365,8 +381,12 @@ const Settings = () => {
                 >
                   Cancel
                 </button>
-                <button className="btn-danger" onClick={handleDeleteAccount}>
-                  Yes, Delete My Account
+                <button
+                  className="btn-danger"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeletingAccount}
+                >
+                  {isDeletingAccount ? "Deleting..." : "Yes, Delete My Account"}
                 </button>
               </div>
             </div>

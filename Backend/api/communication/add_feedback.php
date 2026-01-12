@@ -3,6 +3,8 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json");
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 
 require_once '../db_connect.php';
 
@@ -23,21 +25,27 @@ $user_id = isset($data['user_id']) ? intval($data['user_id']) : null;
 $rating = isset($data['rating']) ? intval($data['rating']) : 0;
 $comment = isset($data['comment']) ? $conn->real_escape_string($data['comment']) : '';
 
-// Get user name from database if user_id is provided
+// Get user name and role from database if user_id is provided
 $user_name = 'Anonymous';
+$user_role = 'guest';
 if ($user_id) {
-    $user_stmt = $conn->prepare("SELECT full_name FROM users WHERE id = ?");
+    $user_stmt = $conn->prepare("SELECT first_name, last_name, role FROM users WHERE id = ?");
     $user_stmt->bind_param("i", $user_id);
     $user_stmt->execute();
     $user_result = $user_stmt->get_result();
     if ($user_row = $user_result->fetch_assoc()) {
-        $user_name = $user_row['full_name'];
+        $user_name = $user_row['first_name'] . ' ' . $user_row['last_name'];
+        $user_role = $user_row['role'];
     }
     $user_stmt->close();
 }
 
-if ($work_id === 0 || $rating < 1 || $rating > 5 || empty($comment)) {
-    echo json_encode(["success" => false, "message" => "Invalid input data."]);
+// Validation
+// For officers, rating 0 is allowed (it's a comment). For citizens/guests, rating 1-5 is required.
+$is_valid_rating = ($user_role === 'officer') ? true : ($rating >= 1 && $rating <= 5);
+
+if ($work_id === 0 || !$is_valid_rating || ($rating != 0 && ($rating < 1 || $rating > 5)) || empty($comment)) {
+    echo json_encode(["success" => false, "message" => "Invalid input data. Rating and comment are required."]);
     exit();
 }
 

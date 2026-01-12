@@ -28,7 +28,7 @@ const Notification = () => {
       if (wardId) {
         url += `&ward_id=${wardId}`;
       }
-      
+
       const response = await fetch(url);
       const data = await response.json();
 
@@ -142,12 +142,12 @@ const Notification = () => {
               <div className="notification-actions">
                 {unreadCount > 0 && (
                   <button onClick={markAllAsRead} className="mark-all-btn">
-                    Mark all as read
+                    Mark Read
                   </button>
                 )}
                 {notifications.length > 0 && (
                   <button onClick={clearAll} className="clear-all-btn">
-                    Clear all
+                    Clear All
                   </button>
                 )}
               </div>

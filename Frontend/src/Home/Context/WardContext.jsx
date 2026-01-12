@@ -19,18 +19,56 @@ export function WardProvider({ children }) {
     isFollowing: false,
   });
 
-  const { wards } = useAuth();
+  const [hasAutoSwitched, setHasAutoSwitched] = useState(false);
+  const { user, wards } = useAuth();
 
-  // Set default ward if none selected
+  // Reset auto-switch flag if user changes (login/logout)
   React.useEffect(() => {
-    if (!wardId && wards && wards.length > 0) {
-      // Default to the first ward in the list
+    setHasAutoSwitched(false);
+  }, [user?.id]);
+
+  // Set default ward or user's ward if none selected
+  React.useEffect(() => {
+    if (!wards || wards.length === 0) return;
+
+    // 1. Auto-switch to user's ward ONLY ONCE if they just logged in
+    if (user && (user.ward_number || user.work_ward) && !hasAutoSwitched) {
+      const uWardNum =
+        user.role === "officer" ? user.work_ward : user.ward_number;
+      const uMuni =
+        user.role === "officer" ? user.work_municipality : user.city;
+
+      const matchedWard = wards.find(
+        (w) =>
+          String(w.number) === String(uWardNum) &&
+          (String(w.municipality)
+            .toLowerCase()
+            .includes(String(uMuni).toLowerCase()) ||
+            String(uMuni)
+              .toLowerCase()
+              .includes(String(w.municipality).toLowerCase()))
+      );
+
+      if (matchedWard) {
+        setMunicipality(matchedWard.municipality);
+        setWard(matchedWard.number);
+        setWardId(matchedWard.id);
+        setHasAutoSwitched(true);
+        console.log(
+          `Auto-synced to user's ward: ${matchedWard.municipality} - ${matchedWard.number}`
+        );
+        return;
+      }
+    }
+
+    // 2. Fallback to default if no ward selected at all
+    if (!wardId) {
       const defaultWard = wards[0];
       setMunicipality(defaultWard.municipality);
       setWard(defaultWard.number);
       setWardId(defaultWard.id);
     }
-  }, [wardId, wards]);
+  }, [wardId, wards, user, hasAutoSwitched]);
 
   const refreshStats = (currentWardId, followerId) => {
     // Don't fetch if no ward is selected

@@ -5,7 +5,7 @@ import "./wadaselector.css";
 
 const WardSelector = ({ onWardSelect }) => {
   const { municipality, ward, setMunicipality, setWard, setWardId } = useWard();
-  const { wards: allWards } = useAuth(); // Get real wards from DB
+  const { wards: allWards, wardsLoading } = useAuth(); // Get real wards from DB
   const [isOpen, setIsOpen] = useState(false);
   const [selectedMunicipality, setSelectedMunicipality] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
@@ -96,11 +96,11 @@ const WardSelector = ({ onWardSelect }) => {
   // Helper to get display text for the button
   const getDisplayText = () => {
     if (municipality && ward) {
-      return `${municipality}, Ward ${ward}`;
+      return `${municipality} - Ward No. ${ward}`;
     } else if (municipality) {
       return `${municipality}`;
     }
-    return "Select Ward";
+    return "Select Location";
   };
 
   const handleBack = () => {
@@ -112,7 +112,11 @@ const WardSelector = ({ onWardSelect }) => {
 
   return (
     <div className="ward-selector-container">
-      <button className="ward-selector-button" onClick={toggleDropdown} title={displayText}>
+      <button
+        className="ward-selector-button"
+        onClick={toggleDropdown}
+        title={displayText}
+      >
         <i className="icon-map-pin">📍</i>
         {!isMobile && <span className="ward-text">{displayText}</span>}
         {!isMobile && <i className={`arrow-icon ${isOpen ? "up" : ""}`}>▲</i>}
@@ -144,12 +148,22 @@ const WardSelector = ({ onWardSelect }) => {
                   />
                 </div>
                 <ul className="municipality-list">
-                  {filteredMunicipalities.length === 0 ? (
+                  {wardsLoading ? (
                     <li
                       className="municipality-list-item"
-                      style={{ justifyContent: "center", color: "#888" }}
+                      style={{ justifyContent: "center", color: "#6366f1" }}
                     >
-                      No Municipalities Found
+                      <div className="loading-spinner-small"></div>
+                      Loading Municipalities...
+                    </li>
+                  ) : filteredMunicipalities.length === 0 ? (
+                    <li
+                      className="municipality-list-item"
+                      style={{ justifyContent: "center", color: "#ef4444" }}
+                    >
+                      {allWards.length === 0
+                        ? "No data available in DB"
+                        : "No Municipalities Found"}
                     </li>
                   ) : (
                     filteredMunicipalities.map((muni) => (

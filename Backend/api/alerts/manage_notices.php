@@ -77,8 +77,8 @@ if ($method === 'GET') {
         $sql = "SELECT n.*, w.municipality, w.ward_number, w.district_name, w.province 
                 FROM ward_notices n
                 LEFT JOIN wards w ON n.ward_id = w.id
-                WHERE n.ward_id = ? 
-                ORDER BY n.created_at DESC";
+                WHERE (n.ward_id = ? OR n.ward_id IS NULL)
+                ORDER BY (n.ward_id IS NULL) DESC, n.created_at DESC";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("i", $ward_id);
         $stmt->execute();

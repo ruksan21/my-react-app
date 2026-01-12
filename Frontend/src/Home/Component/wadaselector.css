@@ -1,121 +1,162 @@
-/* Main Container - RESPONSIVE */
 .ward-selector-container {
   position: relative;
-  width: 380px; /* Increased to 400px to accommodate full names like Kathmandu Metropolitan City */
+  width: auto;
+  min-width: 180px;
+  max-width: 550px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  box-sizing: border-box;
 }
 
 .ward-selector-container * {
   box-sizing: border-box;
 }
 
-/* Main Button */
+/* Main Button - Glassmorphic */
 .ward-selector-button {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 12px 16px;
-  background-color: #1d4ed8;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  color: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.2s;
-  height: 44px; /* Consistent height */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 36px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
 }
 
 .ward-selector-button:hover {
-  background-color: #1e40af;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 }
 
 .ward-selector-button .icon-map-pin {
-  margin-right: 8px;
-  font-style: normal;
+  margin-right: 10px;
+  font-size: 18px;
+  color: #6366f1;
   flex-shrink: 0;
-  font-size: 14px;
 }
 
 .ward-selector-button span {
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-  min-width: 0;
 }
 
 .ward-selector-button .arrow-icon {
-  margin-left: 8px;
-  font-style: normal;
-  transition: transform 0.2s ease-in-out;
-  flex-shrink: 0;
-  font-size: 12px;
+  margin-left: 10px;
+  font-size: 10px;
+  color: #94a3b8;
+  transition: transform 0.3s;
 }
 
 .ward-selector-button .arrow-icon.up {
   transform: rotate(180deg);
 }
 
-/* Overlay backdrop */
+/* Overlay */
 .ward-selector-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 1000;
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(2px);
+  z-index: 999;
 }
 
 /* Dropdown Menu */
 .ward-selector-dropdown {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 15px);
   left: 0;
   width: 100%;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  padding: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 24px;
   z-index: 1001;
+  min-width: 320px;
+  animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .dropdown-title {
   font-size: 18px;
-  color: #1e40af;
-  margin: 0 0 16px 0;
-  font-weight: 600;
+  font-weight: 800;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0 0 20px 0;
+}
+
+.close-dropdown-mobile {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #f1f5f9;
+  background: white;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  z-index: 10;
+}
+
+.close-dropdown-mobile:hover {
+  background: #f1f5f9;
+  color: #ef4444;
+  transform: rotate(90deg);
 }
 
 /* Search Box */
 .search-box {
-  position: relative;
-  margin-bottom: 16px;
-  width: 100%;
+  margin-bottom: 18px;
 }
 
 .search-input {
-  width: 100% !important;
-  height: 44px;
-  padding: 12px 16px; /* Reset padding since icon is removed */
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
+  width: 100%;
+  height: 48px;
+  padding: 0 18px;
+  background: #f8fafc;
+  border: 2px solid #f1f5f9;
+  border-radius: 14px;
   font-size: 15px;
-  transition: all 0.2s;
-  display: block;
-}
-
-.search-input::placeholder {
-  color: #6b7280;
-  opacity: 1;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #6366f1;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
 /* Municipality List */
@@ -123,243 +164,151 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 280px;
+  max-height: 320px;
   overflow-y: auto;
-  padding-right: 4px; /* Reduced to avoid extra width issues */
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.municipality-list-item {
-  padding: 14px 12px;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: background-color 0.15s;
-  border-bottom: 1px solid #f3f4f6;
+.loading-spinner-small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(99, 102, 241, 0.1);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 10px;
 }
 
-.municipality-list-item:last-child {
-  border-bottom: none;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.municipality-list-item:hover {
-  background-color: #f9fafb;
-}
-
-.municipality-name {
-  font-size: 16px;
-  font-weight: 500;
-  color: #111827;
-  display: block;
-  margin-bottom: 2px;
-}
-
-.ward-count {
-  font-size: 13px;
-  color: #6b7280;
-  display: block;
-}
-
-/* Custom Scrollbar */
 .municipality-list::-webkit-scrollbar {
   width: 5px;
 }
 
-.municipality-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
 .municipality-list::-webkit-scrollbar-thumb {
-  background-color: #d1d5db;
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 10px;
 }
 
-/* Ward Selection View */
-.ward-grid-view {
-  padding: 4px;
-  width: 100%;
-}
-
-.back-button {
-  background: none;
-  border: none;
-  color: #2563eb;
+.municipality-list-item {
+  padding: 14px 16px;
   cursor: pointer;
+  border-radius: 14px;
+  transition: all 0.2s;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+}
+
+.municipality-list-item:hover {
+  background: white;
+  border-color: rgba(99, 102, 241, 0.1);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.municipality-name {
   font-size: 15px;
-  margin-bottom: 12px;
-  font-weight: 500;
-  padding: 4px 0;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s;
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
 }
 
-.back-button:hover {
-  color: #1d4ed8;
-}
-
-.selected-municipality-title {
-  font-size: 17px;
+.ward-count {
+  font-size: 12px;
   font-weight: 600;
-  text-align: center;
-  margin-bottom: 16px;
-  color: #111827;
+  color: #94a3b8;
 }
 
+/* Ward Grid */
 .ward-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-  gap: 8px;
-  max-height: 280px;
+  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  gap: 10px;
+  max-height: 300px;
   overflow-y: auto;
+  padding: 4px;
 }
 
 .ward-grid-item {
-  padding: 12px 6px;
-  border: 2px solid #d1d5db;
-  border-radius: 8px;
+  padding: 12px 0;
+  border-radius: 12px;
   text-align: center;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 600;
-  background-color: white;
+  font-weight: 800;
+  background: #f8fafc;
+  border: 2px solid #f1f5f9;
   transition: all 0.2s;
+  color: #475569;
 }
 
 .ward-grid-item:hover {
-  background-color: #eff6ff;
-  border-color: #93c5fd;
+  background: white;
+  border-color: #6366f1;
+  color: #6366f1;
+  transform: translateY(-2px);
 }
 
 .ward-grid-item.selected {
-  background-color: #1d4ed8;
-  border-color: #1d4ed8;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+}
+
+.back-button {
+  background: rgba(99, 102, 241, 0.1);
+  border: none;
+  color: #6366f1;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: all 0.2s;
+}
+
+.back-button:hover {
+  background: #6366f1;
   color: white;
 }
 
-/* Hide close button on desktop */
-.close-dropdown-mobile {
-  display: none;
-}
-
-/* Tablet Adjustments - Compact button */
+/* Mobile Adjustments */
 @media (max-width: 768px) {
   .ward-selector-container {
     width: auto;
-    max-width: none;
+  }
+
+  .ward-selector-button span {
+    display: none;
   }
 
   .ward-selector-button {
-    width: auto;
-    min-width: 44px;
-    padding: 10px 12px;
-    font-size: 14px;
-    height: 44px;
-  }
-
-  .ward-selector-button .ward-text {
-    display: none; /* Hide text on tablet and below */
+    width: 50px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 14px;
   }
 
   .ward-selector-button .icon-map-pin {
     margin-right: 0;
-    font-size: 18px;
-  }
-
-  .ward-selector-button .arrow-icon {
-    display: none; /* Hide arrow on mobile, icon is enough */
   }
 
   .ward-selector-dropdown {
     position: fixed;
-    top: 64px;
-    left: 10px !important;
-    right: 10px !important;
-    width: calc(100% - 20px) !important;
-    transform: none !important;
+    top: 50%;
+    left: 20px !important;
+    right: 20px !important;
+    width: calc(100% - 40px) !important;
+    transform: translateY(-50%) !important;
     max-height: 80vh;
-    padding: 16px;
-    border-radius: 16px;
-  }
-
-  .close-dropdown-mobile {
-    display: flex;
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: #f3f4f6;
-    border: none;
-    font-size: 16px;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    color: #4b5563;
-    z-index: 10;
-  }
-
-  .dropdown-title {
-    font-size: 16px;
-    margin-bottom: 20px;
-    padding-right: 30px;
-  }
-}
-
-/* Mobile Adjustments - Icon only */
-@media (max-width: 480px) {
-  .ward-selector-container {
-    max-width: none;
-    min-width: 0;
-    width: auto;
-  }
-
-  .ward-selector-button {
-    padding: 8px 10px;
-    min-width: 40px;
-    height: 40px;
-    border-radius: 8px;
-  }
-
-  .ward-selector-button .icon-map-pin {
-    font-size: 16px;
-  }
-
-  .ward-selector-dropdown {
-    top: 60px;
-    padding: 16px;
-    border-radius: 16px;
-  }
-
-  .dropdown-title {
-    font-size: 16px;
-    margin-bottom: 20px;
-    padding-right: 30px;
-  }
-
-  .search-box {
-    margin-bottom: 12px;
-  }
-
-  .search-input {
-    padding: 10px 12px;
-    font-size: 14px;
-  }
-
-  .municipality-list {
-    max-height: 300px;
-  }
-
-  .municipality-list-item {
-    padding: 12px 10px;
-  }
-
-  .ward-grid {
-    grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
-    gap: 6px;
-  }
-
-  .ward-grid-item {
-    padding: 10px 4px;
-    font-size: 13px;
   }
 }

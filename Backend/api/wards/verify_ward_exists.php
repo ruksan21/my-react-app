@@ -12,10 +12,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once '../db_connect.php';
 
 // Get parameters from GET or POST
+// Get parameters from GET or POST
 $province = isset($_GET['province']) ? $conn->real_escape_string($_GET['province']) : (isset($_POST['province']) ? $conn->real_escape_string($_POST['province']) : '');
 $district = isset($_GET['district']) ? $conn->real_escape_string($_GET['district']) : (isset($_POST['district']) ? $conn->real_escape_string($_POST['district']) : '');
 $municipality = isset($_GET['municipality']) ? $conn->real_escape_string($_GET['municipality']) : (isset($_POST['municipality']) ? $conn->real_escape_string($_POST['municipality']) : '');
-$ward_number = isset($_GET['ward_number']) ? intval($_GET['ward_number']) : (isset($_POST['ward_number']) ? intval($_POST['ward_number']) : 0);
+
+// EXTRACT WARD NUMBER logic:
+// Fetch raw input first (don't use intval immediately)
+$raw_ward = isset($_GET['ward_number']) ? $_GET['ward_number'] : (isset($_POST['ward_number']) ? $_POST['ward_number'] : '');
+// Extract digits only (e.g., "Ward 1" -> "1", "05" -> "5")
+$ward_number = intval(preg_replace('/[^0-9]/', '', $raw_ward));
+// Fallback if extraction fails but input wasn't empty (though intval of string is 0 anyway)
+if ($ward_number === 0 && !empty($raw_ward) && is_numeric($raw_ward)) {
+    $ward_number = intval($raw_ward);
+}
+
+// Ensure it's treated as number in SQL
+$ward_number_safe = $ward_number;
 
 if (!$province || !$district || !$municipality || !$ward_number) {
     echo json_encode([
@@ -35,19 +48,18 @@ $municipality_safe = $conn->real_escape_string($municipality);
 // 2. Municipality/District/Province fuzzy match OR database value is NULL (handle legacy/incomplete data)
 // 3. We use bidirectional LIKE for string components
 
+// 1. STRICT MATCH (All fields)
 $query = "SELECT id, ward_number, municipality, district, province 
           FROM wards 
           WHERE ward_number = $ward_number
           AND (
-              province IS NULL 
-              OR TRIM(province) = ''
+              province IS NULL OR province = ''
               OR TRIM(province) LIKE TRIM('$province_safe') 
               OR TRIM(province) LIKE CONCAT('%', TRIM('$province_safe'), '%')
               OR '$province_safe' LIKE CONCAT('%', TRIM(province), '%')
           )
           AND (
-              district IS NULL 
-              OR TRIM(district) = ''
+              district IS NULL OR district = ''
               OR TRIM(district) LIKE TRIM('$district_safe')
               OR TRIM(district) LIKE CONCAT('%', TRIM('$district_safe'), '%')
               OR '$district_safe' LIKE CONCAT('%', TRIM(district), '%')
@@ -60,6 +72,22 @@ $query = "SELECT id, ward_number, municipality, district, province
           LIMIT 1";
 
 $result = $conn->query($query);
+
+// 2. RELAXED MATCH (Municipality + Ward Only) - Fallback
+if (!$result || $result->num_rows == 0) {
+    $fallback_query = "SELECT id, ward_number, municipality, district, province 
+                       FROM wards 
+                       WHERE ward_number = $ward_number_safe
+                       AND (
+                           TRIM(municipality) LIKE TRIM('$municipality_safe')
+                           OR TRIM(municipality) LIKE CONCAT('%', TRIM('$municipality_safe'), '%')
+                           OR '$municipality_safe' LIKE CONCAT('%', TRIM(municipality), '%')
+                       )
+                       LIMIT 1";
+    $result = $conn->query($fallback_query);
+}
+
+
 
 if ($result && $result->num_rows > 0) {
     $ward = $result->fetch_assoc();

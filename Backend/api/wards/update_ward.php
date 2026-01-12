@@ -36,7 +36,8 @@ $updates = array();
 $allowed_fields = [
     'location', 'google_map_link', 'municipality', 'contact_phone', 'telephone', 'contact_email',
     'chairperson_name', 'chairperson_phone', 'chairperson_email', 'chairperson_education',
-    'chairperson_experience', 'chairperson_political_party', 'chairperson_appointment_date', 'chairperson_bio'
+    'chairperson_experience', 'chairperson_political_party', 'chairperson_appointment_date', 'chairperson_bio',
+    'province', 'district_name'
 ];
 
 foreach ($allowed_fields as $field) {
@@ -82,11 +83,21 @@ if (empty($updates)) {
 $query = "UPDATE wards SET " . implode(", ", $updates) . " WHERE id = $ward_id";
 
 if ($conn->query($query)) {
-    // Create System Alert
-    $alert_title = "Ward Updated";
-    $alert_message = "Details for Ward ID " . $ward_id . " have been updated.";
-    $alert_query = "INSERT INTO system_alerts (type, title, message, status) VALUES ('info', '$alert_title', '$alert_message', 'unread')";
-    $conn->query($alert_query);
+    // Administrative Tasks (Alerts and Notifications)
+    try {
+        // Create System Alert
+        $alert_title = "Ward Updated";
+        $alert_message = "Details for Ward ID " . $ward_id . " have been updated.";
+        $alert_query = "INSERT INTO system_alerts (ward_id, type, title, message, status, created_at) VALUES ($ward_id, 'info', '$alert_title', '$alert_message', 'unread', NOW())";
+        $conn->query($alert_query);
+
+        // Admin Notification
+        $admin_res = $conn->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+        $target_admin_id = ($admin_res && $admin_res->num_rows > 0) ? $admin_res->fetch_assoc()['id'] : 1;
+        $conn->query("INSERT INTO notifications (user_id, type, title, message, is_read, created_at) VALUES ($target_admin_id, 'system', '$alert_title', '$alert_message', 0, NOW())");
+    } catch (Exception $e) {
+        error_log("Non-critical ward tasks failed: " . $e->getMessage());
+    }
 
     echo json_encode(array("success" => true, "message" => "Ward updated successfully."));
 } else {

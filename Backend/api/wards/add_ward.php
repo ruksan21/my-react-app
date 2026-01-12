@@ -20,6 +20,7 @@ if (!empty($_POST)) {
     $ward_number = intval($_POST['ward_number']);
     $district_id = isset($_POST['district_id']) ? intval($_POST['district_id']) : 0;
     $district_name = isset($_POST['district_name']) ? $conn->real_escape_string($_POST['district_name']) : '';
+    $province = isset($_POST['province']) ? $conn->real_escape_string($_POST['province']) : '';
     $municipality = isset($_POST['municipality']) ? $conn->real_escape_string($_POST['municipality']) : '';
     $location = isset($_POST['location']) ? $conn->real_escape_string($_POST['location']) : '';
     $google_map_link = isset($_POST['google_map_link']) ? $conn->real_escape_string($_POST['google_map_link']) : '';
@@ -43,6 +44,7 @@ if (!empty($_POST)) {
     $ward_number = intval($data->ward_number);
     $district_id = isset($data->district_id) ? intval($data->district_id) : 0;
     $district_name = isset($data->district_name) ? $conn->real_escape_string($data->district_name) : '';
+    $province = isset($data->province) ? $conn->real_escape_string($data->province) : '';
     $municipality = isset($data->municipality) ? $conn->real_escape_string($data->municipality) : '';
     $location = isset($data->location) ? $conn->real_escape_string($data->location) : '';
     $google_map_link = isset($data->google_map_link) ? $conn->real_escape_string($data->google_map_link) : '';
@@ -127,12 +129,12 @@ if (isset($_FILES['chairperson_photo']) && $_FILES['chairperson_photo']['error']
 }
 
 $query = "INSERT INTO wards (
-    ward_number, district_id, municipality, location, google_map_link, contact_phone, telephone, contact_email,
+    ward_number, district_id, district_name, province, municipality, location, google_map_link, contact_phone, telephone, contact_email,
     chairperson_name, chairperson_phone, chairperson_email,
     chairperson_education, chairperson_experience, chairperson_political_party,
     chairperson_appointment_date, chairperson_bio, chairperson_photo
 ) VALUES (
-    $ward_number, $district_id, '$municipality', '$location', '$google_map_link', '$contact_phone', '$telephone', '$contact_email',
+    $ward_number, $district_id, '$district_name', '$province', '$municipality', '$location', '$google_map_link', '$contact_phone', '$telephone', '$contact_email',
     '$chairperson_name', '$chairperson_phone', '$chairperson_email',
     '$chairperson_education', '$chairperson_experience', '$chairperson_political_party',
     " . ($chairperson_appointment_date ? "'$chairperson_appointment_date'" : "NULL") . ", '$chairperson_bio', '$chairperson_photo'
@@ -140,11 +142,21 @@ $query = "INSERT INTO wards (
 
 if ($conn->query($query)) {
     $inserted_id = $conn->insert_id;
-    // Create System Alert
-    $alert_title = "New Ward Added";
-    $alert_message = "Ward number " . $ward_number . " has been added to the system.";
-    $alert_query = "INSERT INTO system_alerts (type, title, message, status) VALUES ('success', '$alert_title', '$alert_message', 'unread')";
-    $conn->query($alert_query);
+    // Administrative Tasks (Alerts and Notifications)
+    try {
+        // Create System Alert
+        $alert_title = "New Ward Added";
+        $alert_message = "Ward number " . $ward_number . " has been added to the system.";
+        $alert_query = "INSERT INTO system_alerts (ward_id, type, title, message, status, created_at) VALUES ($inserted_id, 'success', '$alert_title', '$alert_message', 'unread', NOW())";
+        $conn->query($alert_query);
+
+        // Admin Notification
+        $admin_res = $conn->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+        $target_admin_id = ($admin_res && $admin_res->num_rows > 0) ? $admin_res->fetch_assoc()['id'] : 1;
+        $conn->query("INSERT INTO notifications (user_id, type, title, message, is_read, created_at) VALUES ($target_admin_id, 'system', '$alert_title', '$alert_message', 0, NOW())");
+    } catch (Exception $e) {
+        error_log("Non-critical ward tasks failed: " . $e->getMessage());
+    }
 
     echo json_encode(array(
         "success" => true,

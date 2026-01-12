@@ -220,13 +220,17 @@ const WardManagement = () => {
     }
 
     // Check district - either district_id OR district_name must be provided
-    if ((!formData.district_id || !formData.district_id.toString().trim()) && 
-        (!formDistrictName || !formDistrictName.trim())) {
+    if (
+      (!formData.district_id || !formData.district_id.toString().trim()) &&
+      (!formDistrictName || !formDistrictName.trim())
+    ) {
       missingFields.push("District");
     }
 
     if (missingFields.length > 0) {
-      alert(`Please fill in all required fields:\n\n• ${missingFields.join("\n• ")}`);
+      alert(
+        `Please fill in all required fields:\n\n• ${missingFields.join("\n• ")}`
+      );
       return;
     }
 
@@ -236,17 +240,26 @@ const WardManagement = () => {
       alert("Please enter a valid contact email.");
       return;
     }
-    if (formData.chairperson_email && !emailRegex.test(formData.chairperson_email)) {
+    if (
+      formData.chairperson_email &&
+      !emailRegex.test(formData.chairperson_email)
+    ) {
       alert("Please enter a valid chairperson email.");
       return;
     }
 
     // Phone validation - only if provided
-    if (formData.contact_phone && !/^[0-9\-\+\s]+$/.test(formData.contact_phone)) {
+    if (
+      formData.contact_phone &&
+      !/^[0-9\-+ ]+$/.test(formData.contact_phone)
+    ) {
       alert("Please enter a valid contact phone number.");
       return;
     }
-    if (formData.chairperson_phone && !/^[0-9\-\+\s]+$/.test(formData.chairperson_phone)) {
+    if (
+      formData.chairperson_phone &&
+      !/^[0-9\-+ ]+$/.test(formData.chairperson_phone)
+    ) {
       alert("Please enter a valid chairperson phone number.");
       return;
     }
@@ -263,6 +276,10 @@ const WardManagement = () => {
     // Explicitly pass district_name for auto-registration
     if (formDistrictName) {
       submitData.append("district_name", formDistrictName);
+    }
+
+    if (formProvince) {
+      submitData.append("province", formProvince);
     }
 
     if (!isAdding && selectedWard) {
@@ -343,8 +360,7 @@ const WardManagement = () => {
 
   // Derived state for ALL districts (not just ones with wards)
   const registeredDistricts = React.useMemo(() => {
-    return districts
-      .sort((a, b) => a.name.localeCompare(b.name));
+    return districts.sort((a, b) => a.name.localeCompare(b.name));
   }, [districts]);
 
   // Combined Filtering Logic
@@ -575,7 +591,8 @@ const WardManagement = () => {
             <div className="ward-form-header-premium">
               <div className="header-title-group">
                 <h2 className="modern-section-title">
-                  Ward {selectedWard?.ward_number} - {selectedWard?.district_name}
+                  Ward {selectedWard?.ward_number} -{" "}
+                  {selectedWard?.district_name}
                 </h2>
                 <p className="modern-section-subtitle">
                   {selectedWard?.municipality || "Municipality"}
@@ -593,9 +610,7 @@ const WardManagement = () => {
             <div className="ward-tabs">
               <button
                 onClick={() => setActiveTab("details")}
-                className={`tab-btn ${
-                  activeTab === "details" ? "active" : ""
-                }`}
+                className={`tab-btn ${activeTab === "details" ? "active" : ""}`}
               >
                 Ward Details
               </button>
@@ -674,30 +689,67 @@ const WardManagement = () => {
                   <h3 className="modern-info-title">
                     <i className="section-icon">👤</i> Chairperson Profile
                   </h3>
-                  
+
                   {/* Photo Display Section */}
-                  <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
+                  <div
+                    style={{
+                      marginBottom: "20px",
+                      padding: "15px",
+                      backgroundColor: "#f9f9f9",
+                      borderRadius: "8px",
+                    }}
+                  >
                     <label className="stat-label">Profile Photo</label>
                     {selectedWard?.chairperson_photo ? (
                       <div style={{ marginTop: "10px" }}>
-                        <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "10px" }}>
-                          Photo File: <strong>{selectedWard.chairperson_photo}</strong>
+                        <p
+                          style={{
+                            fontSize: "0.85rem",
+                            color: "#666",
+                            marginBottom: "10px",
+                          }}
+                        >
+                          Photo File:{" "}
+                          <strong>{selectedWard.chairperson_photo}</strong>
                         </p>
                         <img
                           src={`http://localhost/my-react-app/Backend/api/wards/uploads/${selectedWard.chairperson_photo}`}
                           alt="Chairperson"
-                          style={{ maxWidth: "200px", height: "auto", borderRadius: "8px", border: "2px solid #ddd" }}
+                          style={{
+                            maxWidth: "200px",
+                            height: "auto",
+                            borderRadius: "8px",
+                            border: "2px solid #ddd",
+                          }}
                           onError={(e) => {
                             e.target.style.display = "none";
                             e.target.nextElementSibling.style.display = "block";
                           }}
                         />
-                        <div style={{ display: "none", padding: "20px", backgroundColor: "#fff3cd", borderRadius: "6px", marginTop: "10px" }}>
-                          <p style={{ color: "#856404", margin: "0" }}>⚠️ Photo file not found at upload location</p>
+                        <div
+                          style={{
+                            display: "none",
+                            padding: "20px",
+                            backgroundColor: "#fff3cd",
+                            borderRadius: "6px",
+                            marginTop: "10px",
+                          }}
+                        >
+                          <p style={{ color: "#856404", margin: "0" }}>
+                            ⚠️ Photo file not found at upload location
+                          </p>
                         </div>
                       </div>
                     ) : (
-                      <p style={{ color: "#999", fontSize: "0.9rem", fontStyle: "italic" }}>No photo uploaded</p>
+                      <p
+                        style={{
+                          color: "#999",
+                          fontSize: "0.9rem",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        No photo uploaded
+                      </p>
                     )}
                   </div>
 

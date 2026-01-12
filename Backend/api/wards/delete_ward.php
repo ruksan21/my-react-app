@@ -31,6 +31,16 @@ if (!empty($data->id)) {
     $sql = "DELETE FROM wards WHERE id = $id";
 
     if ($conn->query($sql)) {
+        // Administrative Tasks (Notifications)
+        try {
+            // Admin Notification
+            $admin_res = $conn->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+            $target_admin_id = ($admin_res && $admin_res->num_rows > 0) ? $admin_res->fetch_assoc()['id'] : 1;
+            $conn->query("INSERT INTO notifications (user_id, type, title, message, is_read, created_at) VALUES ($target_admin_id, 'alert', 'Ward Deleted', 'Ward ID $id has been deleted from the system.', 0, NOW())");
+        } catch (Exception $e) {
+            error_log("Non-critical ward tasks failed: " . $e->getMessage());
+        }
+
         echo json_encode(["success" => true, "message" => "Ward deleted successfully."]);
     } else {
         echo json_encode(["success" => false, "message" => "Error deleting ward: " . $conn->error]);

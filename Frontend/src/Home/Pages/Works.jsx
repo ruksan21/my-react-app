@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../Nav/Navbar";
 import { useWard } from "../Context/WardContext";
+import CommentSection from "../Component/CommentSection";
 import "./Works.css";
 import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 
@@ -11,9 +12,9 @@ const WorkCard = ({ work }) => {
     const budgetStr = String(budget);
     if (budgetStr.startsWith("Rs.")) return budgetStr;
     // Add commas for readability
-    const num = parseFloat(budgetStr.replace(/[^0-9.]/g, ''));
+    const num = parseFloat(budgetStr.replace(/[^0-9.]/g, ""));
     if (isNaN(num)) return budgetStr;
-    return `Rs. ${num.toLocaleString('en-IN')}`;
+    return `Rs. ${num.toLocaleString("en-IN")}`;
   };
 
   return (
@@ -84,9 +85,13 @@ const WorkCard = ({ work }) => {
       <div className="work-notice-section">
         <div className="notice-icon">📢</div>
         <div className="notice-text">
-          For official notices and updates related to this project, check the Ward Notices section.
+          For official notices and updates related to this project, check the
+          Ward Notices section.
         </div>
       </div>
+
+      {/* Comment Section - Citizens can comment, Officers can reply */}
+      <CommentSection workId={work.id} />
     </div>
   );
 };

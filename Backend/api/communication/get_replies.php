@@ -3,6 +3,8 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json");
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 
 require_once '../db_connect.php';
 require_once '../utils/ward_utils.php';
