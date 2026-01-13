@@ -167,6 +167,44 @@ i.contact-icon {
   border-radius: 2px;
 }
 
+/* Recipient Info Styling */
+.message-recipient-info {
+  background: #f0f7ff;
+  border-left: 4px solid #2563eb;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.recipient-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #1e40af;
+  margin-bottom: 8px;
+}
+
+.recipient-badge i {
+  font-size: 1.1rem;
+}
+
+.recipient-badge span {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.recipient-badge strong {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.recipient-note {
+  font-size: 0.85rem;
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* Form */
 .contact-form {
   display: flex;

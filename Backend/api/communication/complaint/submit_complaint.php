@@ -27,6 +27,7 @@ if (empty($_POST) && empty($_FILES)) {
         $ward_id = isset($data->ward_id) ? intval($data->ward_id) : ($ward_id ?? null);
         $ward_number = isset($data->ward) ? intval($data->ward) : ($ward_number ?? null);
         $municipality = $data->municipality ?? ($municipality ?? null);
+        $province = $data->province ?? ($province ?? null);
         $full_name = $data->fullName ?? ($full_name ?? '');
         $email = $data->email ?? ($email ?? '');
         $phone = $data->phone ?? ($phone ?? '');
@@ -39,17 +40,17 @@ if (empty($_POST) && empty($_FILES)) {
 
 // 2. Resolve Ward ID if missing
 if (!$ward_id && $municipality && $ward_number) {
-    $stmt = $conn->prepare("SELECT id FROM wards WHERE municipality = ? AND ward_number = ? LIMIT 1");
-    if ($stmt) {
-        $stmt->bind_param("si", $municipality, $ward_number);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        if ($res && $res->num_rows > 0) {
-            $ward_id = $res->fetch_assoc()['id'];
-        }
-        $stmt->close();
+    $muni_safe = $conn->real_escape_string($municipality);
+    $ward_num = intval($ward_number);
+    
+    // STRICT matching for ward number and municipality
+    $res_resolve = $conn->query("SELECT id FROM wards WHERE ward_number = $ward_num AND TRIM(municipality) = TRIM('$muni_safe') LIMIT 1");
+    if ($res_resolve && $res_resolve->num_rows > 0) {
+        $ward_id = $res_resolve->fetch_assoc()['id'];
     }
 }
+
+file_put_contents('submission_log.txt', "[" . date('Y-m-d H:i:s') . "] WardID: $ward_id | Muni: $municipality | WardNum: $ward_number | Subj: $subject\n", FILE_APPEND);
 
 if (!$ward_id) {
     echo json_encode(["success" => false, "message" => "Ward not found. Please verify municipality and ward number."]);
@@ -97,16 +98,20 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
 // Since I cannot verify schema, I will try to insert into common columns.
 // If user_id is null, we pass NULL.
 
+// 4. Insert Complaint
+$current_date = date('Y-m-d');
+
 try {
-    // Attempt 1: Insert with 'complainant' column (assuming it exists)
-    $sql = "INSERT INTO complaints (ward_id, complainant_user_id, subject, message, priority, status, image, complainant) VALUES (?, ?, ?, ?, ?, 'Open', ?, ?)";
+    // Attempt 1: Insert with ALL columns
+    $sql = "INSERT INTO complaints (ward_id, complainant_user_id, subject, message, priority, status, image, complainant, complainant_email, complainant_phone, date) 
+            VALUES (?, ?, ?, ?, ?, 'Open', ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
     
     if (!$stmt) {
         throw new Exception($conn->error);
     }
 
-    $stmt->bind_param("iisssss", $ward_id, $user_id, $subject, $message, $priority, $image_path, $full_name);
+    $stmt->bind_param("iisssssssss", $ward_id, $user_id, $subject, $message, $priority, $image_path, $full_name, $email, $phone, $current_date);
     
     if ($stmt->execute()) {
         echo json_encode(["success" => true, "message" => "Complaint sent successfully!"]);
@@ -118,42 +123,29 @@ try {
     }
 
 } catch (Exception $e) {
-    // Attempt 2: If 'complainant' column doesn't exist...
-    // OR if 'image' column doesn't exist...
-    
-    // We will try a "Safe Insert" with minimal columns (No image, No complainant name)
+    // Fallback logic if some columns are STILL missing (e.g. if migration wasn't run or failed)
     try {
-        // First try dropping 'complainant' but KEEPING 'image' (if error was about complainant)
-        if (strpos($e->getMessage(), "Unknown column 'complainant'") !== false) {
-             $sql_fallback = "INSERT INTO complaints (ward_id, complainant_user_id, subject, message, priority, status, image) VALUES (?, ?, ?, ?, ?, 'Open', ?)";
-             $stmt_fallback = $conn->prepare($sql_fallback);
-             $stmt_fallback->bind_param("iissss", $ward_id, $user_id, $subject, $message, $priority, $image_path);
-             if ($stmt_fallback->execute()) {
-                 echo json_encode(["success" => true, "message" => "Complaint sent successfully!"]);
-                 exit;
-             }
-        }
+        // Fallback: try without the new email/phone/date columns if they cause error
+        $sql_fallback = "INSERT INTO complaints (ward_id, complainant_user_id, subject, message, priority, status, image, complainant) VALUES (?, ?, ?, ?, ?, 'Open', ?, ?)";
+        $stmt_fallback = $conn->prepare($sql_fallback);
+        $stmt_fallback->bind_param("iissssss", $ward_id, $user_id, $subject, $message, $priority, $image_path, $full_name);
         
-        // If we represent here, implies either previous IF failed or error was NOT about complainant (e.g. was about image)
-        throw new Exception("Try minimal");
-
+        if ($stmt_fallback->execute()) {
+            echo json_encode(["success" => true, "message" => "Complaint sent (limited fields)!"]);
+            exit;
+        }
+        throw new Exception("Deep error");
     } catch (Exception $ex2) {
-        // Attempt 3: Minimal Insert (No Image, No Complainant Name)
-        try {
-             $sql_minimal = "INSERT INTO complaints (ward_id, complainant_user_id, subject, message, priority, status) VALUES (?, ?, ?, ?, ?, 'Open')";
-             $stmt_minimal = $conn->prepare($sql_minimal);
-             $stmt_minimal->bind_param("iisss", $ward_id, $user_id, $subject, $message, $priority);
-             
-             if ($stmt_minimal->execute()) {
-                 echo json_encode(["success" => true, "message" => "Complaint sent (without image/name due to DB schema) successfully!"]);
-                 exit;
-             } else {
-                 throw new Exception($stmt_minimal->error);
-             }
-        } catch (Exception $ex3) {
-             echo json_encode(["success" => false, "message" => "Database error: " . $e->getMessage() . " | Fallback error: " . $ex3->getMessage()]);
+        // Final minimal fallback
+        $sql_minimal = "INSERT INTO complaints (ward_id, complainant_user_id, subject, message, priority, status) VALUES (?, ?, ?, ?, ?, 'Open')";
+        $stmt_minimal = $conn->prepare($sql_minimal);
+        $stmt_minimal->bind_param("iisss", $ward_id, $user_id, $subject, $message, $priority);
+        if ($stmt_minimal->execute()) {
+             echo json_encode(["success" => true, "message" => "Complaint sent (minimal fields)!"]);
              exit;
         }
+        echo json_encode(["success" => false, "message" => "Database error: " . $e->getMessage()]);
+        exit;
     }
 }
 ?>

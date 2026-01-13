@@ -18,7 +18,7 @@ require_once '../db_connect.php';
 if (isset($_GET['id'])) {
     $id = intval($_GET['id']);
     $stmt = $conn->prepare("SELECT id, first_name, middle_name, last_name, email, contact_number, role, status, 
-          ward_number, officer_id, department, work_province, work_district, work_municipality, work_ward, work_office_location, gender, dob, 
+          ward_number, officer_id, department, work_province, work_district, work_municipality, work_ward, work_ward_id, work_office_location, gender, dob, 
           province, district, city, citizenship_number, created_at, photo 
           FROM users WHERE id = ?");
     $stmt->bind_param("i", $id);
@@ -27,7 +27,7 @@ if (isset($_GET['id'])) {
 } else {
     // Fetch all users ordered by creation date (id)
     $query = "SELECT id, first_name, middle_name, last_name, email, contact_number, role, status, 
-          ward_number, officer_id, department, work_province, work_district, work_municipality, work_ward, work_office_location, gender, dob, 
+          ward_number, officer_id, department, work_province, work_district, work_municipality, work_ward, work_ward_id, work_office_location, gender, dob, 
           province, district, city, citizenship_number, created_at, photo 
           FROM users 
           ORDER BY id DESC";

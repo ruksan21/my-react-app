@@ -68,6 +68,7 @@ export const API_ENDPOINTS = {
     submitComplaint: `${BASE_URL}/communication/complaint/submit_complaint.php`,
     getComplaints: `${BASE_URL}/communication/complaint/get_complaints.php`,
     updateComplaintStatus: `${BASE_URL}/communication/complaint/update_complaint_status.php`,
+    sendReplyEmail: `${BASE_URL}/communication/complaint/send_reply_email.php`,
     manageComplaints: `${BASE_URL}/communication/complaint/manage_complaints.php`,
     getFeedback: `${BASE_URL}/communication/get_feedback.php`,
     addFeedback: `${BASE_URL}/communication/add_feedback.php`,

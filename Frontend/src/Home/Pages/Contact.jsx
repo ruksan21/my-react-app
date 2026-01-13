@@ -325,6 +325,24 @@ export default function Contact() {
           <div className="contact-content-grid">
             <div className="contact-form-section">
               <h2>Send us a Message</h2>
+
+              <div className="message-recipient-info">
+                <div className="recipient-badge">
+                  <i className="fa-solid fa-paper-plane"></i>
+                  <span>
+                    Recipient:{" "}
+                    <strong>
+                      Officer of {selectedMunicipality}, Ward No. {selectedWard}
+                    </strong>
+                  </span>
+                </div>
+                <p className="recipient-note">
+                  This message will be routed directly to the representative of
+                  the selected ward. To message a different ward, please change
+                  your location from the top navigation bar.
+                </p>
+              </div>
+
               {formStatus && (
                 <div className={`form-alert ${formStatus.type}`}>
                   {formStatus.message}

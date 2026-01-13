@@ -11,6 +11,14 @@ const OfficerComplaints = () => {
   const [reports, setReports] = useState([]);
   const [activeTab, setActiveTab] = useState("citizen"); // "citizen" or "admin"
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [replyData, setReplyData] = useState({
+    status: "Open",
+    message: "",
+  });
+  const [isSendingReply, setIsSendingReply] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [reportData, setReportData] = useState({
     subject: "",
@@ -48,34 +56,110 @@ const OfficerComplaints = () => {
     setShowReportModal(true);
   };
 
-  const handleResolve = (id) => {
-    // Optimistic UI update
-    if (activeTab === "citizen") {
-      setComplaints(
-        complaints.map((complaint) =>
-          complaint.id === id ? { ...complaint, status: "Resolved" } : complaint
-        )
-      );
-    } else {
-      setReports(
-        reports.map((report) =>
-          report.id === id ? { ...report, status: "Resolved" } : report
-        )
-      );
-    }
+  const directStatusUpdate = async (complaint, status) => {
+    // Optimistic UI update for immediate feedback
+    const updateState = (prev) =>
+      prev.map((c) => (c.id === complaint.id ? { ...c, status } : c));
+    setComplaints(updateState);
+    setReports(updateState);
 
-    // Update complaint status in backend
-    (async () => {
-      try {
-        await fetch(API_ENDPOINTS.communication.updateComplaintStatus, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, status: "Resolved" }),
-        });
-      } catch (err) {
-        console.warn("Could not update complaint on server:", err);
+    try {
+      const res = await fetch(API_ENDPOINTS.communication.sendReplyEmail, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          complaint_id: complaint.id,
+          status: status,
+          officer_message: "",
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(
+          `Server error (${res.status}): ${errorText.substring(0, 100)}`
+        );
       }
-    })();
+
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.message || "Failed to update status on server.");
+        fetchComplaints();
+      } else {
+        // Build a helpful message based on email status
+        let msg = `Status updated to ${status}!`;
+        if (data.email_sent) {
+          msg += "\n✅ Notification email sent to citizen.";
+        } else {
+          msg += `\n⚠️ ${data.message}`;
+        }
+        alert(msg);
+        fetchComplaints();
+      }
+    } catch (err) {
+      console.error("Status update error:", err);
+      alert(`Update Failed: ${err.message}`);
+      fetchComplaints();
+    }
+  };
+
+  const handleOpenView = (complaint) => {
+    setSelectedComplaint(complaint);
+    setShowViewModal(true);
+  };
+
+  const handleOpenReply = (complaint, preSelectedStatus = null) => {
+    // If no preSelectedStatus is passed, use the current status of the complaint
+    const targetStatus = preSelectedStatus || complaint.status || "Open";
+
+    setSelectedComplaint(complaint);
+    setReplyData({
+      status: targetStatus,
+      message: "",
+      attachment: null,
+    });
+    setShowReplyModal(true);
+  };
+
+  const handleReplySubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedComplaint) return;
+
+    setIsSendingReply(true);
+    try {
+      const formData = new FormData();
+      formData.append("complaint_id", selectedComplaint.id);
+      formData.append("status", replyData.status);
+      formData.append("officer_message", replyData.message);
+      if (replyData.attachment) {
+        formData.append("attachment", replyData.attachment);
+      }
+
+      const res = await fetch(API_ENDPOINTS.communication.sendReplyEmail, {
+        method: "POST",
+        body: formData, // FormData doesn't need Content-Type header
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        let msg = "Operation successful!";
+        if (data.email_sent) {
+          msg = "Reply and notification email sent successfully!";
+        } else {
+          msg = `Status updated, but email not sent: ${data.message}`;
+        }
+        alert(msg);
+        setShowReplyModal(false);
+        fetchComplaints();
+      } else {
+        alert(data.message || "Failed to send reply.");
+      }
+    } catch (err) {
+      console.error("Reply error:", err);
+      alert("Error sending reply.");
+    } finally {
+      setIsSendingReply(false);
+    }
   };
 
   const handleReportSubmit = async (e) => {
@@ -126,6 +210,7 @@ const OfficerComplaints = () => {
     if (!workLocation) return;
     try {
       const queryParams = {
+        ward_id: workLocation.work_ward_id,
         province: workLocation.work_province,
         municipality: workLocation.work_municipality,
         ward: workLocation.work_ward,
@@ -218,56 +303,127 @@ const OfficerComplaints = () => {
                 return (
                   <tr key={complaint.id}>
                     <td className="complaint-complainant">
-                      {activeTab === "citizen"
-                        ? complaint.complainant
-                        : "System Admin"}
+                      <div className="name-box">
+                        {activeTab === "citizen"
+                          ? complaint.complainant ||
+                            (complaint.first_name
+                              ? `${complaint.first_name} ${complaint.last_name}`
+                              : "Guest User")
+                          : "System Admin"}
+                      </div>
+                      <div
+                        className="contact-info-small"
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "#888",
+                          marginTop: "4px",
+                        }}
+                      >
+                        {activeTab === "citizen" && (
+                          <>
+                            {/* Use complaint's own contact info if available (for guests), otherwise use joined user info */}
+                            <div>
+                              {complaint.complainant_email ||
+                                complaint.email ||
+                                ""}
+                            </div>
+                            <div>
+                              {complaint.complainant_phone ||
+                                complaint.contact_number ||
+                                ""}
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td>
                       <div className="complaint-subject">
                         {complaint.subject}
                       </div>
-                      <div className="location-meta">
-                        {complaint.province}, {complaint.district_name},{" "}
-                        {complaint.municipality}, Ward {complaint.ward_number}
-                      </div>
                     </td>
-                    <td className="complaint-date">
-                      {complaint.created_at
-                        ? new Date(complaint.created_at).toLocaleDateString()
+                    <td
+                      className="complaint-date"
+                      style={{ whiteSpace: "nowrap" }}
+                    >
+                      {complaint.created_at || complaint.date
+                        ? new Date(
+                            complaint.created_at || complaint.date
+                          ).toLocaleString("en-US", {
+                            timeZone: "Asia/Kathmandu",
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })
                         : "N/A"}
                     </td>
                     <td>
                       <span
-                        className={`status-badge ${
-                          activeTab === "admin" &&
-                          complaint.status.toLowerCase() === "open"
-                            ? "pending"
-                            : complaint.status.toLowerCase()
-                        }`}
+                        className={`status-badge-big ${(
+                          complaint.status || "Open"
+                        ).toLowerCase()}`}
+                        style={{ fontSize: "0.7rem" }}
                       >
-                        {activeTab === "admin" && complaint.status === "Open"
-                          ? "Pending"
-                          : complaint.status}
+                        {complaint.status || "Open"}
                       </span>
                     </td>
                     <td>
-                      <div className="action-btns">
-                        {activeTab === "citizen" &&
-                          (complaint.status === "Open" ? (
+                      <div
+                        className="action-btns"
+                        style={{ flexWrap: "wrap", gap: "8px" }}
+                      >
+                        {activeTab === "citizen" ? (
+                          <>
                             <button
-                              onClick={() => handleResolve(complaint.id)}
-                              className="resolve-btn"
-                              title="Resolve"
+                              onClick={() => handleOpenView(complaint)}
+                              className="view-btn-new"
+                              title="View Details"
                             >
-                              Mark as Resolved
+                              View
                             </button>
-                          ) : (
-                            <span className="resolved-text">
-                              <span>✅</span> Resolved
-                            </span>
-                          ))}
 
-                        {activeTab === "admin" && (
+                            {(complaint.status || "Open").toLowerCase() ===
+                              "open" ||
+                            (complaint.status || "").toLowerCase() ===
+                              "pending" ? (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    directStatusUpdate(complaint, "Resolved")
+                                  }
+                                  className="accept-btn"
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    directStatusUpdate(complaint, "Pending")
+                                  }
+                                  className="pending-btn-action"
+                                >
+                                  Pending
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    directStatusUpdate(complaint, "Rejected")
+                                  }
+                                  className="reject-btn"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            ) : null}
+
+                            <button
+                              onClick={() => handleOpenReply(complaint)}
+                              className="send-msg-btn"
+                            >
+                              Send Message
+                            </button>
+                          </>
+                        ) : (
                           <>
                             {complaint.status !== "Resolved" && (
                               <button
@@ -275,7 +431,7 @@ const OfficerComplaints = () => {
                                 className="edit-btn"
                                 title="Edit"
                               >
-                                ✏️
+                                <i className="fa-solid fa-pen"></i>
                               </button>
                             )}
                             <button
@@ -283,7 +439,7 @@ const OfficerComplaints = () => {
                               className="delete-btn"
                               title="Delete"
                             >
-                              🗑️
+                              <i className="fa-solid fa-trash"></i>
                             </button>
                           </>
                         )}
@@ -383,6 +539,225 @@ const OfficerComplaints = () => {
                 <i className="fa-solid fa-paper-plane"></i>
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {showViewModal && selectedComplaint && (
+        <div className="modal-overlay">
+          <div className="modal-content complaint-modal view-modal">
+            <div className="modal-header">
+              <h3>👁️ Complaint Details</h3>
+              <button
+                className="close-btn"
+                onClick={() => setShowViewModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body-content">
+              {/* Top Meta Info Grid */}
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>
+                    <i className="fa-solid fa-heading"></i> Subject
+                  </label>
+                  <span>{selectedComplaint.subject}</span>
+                </div>
+                <div className="detail-item">
+                  <label>
+                    <i className="fa-solid fa-user"></i> Complainant
+                  </label>
+                  <span>
+                    {selectedComplaint.complainant ||
+                      (selectedComplaint.first_name
+                        ? `${selectedComplaint.first_name} ${selectedComplaint.last_name}`
+                        : "Guest")}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <label>
+                    <i className="fa-solid fa-envelope"></i> Email
+                  </label>
+                  <span>
+                    {selectedComplaint.complainant_email ||
+                      selectedComplaint.email ||
+                      "N/A"}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <label>
+                    <i className="fa-solid fa-phone"></i> Contact
+                  </label>
+                  <span>
+                    {selectedComplaint.complainant_phone ||
+                      selectedComplaint.contact_number ||
+                      "N/A"}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <label>
+                    <i className="fa-solid fa-calendar"></i> Submitted Date
+                  </label>
+                  <span>
+                    {selectedComplaint.date ||
+                      (selectedComplaint.created_at
+                        ? new Date(
+                            selectedComplaint.created_at
+                          ).toLocaleString()
+                        : "N/A")}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <label>
+                    <i className="fa-solid fa-layer-group"></i> Locality
+                  </label>
+                  <span>
+                    Ward {selectedComplaint.ward_number},{" "}
+                    {selectedComplaint.municipality}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <label>
+                    <i className="fa-solid fa-flag"></i> Priority
+                  </label>
+                  <div>
+                    <span
+                      className={`priority-badge-big ${selectedComplaint.priority}`}
+                    >
+                      {selectedComplaint.priority}
+                    </span>
+                  </div>
+                </div>
+                <div className="detail-item">
+                  <label>
+                    <i className="fa-solid fa-circle-info"></i> Status
+                  </label>
+                  <div>
+                    <span
+                      className={`status-badge-big ${selectedComplaint.status.toLowerCase()}`}
+                    >
+                      {selectedComplaint.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Message Section */}
+              <div className="detail-message-section">
+                <h4>
+                  <i className="fa-solid fa-message"></i> Complaint Message
+                </h4>
+                <p>{selectedComplaint.message}</p>
+              </div>
+
+              {/* Image Section */}
+              {selectedComplaint.image && (
+                <div className="detail-attachment-section">
+                  <h4>
+                    <i className="fa-solid fa-paperclip"></i> Attachment
+                  </h4>
+                  <div className="image-container">
+                    <img
+                      src={`http://localhost/my-react-app/uploads/complaints/${selectedComplaint.image}`}
+                      alt="attachment"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src =
+                          "https://placehold.co/600x400?text=Image+Not+Found";
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReplyModal && selectedComplaint && (
+        <div className="modal-overlay">
+          <div className="modal-content complaint-modal reply-modal">
+            <div className="modal-header">
+              <h3>✉️ Reply via Email</h3>
+              <button
+                className="close-btn"
+                onClick={() => setShowReplyModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body-content" style={{ padding: "30px" }}>
+              <div
+                style={{
+                  marginBottom: "15px",
+                  padding: "10px",
+                  background: "#f8fafc",
+                  borderRadius: "8px",
+                  fontSize: "0.9rem",
+                }}
+              >
+                <strong>To:</strong>{" "}
+                {selectedComplaint.complainant_email ||
+                  selectedComplaint.email ||
+                  "No Email Found"}
+              </div>
+              <form
+                onSubmit={handleReplySubmit}
+                className="report-form"
+                style={{ padding: 0 }}
+              >
+                <div className="form-group">
+                  <label>Update Status</label>
+                  <select
+                    className="form-input"
+                    value={replyData.status}
+                    onChange={(e) =>
+                      setReplyData({ ...replyData, status: e.target.value })
+                    }
+                  >
+                    <option value="Open">Keep Open</option>
+                    <option value="Pending">Mark as Pending</option>
+                    <option value="Resolved">Mark as Resolved</option>
+                    <option value="Rejected">Mark as Rejected</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Your Message / Response (Optional)</label>
+                  <textarea
+                    className="form-input"
+                    placeholder="Write your reply here..."
+                    value={replyData.message}
+                    onChange={(e) =>
+                      setReplyData({ ...replyData, message: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label>
+                    <i className="fa-solid fa-paperclip"></i> Include Image /
+                    Attachment
+                  </label>
+                  <input
+                    type="file"
+                    className="form-input"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setReplyData({
+                        ...replyData,
+                        attachment: e.target.files[0],
+                      })
+                    }
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="submit-report-btn"
+                  disabled={isSendingReply}
+                >
+                  {isSendingReply ? "Sending..." : "Send Reply & Update"}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}
