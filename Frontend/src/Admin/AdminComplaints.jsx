@@ -7,6 +7,7 @@ const AdminComplaints = () => {
   const [complaints, setComplaints] = useState([]);
   const [filter, setFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
 
   useEffect(() => {
     // Fetch specific Admin complaints or all complaints if needed
@@ -18,8 +19,8 @@ const AdminComplaints = () => {
         );
         if (res.ok) {
           const data = await res.json();
-          if (data.success && Array.isArray(data.data)) {
-            setComplaints(data.data);
+          if (data.success && Array.isArray(data.complaints)) {
+            setComplaints(data.complaints);
           }
         }
       } catch (error) {
@@ -76,6 +77,7 @@ const AdminComplaints = () => {
             <option value="Open">Open</option>
             <option value="Resolved">Resolved</option>
             <option value="Rejected">Rejected</option>
+            <option value="In Progress">In Progress</option>
           </select>
         </div>
 
@@ -108,15 +110,18 @@ const AdminComplaints = () => {
                           color: "var(--text-muted)",
                         }}
                       >
-                        {complaint.municipality
-                          ? `${complaint.municipality}${
-                              complaint.ward_number
-                                ? `, Ward ${complaint.ward_number}`
-                                : ""
-                            }`
-                          : complaint.ward_number
-                          ? `Ward ${complaint.ward_number}`
-                          : "N/A"}
+                        <span style={{ fontSize: "0.85rem", color: "#6366f1" }}>
+                          📍{" "}
+                          {complaint.municipality
+                            ? `${complaint.municipality}${
+                                complaint.ward_number
+                                  ? ` - Ward ${complaint.ward_number}`
+                                  : ""
+                              }`
+                            : complaint.ward_number
+                            ? `Ward ${complaint.ward_number}`
+                            : "N/A"}
+                        </span>
                       </div>
                     </td>
                     <td>
@@ -141,18 +146,27 @@ const AdminComplaints = () => {
                       </span>
                     </td>
                     <td>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        {complaint.status !== "Resolved" && (
-                          <button
-                            className="action-btn"
-                            onClick={() =>
-                              handleStatusChange(complaint.id, "Resolved")
-                            }
-                          >
-                            Resolve
-                          </button>
-                        )}
-                        <button className="action-btn view">View</button>
+                      <div className="action-buttons-group">
+                        <select
+                          className="status-change-select"
+                          value={""}
+                          onChange={(e) =>
+                            handleStatusChange(complaint.id, e.target.value)
+                          }
+                        >
+                          <option value="" disabled>
+                            Action
+                          </option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Resolved">Resolve</option>
+                          <option value="Rejected">Reject</option>
+                        </select>
+                        <button
+                          className="action-btn view"
+                          onClick={() => setSelectedComplaint(complaint)}
+                        >
+                          View
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -170,6 +184,80 @@ const AdminComplaints = () => {
             </tbody>
           </table>
         </div>
+
+        {/* DETAILS MODAL */}
+        {selectedComplaint && (
+          <div
+            className="modal-overlay"
+            onClick={() => setSelectedComplaint(null)}
+          >
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Complaint Details</h2>
+                <button
+                  className="close-btn"
+                  onClick={() => setSelectedComplaint(null)}
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="detail-row">
+                  <strong>Reference ID:</strong> #{selectedComplaint.id}
+                </div>
+                <div className="detail-row">
+                  <strong>Date:</strong>{" "}
+                  {new Date(selectedComplaint.created_at).toLocaleString()}
+                </div>
+                <div className="detail-row">
+                  <strong>Status:</strong>{" "}
+                  <span
+                    className={`status-badge ${
+                      selectedComplaint.status?.toLowerCase() || "pending"
+                    }`}
+                  >
+                    {selectedComplaint.status || "Open"}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <strong>Priority:</strong> {selectedComplaint.priority}
+                </div>
+
+                <hr className="modal-divider" />
+
+                <div className="detail-row">
+                  <strong>Complainant:</strong> {selectedComplaint.complainant}
+                </div>
+                <div className="detail-row">
+                  <strong>Location:</strong>{" "}
+                  {selectedComplaint.municipality || "N/A"}{" "}
+                  {selectedComplaint.ward_number
+                    ? `- Ward ${selectedComplaint.ward_number}`
+                    : ""}
+                </div>
+
+                <hr className="modal-divider" />
+
+                <div className="detail-section">
+                  <h3>Subject: {selectedComplaint.subject}</h3>
+                  <p className="complaint-message">
+                    {selectedComplaint.message}
+                  </p>
+                </div>
+
+                {/* You could add logs or reply history here */}
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="modal-action-btn close"
+                  onClick={() => setSelectedComplaint(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

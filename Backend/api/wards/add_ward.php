@@ -83,8 +83,37 @@ if (!$district_id && $district_name) {
 }
 
 // Validate required fields
-if (!$ward_number || !$district_id) {
-    echo json_encode(array("success" => false, "message" => "Ward number and district are required."));
+$missing_fields = [];
+if (empty($ward_number)) $missing_fields[] = "Ward Number";
+if (empty($district_id)) $missing_fields[] = "District";
+if (empty($province)) $missing_fields[] = "Province";
+if (empty($municipality)) $missing_fields[] = "Municipality";
+if (empty($location)) $missing_fields[] = "Office Name/Location";
+if (empty($google_map_link)) $missing_fields[] = "Google Maps Link";
+if (empty($contact_phone)) $missing_fields[] = "Ward Mobile";
+if (empty($telephone)) $missing_fields[] = "Ward Telephone";
+if (empty($contact_email)) $missing_fields[] = "Office Email";
+if (empty($chairperson_name)) $missing_fields[] = "Chairperson Name";
+if (empty($chairperson_phone)) $missing_fields[] = "Personal Phone";
+if (empty($chairperson_email)) $missing_fields[] = "Personal Email";
+if (empty($chairperson_education)) $missing_fields[] = "Education";
+if (empty($chairperson_experience)) $missing_fields[] = "Experience";
+if (empty($chairperson_political_party)) $missing_fields[] = "Political Party";
+if (empty($chairperson_appointment_date)) $missing_fields[] = "Appointed Date";
+if (empty($chairperson_bio)) $missing_fields[] = "Bio/Message";
+
+// Check if photo is uploaded (Required)
+if (!isset($_FILES['chairperson_photo']) || $_FILES['chairperson_photo']['error'] !== UPLOAD_ERR_OK) {
+    // Only require photo for NEW wards (when $_POST present usually implies new or update). 
+    // Assuming this file is mostly used for ADDING.
+    $missing_fields[] = "Chairperson Photo";
+}
+
+if (!empty($missing_fields)) {
+    echo json_encode(array(
+        "success" => false, 
+        "message" => "Please fill in all required fields: " . implode(", ", $missing_fields)
+    ));
     exit();
 }
 
@@ -96,7 +125,7 @@ $phone_fields = [
 ];
 
 foreach ($phone_fields as $label => $val) {
-    if (!empty($val) && !preg_match('/^[0-9+ \-]+$/', $val)) {
+    if (!preg_match('/^[0-9+ \-]+$/', $val)) {
         echo json_encode(array("success" => false, "message" => "$label must contain only numbers, spaces, or plus/minus signs."));
         exit();
     }

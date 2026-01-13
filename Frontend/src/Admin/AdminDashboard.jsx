@@ -102,7 +102,7 @@ const AdminDashboard = () => {
               fetchPendingOfficers && fetchPendingOfficers(),
               refreshWards && refreshWards(),
             ]);
-            btn.innerText = "🔄 Force Refresh";
+            btn.innerText = "🔄 Refresh";
           }}
           style={{
             padding: "8px 16px",
@@ -114,7 +114,7 @@ const AdminDashboard = () => {
             fontWeight: "600",
           }}
         >
-          🔄 Force Refresh
+          🔄 Refresh
         </button>
       </div>
       {/* Premium Stats Grid */}

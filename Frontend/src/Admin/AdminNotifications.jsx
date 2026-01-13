@@ -1,27 +1,22 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AdminLayout from "./AdminLayout";
+import { useAuth } from "../Home/Context/AuthContext";
 import { API_ENDPOINTS } from "../config/api";
 import "./AdminNotifications.css";
 
 const AdminNotifications = () => {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [filteredNotifications, setFilteredNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterType, setFilterType] = useState("all");
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    message: "",
-    type: "system",
-    source_ward: "",
-  });
   const [stats, setStats] = useState({
     total: 0,
   });
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (isBackground = false) => {
     try {
-      setIsLoading(true);
+      if (!isBackground) setIsLoading(true);
       const response = await fetch(
         `${API_ENDPOINTS.notifications.getAll}?limit=500`
       );
@@ -34,52 +29,33 @@ const AdminNotifications = () => {
     } catch (error) {
       console.error("Error fetching notifications:", error);
     } finally {
-      setIsLoading(false);
+      if (!isBackground) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchNotifications();
+    fetchNotifications(false);
+
+    const interval = setInterval(() => {
+      fetchNotifications(true);
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [fetchNotifications]);
 
   useEffect(() => {
     let filtered = notifications;
     if (filterType !== "all") {
-      filtered = filtered.filter((n) => n.type === filterType);
+      if (filterType === "system") {
+        filtered = filtered.filter(
+          (n) => n.type === "system" || n.origin === "system_alert"
+        );
+      } else {
+        filtered = filtered.filter((n) => n.type === filterType);
+      }
     }
     setFilteredNotifications(filtered);
   }, [notifications, filterType]);
-
-  const handleCreateNotification = async (e) => {
-    e.preventDefault();
-
-    try {
-      const response = await fetch(API_ENDPOINTS.notifications.create, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        alert("Notification created successfully!");
-        setIsCreateModalOpen(false);
-        setFormData({
-          title: "",
-          message: "",
-          type: "system",
-          source_ward: "",
-        });
-        fetchNotifications();
-      } else {
-        alert("Failed: " + data.message);
-      }
-    } catch (error) {
-      console.error("Error creating notification:", error);
-      alert("Failed to create notification");
-    }
-  };
 
   const handleDelete = async (id, origin = "notification") => {
     if (!window.confirm("Delete this notification?")) return;
@@ -124,14 +100,30 @@ const AdminNotifications = () => {
     }
   };
 
+  const handleMarkAllRead = async () => {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(API_ENDPOINTS.notifications.markAllAsRead, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: user.id, scope: "global" }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchNotifications();
+      }
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
+  };
+
   const getTypeIcon = (type) => {
     const icons = {
       notice: "📢",
-      complaint: "📝",
       work: "🏗️",
       budget: "💰",
       activity: "📅",
-      meeting: "🤝",
       alert: "⚠️",
       system: "🔔",
     };
@@ -177,19 +169,6 @@ const AdminNotifications = () => {
   return (
     <AdminLayout title="System Notifications">
       <div className="admin-notifications-container">
-        {/* Simplified Header Stats */}
-        <div className="notification-stats-premium">
-          <div className="stat-card-simple">
-            <div className="stat-icon-wrapper">
-              <span className="stat-main-icon">🔔</span>
-            </div>
-            <div className="stat-details">
-              <h3>{stats.total}</h3>
-              <p>Total Records</p>
-            </div>
-          </div>
-        </div>
-
         {/* Controls */}
         <div className="notification-toolbar">
           <div className="filter-group">
@@ -202,29 +181,33 @@ const AdminNotifications = () => {
               <option value="all">📁 All Types</option>
               <option value="system">🔔 System</option>
               <option value="notice">📢 Notice</option>
-              <option value="complaint">📝 Complaint</option>
+
               <option value="work">🏗️ Work</option>
               <option value="budget">💰 Budget</option>
               <option value="activity">📅 Activity</option>
-              <option value="meeting">🤝 Meeting</option>
               <option value="alert">⚠️ Alert</option>
             </select>
           </div>
 
           <div className="toolbar-actions">
             <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="btn-create-premium"
+              onClick={handleMarkAllRead}
+              className="btn-secondary-outline"
             >
-              <span>+</span> Create Notice
+              ✓ Read All
             </button>
             <button
               onClick={handleDeleteAll}
               className="btn-destructive-outline"
             >
-              🗑️ Purge All
+              🗑️ Delete All
             </button>
           </div>
+        </div>
+        <div className="notification-stats-footer">
+          <p>
+            Total Notifications: <strong>{stats.total}</strong>
+          </p>
         </div>
 
         {/* Notifications List */}
@@ -291,108 +274,6 @@ const AdminNotifications = () => {
             ))
           )}
         </div>
-
-        {/* Simplified Create Modal */}
-        {isCreateModalOpen && (
-          <div
-            className="custom-modal-overlay"
-            onClick={() => setIsCreateModalOpen(false)}
-          >
-            <div
-              className="premium-modal-content"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="premium-modal-header">
-                <h2>Broadcast New Notice</h2>
-                <button
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="close-x"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form
-                onSubmit={handleCreateNotification}
-                className="premium-form"
-              >
-                <div className="form-field">
-                  <label>Subject Title</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                    placeholder="e.g. Important Update for Citizens"
-                  />
-                </div>
-
-                <div className="form-field">
-                  <label>Message Content</label>
-                  <textarea
-                    required
-                    rows="4"
-                    value={formData.message}
-                    onChange={(e) =>
-                      setFormData({ ...formData, message: e.target.value })
-                    }
-                    placeholder="Provide full details of the notice..."
-                  />
-                </div>
-
-                <div className="form-grid-2">
-                  <div className="form-field">
-                    <label>Notice Type</label>
-                    <select
-                      value={formData.type}
-                      onChange={(e) =>
-                        setFormData({ ...formData, type: e.target.value })
-                      }
-                    >
-                      <option value="system">System</option>
-                      <option value="notice">Notice</option>
-                      <option value="alert">Alert</option>
-                      <option value="meeting">Meeting</option>
-                      <option value="work">Work</option>
-                      <option value="budget">Budget</option>
-                      <option value="activity">Activity</option>
-                    </select>
-                  </div>
-
-                  <div className="form-field">
-                    <label>Target Ward (Optional)</label>
-                    <input
-                      type="number"
-                      value={formData.source_ward}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          source_ward: e.target.value,
-                        })
-                      }
-                      placeholder="Ward No."
-                    />
-                  </div>
-                </div>
-
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="btn-ghost"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn-primary-action">
-                    Send Notification
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     </AdminLayout>
   );

@@ -63,11 +63,12 @@ export const API_ENDPOINTS = {
   },
 
   // Communication
+  // Communication
   communication: {
-    submitComplaint: `${BASE_URL}/communication/submit_complaint.php`,
-    getComplaints: `${BASE_URL}/communication/get_complaints.php`,
-    updateComplaintStatus: `${BASE_URL}/communication/update_complaint_status.php`,
-    manageComplaints: `${BASE_URL}/communication/manage_complaints.php`,
+    submitComplaint: `${BASE_URL}/communication/complaint/submit_complaint.php`,
+    getComplaints: `${BASE_URL}/communication/complaint/get_complaints.php`,
+    updateComplaintStatus: `${BASE_URL}/communication/complaint/update_complaint_status.php`,
+    manageComplaints: `${BASE_URL}/communication/complaint/manage_complaints.php`,
     getFeedback: `${BASE_URL}/communication/get_feedback.php`,
     addFeedback: `${BASE_URL}/communication/add_feedback.php`,
     getReviews: `${BASE_URL}/communication/get_reviews.php`,

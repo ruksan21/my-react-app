@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../Context/AuthContext";
 import { useWard } from "../Context/WardContext";
 import { API_ENDPOINTS } from "../../config/api";
@@ -15,13 +15,21 @@ const Notification = () => {
   useEffect(() => {
     if (user?.id) {
       fetchNotifications();
-    }
-  }, [user?.id, wardId]);
 
-  const fetchNotifications = async () => {
+      // Poll every 10 seconds to keep sync
+      const intervalId = setInterval(fetchNotifications, 10000);
+      return () => clearInterval(intervalId);
+    }
+  }, [user?.id, wardId, fetchNotifications]);
+
+  const fetchNotifications = useCallback(async () => {
+    // Avoid fetching if user is not logged in
     if (!user?.id) return;
 
-    setLoading(true);
+    // Don't set global loading state on background polls to avoid flickering
+    // We can use a local flag just for the first load if needed
+    if (notifications.length === 0) setLoading(true);
+
     try {
       // Include ward_id in the request if available
       let url = `${API_ENDPOINTS.notifications.get}?user_id=${user.id}`;
@@ -39,9 +47,9 @@ const Notification = () => {
     } catch (error) {
       console.error("Error fetching notifications:", error);
     } finally {
-      setLoading(false);
+      if (notifications.length === 0) setLoading(false);
     }
-  };
+  }, [user?.id, wardId, notifications.length]);
 
   const toggleNotification = () => {
     setIsOpen(!isOpen);

@@ -117,7 +117,7 @@ const WardManagement = () => {
 
   const handleNumericInput = (e, field) => {
     const val = e.target.value;
-    if (val === "" || /^[0-9]+$/.test(val)) {
+    if (val === "" || /^[0-9+\- ]+$/.test(val)) {
       setFormData({ ...formData, [field]: val });
     }
   };
@@ -197,19 +197,32 @@ const WardManagement = () => {
     setSelectedWard(null);
     setProfilePhotoFile(null);
     setFormProvince("");
+    setProfilePhotoFile(null);
+    setFormProvince("");
     setFormDistrictName("");
   };
 
+  // Main Handle Save Function for Add/Edit
   const handleSave = async (e) => {
     e.preventDefault();
 
-    // Comprehensive Validation - Required fields only
+    // Comprehensive Validation - ALL fields required
     const requiredFields = {
       ward_number: "Ward Number",
       municipality: "Municipality",
+      location: "Office Location",
+      google_map_link: "Google Maps Link",
+      contact_phone: "Ward Mobile",
+      telephone: "Ward Telephone",
+      contact_email: "Office Email",
       chairperson_name: "Chairperson Name",
-      chairperson_phone: "Chairperson Phone",
-      chairperson_email: "Chairperson Email",
+      chairperson_phone: "Personal Phone",
+      chairperson_email: "Personal Email",
+      chairperson_political_party: "Political Party",
+      chairperson_appointment_date: "Appointed Date",
+      chairperson_education: "Education",
+      chairperson_experience: "Experience",
+      chairperson_bio: "Bio / Message",
     };
 
     const missingFields = [];
@@ -219,12 +232,17 @@ const WardManagement = () => {
       }
     }
 
-    // Check district - either district_id OR district_name must be provided
+    // Check district
     if (
       (!formData.district_id || !formData.district_id.toString().trim()) &&
       (!formDistrictName || !formDistrictName.trim())
     ) {
       missingFields.push("District");
+    }
+
+    // Check Photo (Required for new wards)
+    if (isAdding && !profilePhotoFile) {
+      missingFields.push("Profile Photo");
     }
 
     if (missingFields.length > 0) {
@@ -234,7 +252,7 @@ const WardManagement = () => {
       return;
     }
 
-    // Email validation - only if provided
+    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.contact_email && !emailRegex.test(formData.contact_email)) {
       alert("Please enter a valid contact email.");
@@ -248,7 +266,7 @@ const WardManagement = () => {
       return;
     }
 
-    // Phone validation - only if provided
+    // Phone validation
     if (
       formData.contact_phone &&
       !/^[0-9\-+ ]+$/.test(formData.contact_phone)
@@ -273,7 +291,6 @@ const WardManagement = () => {
       submitData.append(key, formData[key]);
     });
 
-    // Explicitly pass district_name for auto-registration
     if (formDistrictName) {
       submitData.append("district_name", formDistrictName);
     }
@@ -387,7 +404,6 @@ const WardManagement = () => {
 
     return wardNoMatch || muniMatch || districtMatch || chairMatch;
   });
-
   // RENDER Start
   return (
     <AdminLayout title="Ward Management">
@@ -997,22 +1013,25 @@ const WardManagement = () => {
                         ))}
                       </select>
                     </div>
+
                     <div className="form-field">
-                      <label className="modern-label">Office Name</label>
+                      <label className="modern-label">Office Name *</label>
                       <input
                         type="text"
+                        required
                         value={formData.location}
                         onChange={(e) =>
                           setFormData({ ...formData, location: e.target.value })
                         }
                         className="modern-input"
-                        placeholder="e.g. Near Kalanki Chowk (Optional)"
+                        placeholder="e.g. Near Kalanki Chowk"
                       />
                     </div>
                     <div className="form-field">
-                      <label className="modern-label">Google Maps Link</label>
+                      <label className="modern-label">Google Maps Link *</label>
                       <input
                         type="url"
+                        required
                         value={formData.google_map_link}
                         onChange={(e) =>
                           setFormData({
@@ -1021,7 +1040,7 @@ const WardManagement = () => {
                           })
                         }
                         className="modern-input"
-                        placeholder="https://maps.app.goo.gl/... (Optional)"
+                        placeholder="https://maps.app.goo.gl/..."
                       />
                     </div>
                   </div>
@@ -1033,29 +1052,32 @@ const WardManagement = () => {
                   </h3>
                   <div className="modern-grid-layout">
                     <div className="form-field">
-                      <label className="modern-label">Ward Mobile</label>
+                      <label className="modern-label">Ward Mobile *</label>
                       <input
                         type="text"
+                        required
                         value={formData.contact_phone}
                         onChange={(e) => handleNumericInput(e, "contact_phone")}
                         className="modern-input"
-                        placeholder="98XXXXXXXX (Optional)"
+                        placeholder="98XXXXXXXX"
                       />
                     </div>
                     <div className="form-field">
-                      <label className="modern-label">Ward Telephone</label>
+                      <label className="modern-label">Ward Telephone *</label>
                       <input
                         type="text"
+                        required
                         value={formData.telephone}
                         onChange={(e) => handleNumericInput(e, "telephone")}
                         className="modern-input"
-                        placeholder="01-XXXXXXX (Optional)"
+                        placeholder="01-XXXXXXX"
                       />
                     </div>
                     <div className="form-field">
-                      <label className="modern-label">Office Email</label>
+                      <label className="modern-label">Office Email *</label>
                       <input
                         type="email"
+                        required
                         value={formData.contact_email}
                         onChange={(e) =>
                           setFormData({
@@ -1064,7 +1086,7 @@ const WardManagement = () => {
                           })
                         }
                         className="modern-input"
-                        placeholder="office@ward.gov.np (Optional)"
+                        placeholder="office@ward.gov.np"
                       />
                     </div>
                   </div>
@@ -1080,6 +1102,7 @@ const WardManagement = () => {
                       <label className="modern-label">Full Name *</label>
                       <input
                         type="text"
+                        required
                         value={formData.chairperson_name}
                         onChange={(e) =>
                           setFormData({
@@ -1092,10 +1115,11 @@ const WardManagement = () => {
                       />
                     </div>
                     <div className="form-field">
-                      <label className="modern-label">Profile Photo</label>
+                      <label className="modern-label">Profile Photo *</label>
                       <input
                         type="file"
                         accept="image/*"
+                        required={isAdding} // Required only when adding new
                         onChange={(e) => {
                           if (e.target.files && e.target.files[0]) {
                             setProfilePhotoFile(e.target.files[0]);
@@ -1103,12 +1127,12 @@ const WardManagement = () => {
                         }}
                         className="modern-file-input"
                       />
-                      <small style={{ color: "#666" }}>(Optional)</small>
                     </div>
                     <div className="form-field">
                       <label className="modern-label">Personal Phone *</label>
                       <input
                         type="text"
+                        required
                         value={formData.chairperson_phone}
                         onChange={(e) =>
                           handleNumericInput(e, "chairperson_phone")
@@ -1121,6 +1145,7 @@ const WardManagement = () => {
                       <label className="modern-label">Personal Email *</label>
                       <input
                         type="email"
+                        required
                         value={formData.chairperson_email}
                         onChange={(e) =>
                           setFormData({
@@ -1133,9 +1158,10 @@ const WardManagement = () => {
                       />
                     </div>
                     <div className="form-field">
-                      <label className="modern-label">Political Party</label>
+                      <label className="modern-label">Political Party *</label>
                       <input
                         type="text"
+                        required
                         value={formData.chairperson_political_party}
                         onChange={(e) =>
                           setFormData({
@@ -1144,14 +1170,15 @@ const WardManagement = () => {
                           })
                         }
                         className="modern-input"
-                        placeholder="(Optional)"
+                        placeholder="e.g. Nepali Congress"
                       />
                     </div>
                     <div className="form-field">
-                      <label className="modern-label">Appointed Date</label>
+                      <label className="modern-label">Appointed Date *</label>
                       <input
                         type="date"
-                        value={formData.chairperson_appointment_date}
+                        required
+                        value={formData.chairperson_appointment_date || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
@@ -1160,12 +1187,12 @@ const WardManagement = () => {
                         }
                         className="modern-input"
                       />
-                      <small style={{ color: "#666" }}>(Optional)</small>
                     </div>
                     <div className="form-field">
-                      <label className="modern-label">Education</label>
+                      <label className="modern-label">Education *</label>
                       <input
                         type="text"
+                        required
                         value={formData.chairperson_education}
                         onChange={(e) =>
                           setFormData({
@@ -1174,13 +1201,14 @@ const WardManagement = () => {
                           })
                         }
                         className="modern-input"
-                        placeholder="e.g. Bachelor's (Optional)"
+                        placeholder="e.g. Bachelor's"
                       />
                     </div>
                     <div className="form-field">
-                      <label className="modern-label">Experience</label>
+                      <label className="modern-label">Experience *</label>
                       <input
                         type="text"
+                        required
                         value={formData.chairperson_experience}
                         onChange={(e) =>
                           setFormData({
@@ -1189,13 +1217,14 @@ const WardManagement = () => {
                           })
                         }
                         className="modern-input"
-                        placeholder="e.g. 5 years in local governance (Optional)"
+                        placeholder="e.g. 5 years in local governance"
                       />
                     </div>
                     <div className="form-field field-full">
-                      <label className="modern-label">Bio / Message</label>
+                      <label className="modern-label">Bio / Message *</label>
                       <textarea
                         rows="3"
+                        required
                         value={formData.chairperson_bio}
                         onChange={(e) =>
                           setFormData({
@@ -1204,7 +1233,7 @@ const WardManagement = () => {
                           })
                         }
                         className="modern-textarea"
-                        placeholder="Brief biography or message (Optional)"
+                        placeholder="Brief biography or message"
                       />
                     </div>
                   </div>
