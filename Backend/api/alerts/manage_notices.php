@@ -72,13 +72,17 @@ if ($method === 'GET') {
         exit();
     }
     
-            if ($ward_id > 0) {
+            $show_all = isset($_GET['show_all']) && $_GET['show_all'] === 'true';
+    $expiry_clause = $show_all ? "" : " AND (n.expiry_date IS NULL OR n.expiry_date >= NOW())";
+
+    if ($ward_id > 0) {
         // Join with wards to get source location details
         $sql = "SELECT n.*, w.municipality, w.ward_number, w.district_name, w.province 
                 FROM ward_notices n
                 LEFT JOIN wards w ON n.ward_id = w.id
-                WHERE (n.ward_id = ? OR n.ward_id IS NULL)
-                ORDER BY (n.ward_id IS NULL) DESC, n.created_at DESC";
+                WHERE n.ward_id = ? 
+                $expiry_clause
+                ORDER BY n.created_at DESC";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("i", $ward_id);
         $stmt->execute();
@@ -105,6 +109,7 @@ if ($method === 'GET') {
                     FROM ward_notices n
                     LEFT JOIN wards w ON n.ward_id = w.id
                     WHERE n.ward_id = ? 
+                    $expiry_clause
                     ORDER BY n.created_at DESC";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $resolvedWardId);

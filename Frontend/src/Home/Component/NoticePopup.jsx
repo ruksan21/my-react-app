@@ -53,12 +53,22 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
 
   const handleClose = () => {
     if (!propNotice && notices.length > 0) {
-      // Mark current notice as shown in localStorage only in automatic mode
+      // Mark current notice as shown in localStorage
       const shownNotices = JSON.parse(
         localStorage.getItem("shownNotices") || "[]"
       );
-      shownNotices.push(notices[currentIndex].id);
-      localStorage.setItem("shownNotices", JSON.stringify(shownNotices));
+      const currentId = notices[currentIndex].id;
+      if (!shownNotices.includes(currentId)) {
+        shownNotices.push(currentId);
+        localStorage.setItem("shownNotices", JSON.stringify(shownNotices));
+      }
+
+      // If there are more notices in the array that haven't been seen in this session,
+      // and we are not at the end of the list, move to the next one.
+      if (currentIndex < notices.length - 1) {
+        setCurrentIndex((prev) => prev + 1);
+        return; // Stay open and show next notice
+      }
     }
 
     setShowPopup(false);
@@ -196,7 +206,13 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
                 <span style={{ color: "#ef4444" }}>⏳</span>
                 <span style={{ color: "#ef4444" }}>
                   Expires:{" "}
-                  {new Date(currentNotice.expiry_date).toLocaleDateString()}
+                  {new Date(currentNotice.expiry_date).toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
                 </span>
               </div>
             )}
@@ -258,46 +274,30 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
         </div>
 
         {notices.length > 1 && (
-          <div style={{ padding: "0 24px 20px 24px" }}>
-            <div className="notice-footer-info">
-              <div className="notice-pagination">
-                {notices.map((_, idx) => (
-                  <div
-                    key={idx}
-                    className={`nav-dot ${
-                      idx === currentIndex ? "active" : ""
-                    }`}
-                    onClick={() => setCurrentIndex(idx)}
-                    style={{ cursor: "pointer" }}
-                  />
-                ))}
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
+          <div className="notice-popup-footer">
+            <div className="notice-counter">
+              Notice {currentIndex + 1} of {notices.length}
+            </div>
+            <div className="notice-navigation">
+              <button
+                className="footer-nav-btn prev"
+                onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
+                disabled={currentIndex === 0}
+              >
+                ← Prev
+              </button>
+              {currentIndex < notices.length - 1 ? (
                 <button
-                  className="notice-popup-close"
-                  onClick={() =>
-                    setCurrentIndex((prev) => Math.max(0, prev - 1))
-                  }
-                  disabled={currentIndex === 0}
-                  style={{ opacity: currentIndex === 0 ? 0.3 : 1 }}
+                  className="footer-nav-btn next highlight"
+                  onClick={handleClose}
                 >
-                  ←
+                  Next Notice →
                 </button>
-                <button
-                  className="notice-popup-close"
-                  onClick={() =>
-                    setCurrentIndex((prev) =>
-                      Math.min(notices.length - 1, prev + 1)
-                    )
-                  }
-                  disabled={currentIndex === notices.length - 1}
-                  style={{
-                    opacity: currentIndex === notices.length - 1 ? 0.3 : 1,
-                  }}
-                >
-                  →
+              ) : (
+                <button className="footer-nav-btn close" onClick={handleClose}>
+                  Finish
                 </button>
-              </div>
+              )}
             </div>
           </div>
         )}

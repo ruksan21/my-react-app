@@ -78,7 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("sssssssssii", $title, $description, $budget, $location, $start_date, $end_date, $beneficiaries, $status, $image_path, $officer_id, $ward_id);
 
     if ($stmt->execute()) {
-        // Create ward-level notification
+        /*
+        // Create ward-level notification - Commented out as requested
         $notif_title = "🏗️ Work Update";
         $notif_msg = "New work added: " . $title;
         $notif_sql = "INSERT INTO notifications (ward_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'work', 0, NOW())";
@@ -87,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $notif_stmt->execute();
             $notif_stmt->close();
         }
+        */
 
         echo json_encode(["success" => true, "message" => "Work added successfully"]);
     } else {

@@ -3,21 +3,7 @@ header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
 require_once '../db_connect.php';
-
-// Helper function to resolve ward ID
-function resolveWardIdStrict($conn, $province, $district, $municipality, $ward_number) {
-    $stmt = $conn->prepare("SELECT id FROM wards WHERE province = ? AND district = ? AND municipality = ? AND ward_number = ? LIMIT 1");
-    $stmt->bind_param("sssi", $province, $district, $municipality, $ward_number);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result && $row = $result->fetch_assoc()) {
-        $ward_id = $row['id'];
-    } else {
-        $ward_id = 0;
-    }
-    $stmt->close();
-    return $ward_id;
-}
+require_once '../utils/ward_utils.php';
 
 // Check if ward_id is provided directly or via location params
 $ward_id = 0;
@@ -25,7 +11,7 @@ $ward_id = 0;
 if (isset($_GET['ward_id'])) {
     $ward_id = intval($_GET['ward_id']);
 } else if (isset($_GET['work_province'])) {
-    $ward_id = resolveWardIdStrict($conn, $_GET['work_province'], $_GET['work_district'], $_GET['work_municipality'], intval($_GET['work_ward']));
+    $ward_id = resolveWardIdFlexible($conn, $_GET['work_province'], $_GET['work_district'], $_GET['work_municipality'], intval($_GET['work_ward']));
 }
 
 if ($ward_id === 0) {

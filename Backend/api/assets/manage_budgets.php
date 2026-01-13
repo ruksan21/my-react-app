@@ -162,6 +162,8 @@ else if ($method === 'POST') {
         $notif_title = "💰 Budget Update";
         $notif_msg = $fiscal_year ? ("Budget saved for fiscal year: " . $fiscal_year) : "Budget details updated.";
 
+        /*
+        // Commented out as requested - redundant
         if ($w_data) {
             $notif_sql = "INSERT INTO notifications (ward_id, title, message, type, source_province, source_district, source_municipality, source_ward, is_read, created_at) VALUES (?, ?, ?, 'budget', ?, ?, ?, ?, 0, NOW())";
             if ($notif_stmt = $conn->prepare($notif_sql)) {
@@ -170,6 +172,7 @@ else if ($method === 'POST') {
                 $notif_stmt->close();
             }
         }
+        */
 
         ob_clean();
         echo json_encode(["success" => true, "message" => "Budget saved successfully"]);

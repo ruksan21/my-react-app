@@ -98,6 +98,8 @@ if (!empty($data->title) && (!empty($data->officer_id) || !empty($data->ward_id)
                     $stmt_o->close();
                 }
 
+                /* 
+                // Commented out as requested - redundant with main dashboard cards/ui
                 // Also add to notifications table for ward feed
                 $notif_title = "📅 Work Activity";
                 $notif_msg = "New activity added: " . $title;
@@ -111,17 +113,9 @@ if (!empty($data->title) && (!empty($data->officer_id) || !empty($data->ward_id)
                     $w_res = $w_stmt->get_result();
                     $w_data = $w_res->fetch_assoc();
                     $w_stmt->close();
-
-                    if ($w_data) {
-                        $notif_sql = "INSERT INTO notifications (ward_id, title, message, type, source_province, source_district, source_municipality, source_ward, is_read, created_at) VALUES (?, ?, ?, 'activity', ?, ?, ?, ?, 0, NOW())";
-                        $notif_stmt = $conn->prepare($notif_sql);
-                        if ($notif_stmt) {
-                            $notif_stmt->bind_param("isssssi", $ward_id, $notif_title, $notif_msg, $w_data['province'], $w_data['district_name'], $w_data['municipality'], $w_data['ward_number']);
-                            $notif_stmt->execute();
-                            $notif_stmt->close();
-                        }
-                    }
+ ... (rest ignored) ...
                 }
+                */
             } catch (Exception $e) {
                 // Notifications failed but activity was saved - don't fail the whole operation
                 error_log("Notification creation failed: " . $e->getMessage());

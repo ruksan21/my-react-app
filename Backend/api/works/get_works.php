@@ -47,13 +47,7 @@ if ($ward_id) {
             http_response_code(422);
             echo json_encode([
                 "success" => false,
-                "message" => "Ward not found for provided work location. Ask admin to create this ward.",
-                "debug" => [
-                    "work_province" => $work_province,
-                    "work_district" => $work_district,
-                    "work_municipality" => $work_municipality,
-                    "work_ward" => $work_ward
-                ]
+                "message" => "Ward not found for provided work location. Ask admin to create this ward."
             ]);
             exit();
         }

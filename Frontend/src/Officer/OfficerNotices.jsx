@@ -22,14 +22,6 @@ const OfficerNotices = () => {
   // Ref for scrolling to form
   const formRef = React.useRef(null);
 
-  // Fetch notices from backend
-  useEffect(() => {
-    if (user?.assigned_ward || workLocation) {
-      fetchNotices();
-    } else {
-      setIsLoading(false);
-    }
-  }, [user?.id, workLocation]);
   const fetchNotices = React.useCallback(async () => {
     try {
       setIsLoading(true);
@@ -45,6 +37,9 @@ const OfficerNotices = () => {
       } else if (user?.assigned_ward) {
         params.append("ward_id", String(user.assigned_ward));
       }
+
+      // Officer panel should see ALL notices (including expired ones) for history
+      params.append("show_all", "true");
 
       const response = await fetch(
         `${API_ENDPOINTS.alerts.manageNotices}?${params.toString()}`
@@ -67,7 +62,7 @@ const OfficerNotices = () => {
     } else {
       setIsLoading(false);
     }
-  }, [user?.id, workLocation, fetchNotices]);
+  }, [user?.id, user?.assigned_ward, workLocation, fetchNotices]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -890,9 +885,22 @@ const NoticeItem = ({ notice, onEdit, onDelete }) => {
           <p className="notice-date">
             📅 Published on {new Date(notice.created_at).toLocaleDateString()}
             {notice.expiry_date && (
-              <span className="expiry-label">
+              <span
+                className={`expiry-label ${
+                  new Date(notice.expiry_date) < new Date() ? "expired" : ""
+                }`}
+                style={
+                  new Date(notice.expiry_date) < new Date()
+                    ? { color: "#ef4444", fontWeight: "700" }
+                    : {}
+                }
+              >
                 {" "}
-                • Expires on {new Date(notice.expiry_date).toLocaleString()}
+                •{" "}
+                {new Date(notice.expiry_date) < new Date()
+                  ? "❌ Expired at "
+                  : "⏳ Expires on "}
+                {new Date(notice.expiry_date).toLocaleString()}
               </span>
             )}
           </p>

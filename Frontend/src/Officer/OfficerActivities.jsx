@@ -27,7 +27,11 @@ export default function OfficerActivities() {
     if (!workLocation) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams(workLocation).toString();
+      const queryObj = { ...workLocation };
+      if (user?.assigned_ward_id) {
+        queryObj.ward_id = user.assigned_ward_id;
+      }
+      const params = new URLSearchParams(queryObj).toString();
       const response = await fetch(`${API_ENDPOINTS.activities.get}?${params}`);
       const data = await response.json();
       if (data.success) {
@@ -37,7 +41,7 @@ export default function OfficerActivities() {
       console.error("Error fetching activities:", error);
     }
     setLoading(false);
-  }, [workLocation]);
+  }, [workLocation, user?.assigned_ward_id]);
 
   useEffect(() => {
     fetchActivities();
@@ -100,11 +104,11 @@ export default function OfficerActivities() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
 
       if (data.success) {
@@ -119,13 +123,18 @@ export default function OfficerActivities() {
           setMessage({ type: "", text: "" });
         }, 1500);
       } else {
-        setMessage({ type: "error", text: data.message || "Failed to save activity." });
+        setMessage({
+          type: "error",
+          text: data.message || "Failed to save activity.",
+        });
       }
     } catch (error) {
       console.error("Error saving activity:", error);
-      setMessage({ 
-        type: "error", 
-        text: error.message || "Failed to save activity. Please check your connection and try again." 
+      setMessage({
+        type: "error",
+        text:
+          error.message ||
+          "Failed to save activity. Please check your connection and try again.",
       });
     }
     setLoading(false);

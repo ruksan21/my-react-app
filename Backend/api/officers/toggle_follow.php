@@ -14,9 +14,6 @@ require_once '../db_connect.php';
 $input = file_get_contents("php://input");
 $data = json_decode($input);
 
-// Log for debugging (optional, can be removed later)
-// file_put_contents('debug_follow.log', "Time: " . date('Y-m-d H:i:s') . " Input: " . $input . "\n", FILE_APPEND);
-
 if (isset($data->follower_id) && (isset($data->officer_id) || isset($data->ward_id))) {
     $follower_id = intval($data->follower_id);
     $officer_id = (!empty($data->officer_id) && $data->officer_id !== "null") ? intval($data->officer_id) : null;

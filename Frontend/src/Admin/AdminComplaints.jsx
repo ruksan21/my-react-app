@@ -13,13 +13,14 @@ const AdminComplaints = () => {
     // For now, mocking or fetching all if API supports it
     const fetchComplaints = async () => {
       try {
-        // Assuming an endpoint exists or reusing one with different params
         const res = await fetch(
           `${API_ENDPOINTS.communication.getComplaints}?source=admin_view`
         );
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data)) setComplaints(data);
+          if (data.success && Array.isArray(data.data)) {
+            setComplaints(data.data);
+          }
         }
       } catch (error) {
         console.error("Error fetching complaints:", error);
@@ -127,7 +128,9 @@ const AdminComplaints = () => {
                         {complaint.priority || "Medium"}
                       </span>
                     </td>
-                    <td>{new Date(complaint.date).toLocaleDateString()}</td>
+                    <td>
+                      {new Date(complaint.created_at).toLocaleDateString()}
+                    </td>
                     <td>
                       <span
                         className={`status-badge ${

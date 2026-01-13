@@ -1,7 +1,6 @@
 <?php
 
 function resolveWardIdStrict($conn, $province, $district, $municipality, $wardNumber) {
-    file_put_contents(__DIR__ . '/resolve_debug.log', "[" . date('Y-m-d H:i:s') . "] resolving: $province, $district, $municipality, $wardNumber\n", FILE_APPEND);
     if (!$municipality || !$wardNumber) {
         return 0;
     }

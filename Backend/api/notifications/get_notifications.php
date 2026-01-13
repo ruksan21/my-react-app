@@ -46,10 +46,11 @@ try {
     // This handles the user's request: "jun wada ko notification officer la create garxa tai wada ma dakhinu paro"
     
     if ($wardId) {
-        // Show notifications specifically for this ward
-        $query = $baseQuery . "n.ward_id = ? AND " . $expiryClause . " ORDER BY n.created_at DESC LIMIT 50";
+        // Strict filtering for the selected ward only. This ensures the user only sees
+        // notifications specifically tagged to this ward.
+        $query = $baseQuery . "n.ward_id = ? AND (n.user_id = ? OR n.user_id IS NULL) AND " . $expiryClause . " ORDER BY n.created_at DESC LIMIT 50";
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $wardId);
+        $stmt->bind_param("ii", $wardId, $userId);
     } else {
         // For user-specific notifications (dashboard feed)
         // Ensure we only show notifications for the user's ward or global ones

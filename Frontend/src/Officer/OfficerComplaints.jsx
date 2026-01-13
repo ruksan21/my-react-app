@@ -309,9 +309,11 @@ const OfficerComplaints = () => {
 
       {showReportModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "500px" }}>
+          <div className="modal-content complaint-modal">
             <div className="modal-header">
-              <h3>{editingId ? "Edit Report" : "Report Issue to Admin"}</h3>
+              <h3>
+                {editingId ? "✏️ Edit Report" : "⚠️ Report Issue to Admin"}
+              </h3>
               <button
                 className="close-btn"
                 onClick={() => {
@@ -327,9 +329,11 @@ const OfficerComplaints = () => {
                 ×
               </button>
             </div>
-            <form onSubmit={handleReportSubmit} style={{ marginTop: "20px" }}>
+            <form onSubmit={handleReportSubmit} className="report-form">
               <div className="form-group">
-                <label>Subject</label>
+                <label>
+                  <i className="fa-solid fa-heading"></i> Subject
+                </label>
                 <input
                   type="text"
                   required
@@ -342,21 +346,27 @@ const OfficerComplaints = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Priority</label>
-                <select
-                  className="form-input"
-                  value={reportData.priority}
-                  onChange={(e) =>
-                    setReportData({ ...reportData, priority: e.target.value })
-                  }
-                >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
+                <label>
+                  <i className="fa-solid fa-flag"></i> Priority
+                </label>
+                <div className="select-wrapper">
+                  <select
+                    className="form-input"
+                    value={reportData.priority}
+                    onChange={(e) =>
+                      setReportData({ ...reportData, priority: e.target.value })
+                    }
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                </div>
               </div>
               <div className="form-group">
-                <label>Message</label>
+                <label>
+                  <i className="fa-solid fa-message"></i> Message
+                </label>
                 <textarea
                   required
                   className="form-input"
@@ -368,12 +378,9 @@ const OfficerComplaints = () => {
                   placeholder="Describe the issue in detail..."
                 ></textarea>
               </div>
-              <button
-                type="submit"
-                className="btn-primary"
-                style={{ width: "100%", marginTop: "10px" }}
-              >
-                Submit Report
+              <button type="submit" className="submit-report-btn">
+                <span>{editingId ? "Update Report" : "Submit Report"}</span>
+                <i className="fa-solid fa-paper-plane"></i>
               </button>
             </form>
           </div>
