@@ -62,7 +62,6 @@ if ($source_role === 'officer') {
 
 $sql .= " ORDER BY c.id DESC";
 
-file_put_contents('sql_log.txt', "[" . date('Y-m-d H:i:s') . "] " . $sql . "\n", FILE_APPEND);
 
 $result = $conn->query($sql);
 $data = [];
@@ -74,12 +73,10 @@ if ($result) {
     }
 } else {
     // Return DB error for debugging
-    file_put_contents('sql_log.txt', "[" . date('Y-m-d H:i:s') . "] ERROR: " . $conn->error . "\n", FILE_APPEND);
     echo json_encode(["status" => "error", "message" => $conn->error, "sql" => $sql]);
     exit;
 }
 
-file_put_contents('sql_log.txt', "[" . date('Y-m-d H:i:s') . "] Results found: $count for WardID: $ward_id\n", FILE_APPEND);
 
 $total_res = $conn->query("SELECT COUNT(*) as total FROM complaints");
 $total_in_db = $total_res ? $total_res->fetch_assoc()['total'] : 0;
