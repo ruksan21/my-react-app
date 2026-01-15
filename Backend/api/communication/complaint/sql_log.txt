@@ -1,0 +1,20 @@
+[2026-01-14 18:13:38] SELECT c.*, 
+               IF(c.status IS NULL OR c.status = '', 'Open', c.status) as status,
+               u.role as user_role, u.first_name, u.last_name, u.contact_number, u.email, 
+               w.municipality, w.ward_number, w.province, w.district_name,
+               c.complainant_email, c.complainant_phone
+        FROM complaints c 
+        LEFT JOIN users u ON c.complainant_user_id = u.id 
+        LEFT JOIN wards w ON c.ward_id = w.id
+        WHERE 1=1 ORDER BY c.id DESC
+[2026-01-14 18:13:38] Results found: 8 for WardID: 
+[2026-01-14 18:13:38] SELECT c.*, 
+               IF(c.status IS NULL OR c.status = '', 'Open', c.status) as status,
+               u.role as user_role, u.first_name, u.last_name, u.contact_number, u.email, 
+               w.municipality, w.ward_number, w.province, w.district_name,
+               c.complainant_email, c.complainant_phone
+        FROM complaints c 
+        LEFT JOIN users u ON c.complainant_user_id = u.id 
+        LEFT JOIN wards w ON c.ward_id = w.id
+        WHERE 1=1 ORDER BY c.id DESC
+[2026-01-14 18:13:38] Results found: 8 for WardID: 
