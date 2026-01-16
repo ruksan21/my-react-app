@@ -34,13 +34,6 @@ const Settings = () => {
   // Toggle handler
   const handleToggle = (key) => {
     setSettings({ ...settings, [key]: !settings[key] });
-
-    // TODO: Backend integration - Save to database
-    // Example API call:
-    // await fetch('http://localhost/ward-portal/api/update_settings.php', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ userId: user.id, setting: key, value: !settings[key] })
-    // });
   };
 
   // Password change handler
@@ -188,7 +181,24 @@ const Settings = () => {
               <h2>General Settings</h2>
             </div>
             <div className="card-body">
-              <p>General settings coming soon...</p>
+              <div className="settings-group">
+                <h3>App Theme</h3>
+                <p>Choose your preferred visual mode</p>
+                <div className="setting-row">
+                  <div className="setting-info">
+                    <h4>Light Mode</h4>
+                    <p>Standard bright interface</p>
+                  </div>
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.theme === "light"}
+                      readOnly
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -257,7 +267,20 @@ const Settings = () => {
               <h2>Privacy Settings</h2>
             </div>
             <div className="card-body">
-              <p>Privacy settings coming soon...</p>
+              <div className="settings-group">
+                <h3>Data & Publicity</h3>
+                <p>Manage how your data is shared</p>
+                <div className="setting-row">
+                  <div className="setting-info">
+                    <h4>Public Profile</h4>
+                    <p>Allow others to see your basic profile data</p>
+                  </div>
+                  <label className="toggle-switch">
+                    <input type="checkbox" defaultChecked />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         )}

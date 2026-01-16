@@ -1,16 +1,6 @@
 import React, { useState } from "react";
 import "./Preferences.css";
 
-/**
- * Preferences Component
- * Manages user notification preferences
- *
- * TODO: Backend Integration
- * - Save preferences to: PUT /api/user/preferences.php
- * - Request body: { user_id, email_notifications, sms_notifications }
- * - MySQL Query: UPDATE users SET preferences_json = ? WHERE id = ?
- * - Store as JSON in database: {"email": true, "sms": false}
- */
 const Preferences = ({ preferences = {} }) => {
   const [emailNotifications] = useState(
     preferences.emailNotifications || false

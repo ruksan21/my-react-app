@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../Context/AuthContext";
 import { API_ENDPOINTS } from "../../config/api";
+import { toast } from "react-toastify";
 import "./CommentSection.css";
 
 const CommentSection = ({ workId }) => {
@@ -10,16 +11,22 @@ const CommentSection = ({ workId }) => {
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [notification, setNotification] = useState(null);
+  // const [notification, setNotification] = useState(null); // Replaced with toast
   const [errors, setErrors] = useState({});
-  const [expandedComments, setExpandedComments] = useState({});
-  const [replies, setReplies] = useState({});
-  const [replyText, setReplyText] = useState({});
-  const [replyLoading, setReplyLoading] = useState({});
 
-  useEffect(() => {
+  // Interaction States
+  const [activeReplyId, setActiveReplyId] = useState(null); // ID of comment being replied to
+  const [replies, setReplies] = useState({}); // Map of feedback_id -> array of replies
+  const [replyText, setReplyText] = useState(""); // Current reply input text
+  const [replyLoading, setReplyLoading] = useState(false);
+  const [expandedReplies, setExpandedReplies] = useState({}); // Toggle visibility of replies
+
+  const fetchComments = useCallback(() => {
     if (workId) {
-      fetch(`${API_ENDPOINTS.communication.getFeedback}?work_id=${workId}`)
+      const userParam = user?.id ? `&user_id=${user.id}` : "";
+      fetch(
+        `${API_ENDPOINTS.communication.getFeedback}?work_id=${workId}${userParam}`
+      )
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
@@ -28,30 +35,47 @@ const CommentSection = ({ workId }) => {
         })
         .catch((err) => console.error("Error fetching comments:", err));
     }
-  }, [workId]);
+  }, [workId, user?.id]);
 
-  // Show notification
-  const showNotification = (type, message) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 4000);
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  // Notification logic replaced by toast
+
+  // Toggle Reply Input
+  const toggleReplyInput = (commentId) => {
+    if (activeReplyId === commentId) {
+      setActiveReplyId(null);
+      setReplyText("");
+    } else {
+      setActiveReplyId(commentId);
+      setReplyText("");
+      // Also ensure replies are visible when replying
+      if (!expandedReplies[commentId]) {
+        toggleViewReplies(commentId);
+      }
+    }
   };
 
-  // Toggle expanded comment
-  const toggleExpandComment = (commentId) => {
-    setExpandedComments((prev) => ({
+  // Toggle View Replies
+  const toggleViewReplies = (commentId) => {
+    setExpandedReplies((prev) => ({
       ...prev,
       [commentId]: !prev[commentId],
     }));
 
-    // Load replies if not already loaded
-    if (!replies[commentId] && expandedComments[commentId] !== true) {
+    if (!replies[commentId]) {
       fetchReplies(commentId);
     }
   };
 
-  // Fetch replies for a comment
+  // Fetch replies
   const fetchReplies = (commentId) => {
-    fetch(`${API_ENDPOINTS.communication.getReplies}?feedback_id=${commentId}`)
+    const userParam = user?.id ? `&user_id=${user.id}` : "";
+    fetch(
+      `${API_ENDPOINTS.communication.getReplies}?feedback_id=${commentId}${userParam}`
+    )
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -64,40 +88,112 @@ const CommentSection = ({ workId }) => {
       .catch((err) => console.error("Error fetching replies:", err));
   };
 
-  // Submit reply
+  // Handle Vote (Like/Dislike for main comments)
+  const handleVote = async (feedbackId, voteType) => {
+    if (!user) {
+      toast.error("Please login to react.");
+      return;
+    }
+
+    try {
+      const response = await fetch(API_ENDPOINTS.communication.toggleVote, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          feedback_id: feedbackId,
+          user_id: user.id,
+          vote_type: voteType,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Optimistic update or refresh
+        // We will update local state for immediate feedback
+        setComments((prev) =>
+          prev.map((c) => {
+            if (c.id === feedbackId) {
+              return {
+                ...c,
+                likes: data.likes,
+                dislikes: data.dislikes,
+                user_vote: data.user_vote,
+              };
+            }
+            return c;
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Vote error:", error);
+    }
+  };
+
+  // Handle Reply Vote
+  const handleReplyVote = async (commentId, replyId, voteType) => {
+    if (!user) {
+      toast.error("Please login to react.");
+      return;
+    }
+
+    try {
+      const response = await fetch(API_ENDPOINTS.communication.toggleVote, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reply_id: replyId,
+          user_id: user.id,
+          vote_type: voteType,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setReplies((prev) => ({
+          ...prev,
+          [commentId]: prev[commentId].map((r) =>
+            r.id === replyId
+              ? {
+                  ...r,
+                  likes: data.likes,
+                  dislikes: data.dislikes,
+                  user_vote: data.user_vote,
+                }
+              : r
+          ),
+        }));
+      }
+    } catch (error) {
+      console.error("Reply vote error:", error);
+    }
+  };
+
+  // Submit Reply
   const handleReplySubmit = async (commentId) => {
-    const reply = replyText[commentId]?.trim();
-
-    if (!user || user.role !== "officer") {
-      showNotification("error", "Only officers can reply");
+    if (!replyText.trim()) return;
+    if (!user) {
+      toast.error("Please login to reply.");
       return;
     }
 
-    if (!reply || reply.length < 5) {
-      showNotification("error", "Reply must be at least 5 characters");
-      return;
-    }
-
-    setReplyLoading((prev) => ({ ...prev, [commentId]: true }));
-
+    setReplyLoading(true);
     try {
       const response = await fetch(API_ENDPOINTS.communication.addReply, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           feedback_id: commentId,
-          officer_id: user.id,
-          reply_text: reply,
+          user_id: user.id, // Generic user_id
+          reply_text: replyText,
         }),
       });
 
       const data = await response.json();
-
       if (data.success) {
-        showNotification("success", "✓ Reply posted successfully!");
-        setReplyText((prev) => ({ ...prev, [commentId]: "" }));
+        toast.success("Reply posted.");
+        setReplyText("");
+        setActiveReplyId(null);
+        fetchReplies(commentId); // Refresh replies
 
-        // Update reply count in local state
+        // Update reply count locally
         setComments((prev) =>
           prev.map((c) =>
             c.id === commentId
@@ -105,26 +201,23 @@ const CommentSection = ({ workId }) => {
               : c
           )
         );
-
-        // Reload replies
-        fetchReplies(commentId);
       } else {
-        showNotification("error", "Error: " + data.message);
+        toast.error(data.message);
       }
-    } catch (err) {
-      console.error("Reply error:", err);
-      showNotification("error", "Network error. Please try again.");
+    } catch {
+      toast.error("Failed to post reply.");
     } finally {
-      setReplyLoading((prev) => ({ ...prev, [commentId]: false }));
+      setReplyLoading(false);
     }
   };
 
+  // Main Comment Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
 
     if (!user) {
-      showNotification("error", "Please log in to submit a comment");
+      toast.error("Please login to submit a comment");
       return;
     }
 
@@ -133,16 +226,12 @@ const CommentSection = ({ workId }) => {
     if (user.role === "citizen" && rating === 0) {
       newErrors.rating = "Please select a rating";
     }
-    if (comment.trim() === "") {
-      newErrors.comment = "Please write a comment";
-    }
     if (comment.trim().length < 5) {
       newErrors.comment = "Comment must be at least 5 characters";
     }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      showNotification("error", "Please fix the errors before submitting");
       return;
     }
 
@@ -154,7 +243,7 @@ const CommentSection = ({ workId }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           work_id: workId,
-          user_id: user.id || null,
+          user_id: user.id,
           rating: rating,
           comment: comment,
         }),
@@ -163,25 +252,18 @@ const CommentSection = ({ workId }) => {
       const data = await response.json();
 
       if (data.success) {
-        // Refresh comments list
-        const updatedRes = await fetch(
-          `${API_ENDPOINTS.communication.getFeedback}?work_id=${workId}`
-        );
-        const updatedData = await updatedRes.json();
-        if (updatedData.success) {
-          setComments(updatedData.comments || []);
-        }
-
+        fetchComments(); // Reload all
         setRating(0);
         setComment("");
-        setErrors({});
-        showNotification("success", "✓ Feedback submitted successfully!");
+        fetchComments(); // Reload all
+        setRating(0);
+        setComment("");
+        toast.success("Feedback submitted!");
       } else {
-        showNotification("error", "Error: " + data.message);
+        toast.error(data.message);
       }
-    } catch (err) {
-      console.error("Submission error:", err);
-      showNotification("error", "Network error. Please try again.");
+    } catch {
+      toast.error("Network error.");
     } finally {
       setLoading(false);
     }
@@ -191,19 +273,19 @@ const CommentSection = ({ workId }) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now - date);
+    const diffMins = Math.floor(diffTime / (1000 * 60));
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}d`;
     return date.toLocaleDateString("en-GB");
   };
 
-  // Helper to construct full image URL
   const getPhotoUrl = (photoPath) => {
-    if (!photoPath) return "https://placehold.co/100x100?text=User";
+    if (!photoPath) return "https://placehold.co/100x100?text=U";
     if (photoPath.startsWith("http")) return photoPath;
-    // Assuming backend serves auth uploads at /auth/uploads/
     return `${API_ENDPOINTS.authUploads}/${photoPath}`;
   };
 
@@ -211,292 +293,293 @@ const CommentSection = ({ workId }) => {
     return (
       <div className="star-rating">
         {[1, 2, 3, 4, 5].map((star) => (
-          <span
+          <i
             key={star}
-            className={`star ${
+            className={`${
               star <= (isInteractive ? hoverRating || rating : currentRating)
-                ? "filled"
-                : ""
-            }`}
+                ? "fa-solid"
+                : "fa-regular"
+            } fa-star`}
+            style={{
+              color: "#f1c40f",
+              cursor: isInteractive ? "pointer" : "default",
+            }}
             onClick={() => isInteractive && setRating(star)}
             onMouseEnter={() => isInteractive && setHoverRating(star)}
             onMouseLeave={() => isInteractive && setHoverRating(0)}
-          >
-            ★
-          </span>
+          ></i>
         ))}
       </div>
     );
   };
 
   return (
-    <div className="comment-section">
-      {/* Notification Toast */}
-      {notification && (
-        <div className={`notification-toast ${notification.type}`}>
-          <span>{notification.message}</span>
-          <button onClick={() => setNotification(null)} className="close-toast">
-            ×
-          </button>
-        </div>
-      )}
-
-      <div className="comment-header">
-        <h3>Comments & Feedback</h3>
-        <span className="comment-count">{comments.length} comments</span>
+    <div className="comment-section-fb">
+      {/* Header */}
+      <div className="fb-header">
+        <h3>User Reviews & Feedback</h3>
+        <span className="fb-count">{comments.length} Comments</span>
       </div>
 
-      {/* Comment Form */}
-      <div className="comment-form-container">
+      {/* Write Comment Box */}
+      <div className="fb-composer">
         {!user ? (
-          <div className="login-prompt">
-            <p>Login to comment...</p>
-            <div className="rating-preview">
-              Rating: {renderStars(0, false)}
-            </div>
-            <p className="login-message">
-              Please log in as a Citizen or Officer to join the discussion.
-            </p>
-          </div>
-        ) : user.role !== "citizen" && user.role !== "officer" ? (
-          <div className="role-restricted-message">
-            <span className="info-icon">ℹ️</span>
-            <p>
-              Only registered <strong>Citizens</strong> or{" "}
-              <strong>Officers</strong> can participate in development work
-              discussions.
-            </p>
-            <p className="sub-text">
-              As a {user.role}, you can view all community feedback below.
+          <div className="fb-login-prompt">
+            <p onClick={() => (window.location.href = "/login")}>
+              Log in to join the discussion
             </p>
           </div>
         ) : (
-          <form className="comment-form" onSubmit={handleSubmit}>
-            <div className="user-info">
-              <img
-                src={getPhotoUrl(user.photo) || getPhotoUrl(user.photoUrl)}
-                alt={user.name}
-                className="user-avatar"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "https://placehold.co/100x100?text=U";
-                }}
-              />
-              <span className="user-name">
-                {user.name}{" "}
-                {user.role === "officer" && (
-                  <span className="officer-badge">Official</span>
-                )}
-              </span>
-            </div>
-
-            {user.role === "citizen" ? (
-              <div className="rating-input">
-                <label>
-                  Rating:{" "}
-                  {rating > 0 && (
-                    <span className="rating-value">({rating}/5)</span>
-                  )}
-                </label>
-                {renderStars(rating, true)}
-                {errors.rating && (
-                  <span className="error-message">{errors.rating}</span>
-                )}
-              </div>
-            ) : (
-              <div className="officer-comment-info">
-                <p>Posting as Ward Officer</p>
-              </div>
-            )}
-
-            <div className="textarea-wrapper">
-              <textarea
-                className={`comment-textarea ${errors.comment ? "error" : ""}`}
-                placeholder={
-                  user.role === "officer"
-                    ? "Write an official update or comment..."
-                    : "Write your comment (minimum 10 characters)..."
-                }
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows="4"
-                maxLength="500"
-              />
-              <div className="textarea-footer">
-                {errors.comment && (
-                  <span className="error-message">{errors.comment}</span>
-                )}
-                <span className="char-counter">{comment.length}/500</span>
-              </div>
-            </div>
-
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? (
-                <>
-                  <span className="spinner"></span> Submitting...
-                </>
-              ) : (
-                "Submit Comment"
+          <div className="fb-composer-inner">
+            <img
+              src={getPhotoUrl(user.photo || user.photoUrl)}
+              alt="User"
+              className="fb-avatar"
+            />
+            <div className="fb-input-wrapper">
+              {user.role === "citizen" && (
+                <div className="fb-rating-select">
+                  {renderStars(rating, true)}
+                </div>
               )}
-            </button>
-          </form>
+              <form onSubmit={handleSubmit}>
+                <textarea
+                  className="fb-textarea"
+                  placeholder={
+                    user.role === "officer"
+                      ? "Write an official update..."
+                      : "Write a public comment..."
+                  }
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={comment ? 3 : 1}
+                />
+                {
+                  /* Only show submit button if typing */
+                  (comment.length > 0 || rating > 0) && (
+                    <div className="fb-actions">
+                      {errors.comment && (
+                        <span className="fb-error">{errors.comment}</span>
+                      )}
+                      {errors.rating && (
+                        <span className="fb-error">{errors.rating}</span>
+                      )}
+                      <button
+                        type="submit"
+                        className="fb-submit-btn"
+                        disabled={loading}
+                      >
+                        {loading ? "Posting..." : "Post Comment"}
+                      </button>
+                    </div>
+                  )
+                }
+              </form>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Comments List */}
-      <div className="comments-list">
-        {comments.length === 0 ? (
-          <p className="no-comments">
-            No comments yet. Be the first to comment!
-          </p>
-        ) : (
-          comments.map((c) => (
-            <div key={c.id} className="comment-card">
-              <div className="comment-user">
-                <img
-                  src={getPhotoUrl(c.user_photo)}
-                  alt={c.user_name}
-                  className="comment-avatar"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "https://placehold.co/100x100?text=U";
-                  }}
-                />
-                <div className="comment-user-info">
-                  <span className="comment-user-name">
+      {/* Main Comments List */}
+      <div className="fb-comments-list">
+        {comments.map((c) => (
+          <div key={c.id} className="fb-comment-card">
+            <div className="fb-comment-row">
+              <img
+                src={getPhotoUrl(c.user_photo)}
+                alt={c.user_name}
+                className="fb-avatar-small"
+              />
+              <div className="fb-bubble-container">
+                <div className="fb-bubble">
+                  <div className="fb-user-name">
                     {c.user_name}
                     {c.user_role === "officer" && (
-                      <span className="officer-badge">Official</span>
+                      <span className="fb-badge-official">Official</span>
                     )}
-                  </span>
-                  <span className="comment-date">
+                    {c.rating > 0 && (
+                      <span className="fb-rating-tag">
+                        {[...Array(5)].map((_, i) => (
+                          <i
+                            key={i}
+                            className={`${
+                              c.rating > i ? "fa-solid" : "fa-regular"
+                            } fa-star`}
+                            style={{
+                              fontSize: "0.8rem",
+                              color: "#f1c40f",
+                              marginRight: "1px",
+                            }}
+                          ></i>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                  <div className="fb-text">{c.comment}</div>
+                </div>
+                {/* Action Bar */}
+                <div className="fb-action-bar">
+                  <button
+                    className={`fb-action-btn ${
+                      c.user_vote === 1 ? "active" : ""
+                    }`}
+                    onClick={() => handleVote(c.id, 1)}
+                  >
+                    Like {c.likes > 0 && `(${c.likes})`}
+                  </button>
+                  <button
+                    className={`fb-action-btn ${
+                      c.user_vote === -1 ? "active" : ""
+                    }`}
+                    onClick={() => handleVote(c.id, -1)}
+                  >
+                    Dislike {c.dislikes > 0 && `(${c.dislikes})`}
+                  </button>
+                  <button
+                    className="fb-action-btn"
+                    onClick={() => toggleReplyInput(c.id)}
+                  >
+                    Reply
+                  </button>
+                  <span className="fb-timestamp">
                     {formatDate(c.created_at)}
                   </span>
                 </div>
               </div>
-              {c.rating > 0 && (
-                <div className="comment-rating">
-                  {renderStars(c.rating, false)}
-                </div>
-              )}
-              <p className="comment-text">{c.comment}</p>
-
-              {/* Replies Section */}
-              {(c.reply_count > 0 || user?.role === "officer") && (
-                <div className="replies-section">
-                  <button
-                    className="expand-replies-btn"
-                    onClick={() => toggleExpandComment(c.id)}
-                  >
-                    <span className="reply-toggle-icon">
-                      {expandedComments[c.id] ? "💬" : "🗨️"}
-                    </span>
-                    {c.reply_count > 0
-                      ? `Official Replies (${c.reply_count})`
-                      : "Add Official Response"}
-                    <span
-                      className={`reply-arrow ${
-                        expandedComments[c.id] ? "up" : ""
-                      }`}
-                    >
-                      ▼
-                    </span>
-                  </button>
-
-                  {expandedComments[c.id] && (
-                    <div className="replies-container">
-                      {/* Display existing replies */}
-                      {replies[c.id] && replies[c.id].length > 0 && (
-                        <div className="replies-list">
-                          {replies[c.id].map((reply) => (
-                            <div key={reply.id} className="reply-card">
-                              <div className="reply-user">
-                                <img
-                                  src={getPhotoUrl(reply.officer_photo)}
-                                  alt={reply.officer_name}
-                                  className="reply-avatar"
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src =
-                                      "https://placehold.co/100x100?text=O";
-                                  }}
-                                />
-                                <div className="reply-user-info">
-                                  <span className="reply-user-name">
-                                    {reply.officer_name}
-                                    <span className="officer-badge">
-                                      Official
-                                    </span>
-                                  </span>
-                                  <div className="reply-meta-row">
-                                    {reply.officer_location && (
-                                      <span className="reply-user-location">
-                                        {reply.officer_location}
-                                      </span>
-                                    )}
-                                    <span className="reply-date">
-                                      • {formatDate(reply.created_at)}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              <p className="reply-text">{reply.reply_text}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Reply form for officers only */}
-                      {user && user.role === "officer" && (
-                        <div className="reply-form">
-                          <div className="reply-form-header">
-                            <span className="reply-label">
-                              Official Response
-                            </span>
-                          </div>
-                          <div className="reply-input-wrapper">
-                            <textarea
-                              className="reply-textarea"
-                              placeholder="Write an official response..."
-                              value={replyText[c.id] || ""}
-                              onChange={(e) =>
-                                setReplyText((prev) => ({
-                                  ...prev,
-                                  [c.id]: e.target.value,
-                                }))
-                              }
-                              rows="3"
-                              maxLength="300"
-                            />
-                            <button
-                              className="reply-submit-btn"
-                              onClick={() => handleReplySubmit(c.id)}
-                              disabled={replyLoading[c.id]}
-                            >
-                              {replyLoading[c.id] ? (
-                                <span className="spinner-small"></span>
-                              ) : (
-                                <>
-                                  <i className="fa-solid fa-paper-plane"></i>
-                                  Post
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <div className="reply-form-footer">
-                            <span className="char-counter">
-                              {(replyText[c.id] || "").length}/300
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
-          ))
-        )}
+
+            {/* Reply Input */}
+            {activeReplyId === c.id && (
+              <div className="fb-reply-input-row">
+                <img
+                  src={getPhotoUrl(user?.photo || user?.photoUrl)}
+                  alt="Me"
+                  className="fb-avatar-xs"
+                />
+                <div className="fb-reply-box">
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder={`Reply to ${c.user_name}...`}
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleReplySubmit(c.id);
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => handleReplySubmit(c.id)}
+                    disabled={!replyText.trim() || replyLoading}
+                  >
+                    <i className="fa-solid fa-paper-plane"></i>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Legacy Reply Support */}
+            {c.reply_text && (
+              <div className="fb-nested-replies">
+                <div className="fb-reply-card">
+                  <img
+                    src="https://placehold.co/100x100?text=O"
+                    alt="Official"
+                    className="fb-avatar-xs"
+                  />
+                  <div className="fb-reply-bubble">
+                    <div className="fb-reply-content">
+                      <span className="fb-reply-user">
+                        Official Response{" "}
+                        <i className="fas fa-check-circle fb-verified-icon"></i>
+                      </span>
+                      <span className="fb-reply-text">{c.reply_text}</span>
+                    </div>
+                    {c.replied_at && (
+                      <div className="fb-reply-meta">
+                        {formatDate(c.replied_at)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Nested Replies */}
+            {c.reply_count > 0 && (
+              <div className="fb-nested-replies">
+                {/* If not expanded, show "View X replies" */}
+                {!expandedReplies[c.id] ? (
+                  <div
+                    className="fb-view-replies"
+                    onClick={() => toggleViewReplies(c.id)}
+                  >
+                    <i className="fa-solid fa-share"></i> View {c.reply_count}{" "}
+                    replies
+                  </div>
+                ) : (
+                  /* Expanded List */
+                  <div className="fb-replies-list">
+                    {(replies[c.id] || []).map((r) => (
+                      <div key={r.id} className="fb-reply-card">
+                        <img
+                          src={getPhotoUrl(r.user_photo)}
+                          alt={r.user_name}
+                          className="fb-avatar-xs"
+                        />
+                        <div className="fb-reply-bubble">
+                          <div className="fb-reply-content">
+                            <span className="fb-reply-user">
+                              {r.user_name}
+                              {r.user_role === "officer" && (
+                                <i
+                                  className="fas fa-check-circle fb-verified-icon"
+                                  title="Official"
+                                ></i>
+                              )}
+                            </span>
+                            <span className="fb-reply-text">
+                              {r.reply_text}
+                            </span>
+                          </div>
+                          <div className="fb-reply-meta">
+                            <button
+                              className={`fb-reply-action-btn ${
+                                r.user_vote === 1 ? "active" : ""
+                              }`}
+                              onClick={() => handleReplyVote(c.id, r.id, 1)}
+                            >
+                              Like {r.likes > 0 && `(${r.likes})`}
+                            </button>
+                            <button
+                              className={`fb-reply-action-btn ${
+                                r.user_vote === -1 ? "active" : ""
+                              }`}
+                              onClick={() => handleReplyVote(c.id, r.id, -1)}
+                            >
+                              Dislike {r.dislikes > 0 && `(${r.dislikes})`}
+                            </button>
+                            <button
+                              className="fb-reply-action-btn"
+                              onClick={() => toggleReplyInput(c.id)}
+                            >
+                              Reply
+                            </button>
+                            <span className="fb-reply-time">
+                              {formatDate(r.created_at)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

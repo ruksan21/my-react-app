@@ -377,7 +377,7 @@ export default function RegisterPage({
             <div className="form-section">
               <h2 className="section-title">Personal Details</h2>
 
-              {/* Profile Picture Upload row removed from here */}
+
 
               <div className="form-row two-cols">
                 <div className="form-group">

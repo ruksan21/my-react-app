@@ -37,7 +37,7 @@ try {
         d.province,
         (SELECT COUNT(*) FROM ward_assets WHERE ward_id = w.id AND status = 'active') as total_assets
     FROM wards w
-    INNER JOIN districts d ON w.district_id = d.id";
+    LEFT JOIN districts d ON w.district_id = d.id";
 
     if ($district_id) {
         $query .= " WHERE w.district_id = $district_id";

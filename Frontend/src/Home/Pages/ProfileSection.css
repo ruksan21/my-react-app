@@ -389,47 +389,8 @@
   gap: 8px;
 }
 
-/* Edit Form Styles */
-.edit-form {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
-}
-
-.form-input {
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 1rem;
-  color: #1f2937;
-  transition: all 0.2s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #009688;
-  box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
-}
-
-.form-input:disabled {
-  background-color: #f3f4f6;
-  cursor: not-allowed;
-  color: #6b7280;
-}
-
-.form-actions {
+.form-actions,
+.edit-actions {
   grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
@@ -437,6 +398,65 @@
   margin-top: 1rem;
   padding-top: 1.5rem;
   border-top: 1px solid #f3f4f6;
+}
+
+/* Edit Grid */
+.edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.edit-grid .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Photo Upload */
+.photo-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+}
+
+.photo-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.photo-upload-container input[type="file"] {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.profile-edit-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+.profile-edit-form textarea:focus {
+  outline: none;
+  border-color: #009688;
+  box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
+}
+
+.profile-edit-form select {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: white;
+  font-size: 0.95rem;
 }
 
 .btn-primary {

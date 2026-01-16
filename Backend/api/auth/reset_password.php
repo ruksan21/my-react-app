@@ -48,7 +48,6 @@ try {
 
     if (!empty($input_email) && !empty($input_code) && !empty($new_password)) {
         
-        // Validate Code - REMOVED 'full_name' from select as it might not exist
         $stmt = $conn->prepare("SELECT id, token_expiry FROM users WHERE email = ? AND reset_token = ?");
         if (!$stmt) {
              throw new Exception("Database prepare failed: " . $conn->error);

@@ -1,18 +1,6 @@
 import React from "react";
 import "./ActivityHistory.css";
 
-/**
- * ActivityHistory Component
- * Displays recent user activities with timestamps
- *
- * Props:
- * - activities: Array of activity objects { id, type, description, timestamp }
- *
- * TODO: Backend Integration
- * - Fetch activities from: GET /api/user/activities.php?user_id={userId}
- * - Expected response: { success: true, activities: [...] }
- * - MySQL Query: SELECT * FROM activities WHERE user_id = ? ORDER BY created_at DESC LIMIT 20
- */
 const ActivityHistory = ({ activities = [] }) => {
   const getActivityIcon = (type) => {
     switch (type) {

@@ -6,8 +6,6 @@ header('Content-Type: application/json');
 
 require_once '../db_connect.php';
 
-// TODO: Implement admin authentication/authorization here
-
 $data = json_decode(file_get_contents('php://input'), true);
 $officer_id = isset($data['officer_id']) ? intval($data['officer_id']) : 0;
 

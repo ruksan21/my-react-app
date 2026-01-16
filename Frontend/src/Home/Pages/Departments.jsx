@@ -3,7 +3,6 @@ import Navbar from "../Nav/Navbar";
 import "./Departments.css";
 
 export default function Departments() {
-  // Sample data - In future, fetch from backend
   const [departments] = useState([
     {
       id: 1,

@@ -10,10 +10,10 @@ header("Access-Control-Allow-Methods: GET");
 require_once '../db_connect.php';
 require_once '../utils/ward_utils.php';
 
-$ward_id = isset($_GET['ward_id']) ? intval($_GET['ward_id']) : 0;
+$ward_id = isset($_GET['ward_id']) ? $_GET['ward_id'] : '';
 
-// Dynamic Resolution if ward_id not provided
-if ($ward_id === 0) {
+// Resolve ward_id if it's 0 or empty string
+if (!$ward_id || $ward_id === '0') {
     if (isset($_GET['municipality']) && isset($_GET['ward_number'])) {
         $mun = $_GET['municipality'];
         $wn = intval($_GET['ward_number']);
@@ -24,7 +24,7 @@ if ($ward_id === 0) {
     }
 }
 
-if ($ward_id === 0) {
+if (!$ward_id || $ward_id === '0') {
     echo json_encode(array(
         "success" => false,
         "message" => "Ward ID or valid Location (Municipality + Ward Number) required."
@@ -62,7 +62,7 @@ LEFT JOIN districts d ON w.district_id = d.id
 WHERE w.id = ?";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param("i", $ward_id);
+$stmt->bind_param("s", $ward_id);
 $stmt->execute();
 $result = $stmt->get_result();
 

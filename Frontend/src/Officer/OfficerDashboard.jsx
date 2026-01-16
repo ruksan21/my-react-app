@@ -9,8 +9,6 @@ const OfficerDashboard = () => {
   const { getOfficerWorkLocation, user } = useAuth();
   const workLocation = getOfficerWorkLocation();
   const [wardExists, setWardExists] = useState(null);
-  // const [complaints, setComplaints] = useState([]); // Removed
-  // const [loading, setLoading] = useState(true); // Removed
   const [stats, setStats] = useState([
     { label: "Pending Complaints", value: "0", icon: "📢" },
     { label: "Ward Population", value: "-", icon: "👥" },
@@ -39,7 +37,7 @@ const OfficerDashboard = () => {
             setCurrentWardId(wardData.ward_id);
           }
 
-          // 2. Fetch Complaints
+          // Fetch complaints and update stats
           const params = new URLSearchParams({
             province: workLocation.work_province,
             municipality: workLocation.work_municipality,
@@ -53,14 +51,10 @@ const OfficerDashboard = () => {
           const complaintsData = await complaintsRes.json();
 
           if (Array.isArray(complaintsData)) {
-            // setComplaints(complaintsData.slice(0, 5)); // Removed
-
-            // 3. Update Stats
             const pendingCount = complaintsData.filter(
               (c) => c.status === "Open"
             ).length;
 
-            // Format population
             let popValue = "Not Set";
             if (wardData.ward && wardData.ward.population) {
               popValue = Number(wardData.ward.population).toLocaleString();
@@ -131,7 +125,7 @@ const OfficerDashboard = () => {
 
   return (
     <OfficerLayout title="Ward Overview">
-      {/* Redundant 'Assigned Location' banner removed as per user request */}
+
 
       {/* Warnings... */}
       {workLocation && wardExists === false && (
@@ -164,7 +158,7 @@ const OfficerDashboard = () => {
         ))}
       </div>
 
-      {/* Recent activity section removed as per user request */}
+
     </OfficerLayout>
   );
 };

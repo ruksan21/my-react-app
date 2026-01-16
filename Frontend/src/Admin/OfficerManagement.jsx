@@ -928,7 +928,7 @@ const OfficerManagement = () => {
             </span>
           </div>
           <div className="header-buttons">
-            {/* Refresh button removed as per user request */}
+
             <button
               className="btn-primary"
               onClick={() => {

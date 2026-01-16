@@ -166,33 +166,40 @@ export const AuthProvider = ({ children }) => {
     const loadData = async () => {
       setLoading(true);
 
-      // 1. Load Current User from LocalStorage
+      // 1. Load Current User from LocalStorage - THIS IS FAST
       const storedUser = localStorage.getItem("user");
       const loggedIn = localStorage.getItem("isLoggedIn");
 
       if (storedUser && loggedIn === "true") {
-        const userData = JSON.parse(storedUser);
-        if (!userData.name && userData.first_name && userData.last_name) {
-          userData.name = `${userData.first_name} ${userData.last_name}`;
+        try {
+          const userData = JSON.parse(storedUser);
+          if (!userData.name && userData.first_name && userData.last_name) {
+            userData.name = `${userData.first_name} ${userData.last_name}`;
+          }
+          if (!userData.photoUrl && userData.photo) {
+            userData.photoUrl = `${API_ENDPOINTS.authUploads}/${userData.photo}`;
+          }
+          setUser(userData);
+          setIsLoggedIn(true);
+        } catch (e) {
+          console.error("Failed to parse stored user", e);
         }
-        if (!userData.photoUrl && userData.photo) {
-          userData.photoUrl = `${API_ENDPOINTS.authUploads}/${userData.photo}`;
-        }
-        setUser(userData);
-        setIsLoggedIn(true);
       }
 
-      // 2. Fetch all data in parallel
+      // 2. Fetch administrative data in the background (Non-blocking)
+      // We start these but don't 'await' them if we want to show the app immediately.
+      // However, wards might be needed for the UI. Let's await refreshWards but others can be background.
       try {
-        await Promise.all([
-          fetchAllUsers(),
-          fetchPendingOfficers(),
-          refreshWards(),
-        ]);
+        await refreshWards(); // Core UI depends on wards often
+
+        // These can run in parallel in the background
+        fetchAllUsers();
+        fetchPendingOfficers();
       } catch (err) {
-        console.error("Failed to load initial data:", err);
+        console.error("Failed to load supplementary data:", err);
       } finally {
-        setLoading(false);
+        // Short delay for splash screen visibility (optional, but feels premium)
+        setTimeout(() => setLoading(false), 800);
       }
     };
 
@@ -576,15 +583,85 @@ export const AuthProvider = ({ children }) => {
   if (loading) {
     return (
       <div
+        className="app-splash-screen"
         style={{
           display: "flex",
+          flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
           height: "100vh",
-          fontSize: "1.5rem",
+          width: "100vw",
+          background: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
+          color: "white",
+          fontFamily: "'Inter', sans-serif",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          zIndex: 9999,
+          overflow: "hidden",
         }}
       >
-        Loading...
+        <div
+          className="splash-content"
+          style={{ textAlign: "center", animation: "fadeInUp 0.8s ease-out" }}
+        >
+          <div
+            className="splash-logo"
+            style={{
+              fontSize: "4rem",
+              marginBottom: "20px",
+              filter: "drop-shadow(0 10px 15px rgba(0,0,0,0.2))",
+            }}
+          >
+            🏛️
+          </div>
+          <h1
+            style={{
+              fontSize: "2.2rem",
+              margin: "0",
+              fontWeight: "700",
+              letterSpacing: "-0.5px",
+              background: "linear-gradient(to right, #fff, #bfdbfe)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            Ward Management
+          </h1>
+          <p
+            style={{
+              fontSize: "1rem",
+              opacity: 0.8,
+              marginTop: "8px",
+              fontWeight: "300",
+            }}
+          >
+            Building efficient communities
+          </p>
+
+          <div className="loader-container" style={{ marginTop: "40px" }}>
+            <div
+              className="premium-loader"
+              style={{
+                width: "48px",
+                height: "48px",
+                border: "3px solid rgba(255, 255, 255, 0.2)",
+                borderTop: "3px solid #fff",
+                borderRadius: "50%",
+                display: "inline-block",
+                animation: "spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite",
+              }}
+            ></div>
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          @keyframes fadeInUp { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+          }
+        `}</style>
       </div>
     );
   }

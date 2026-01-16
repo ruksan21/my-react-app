@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import "./profile.css";
 import Works from "./works";
@@ -9,6 +9,7 @@ import Assets from "../Pages/Assets";
 import Activities from "../Pages/Activities";
 import { useWard } from "../Context/WardContext";
 import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
+import ReviewListFB from "../Component/ReviewListFB";
 
 // Default profile data (fallback if API fails)
 const defaultProfileData = {
@@ -37,21 +38,29 @@ const defaultProfileData = {
 // Star rating component
 const StarRating = ({ rating, reviews }) => {
   const fullStars = Math.floor(rating);
-  const halfStar = rating % 1 !== 0;
-  const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+  const hasHalfStar = rating % 1 >= 0.3 && rating % 1 <= 0.7;
+  const extraFullStar = rating % 1 > 0.7 ? 1 : 0;
+
+  const displayFullStars = fullStars + extraFullStar;
+  const displayHalfStar = !extraFullStar && hasHalfStar;
+  const emptyStars = Math.max(
+    0,
+    5 - displayFullStars - (displayHalfStar ? 1 : 0)
+  );
 
   return (
     <div className="star-rating">
-      {[...Array(fullStars)].map((_, i) => (
-        <span key={`full-${i}`}>&#9733;</span>
-      ))}
-      {halfStar && <span>&#9734;</span>}{" "}
-      {/* Using an empty star for half, can be improved with better icons */}
-      {[...Array(emptyStars)].map((_, i) => (
-        <span key={`empty-${i}`}>&#9734;</span>
-      ))}
+      <div className="stars-icons">
+        {[...Array(displayFullStars)].map((_, i) => (
+          <i key={`full-${i}`} className="fa-solid fa-star"></i>
+        ))}
+        {displayHalfStar && <i className="fa-solid fa-star-half-stroke"></i>}
+        {[...Array(emptyStars)].map((_, i) => (
+          <i key={`empty-${i}`} className="fa-regular fa-star"></i>
+        ))}
+      </div>
       <span className="reviews-text">
-        {rating} ({reviews} reviews)
+        {rating > 0 ? rating.toFixed(1) : "No rating"} ({reviews || 0} reviews)
       </span>
     </div>
   );
@@ -66,8 +75,8 @@ const Profile = () => {
     wardId: wardId,
   });
   const [personalAssets, setPersonalAssets] = useState([]);
-  const [reviewsList, setReviewsList] = useState([]);
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
+  const [reviewRefreshTrigger, setReviewRefreshTrigger] = useState(0);
 
   const handleImageError = (e) => {
     if (profileData.photoFileName && !e.target.dataset.fallbackTried) {
@@ -89,7 +98,7 @@ const Profile = () => {
   useEffect(() => {
     // Don't fetch if no ward is selected
     if (!wardId) {
-      return; // Silently skip if no ward selected yet
+      return;
     }
 
     // Fetch chairperson profile data from ward database using selected ward ID
@@ -99,7 +108,8 @@ const Profile = () => {
         if (data.success && data.data) {
           const wardData = data.data;
           // Update profile data with database values
-          setProfileData({
+          setProfileData((prev) => ({
+            ...prev,
             name: wardData.chairperson_name || "Not Assigned",
             role: `wardChairperson - ${
               wardData.municipality || wardData.district_name
@@ -110,28 +120,9 @@ const Profile = () => {
               ? `${API_BASE_URL}/uploads/${wardData.chairperson_photo}`
               : "https://i.imgur.com/JQrOMa7.png",
             photoFileName: wardData.chairperson_photo || "",
-            rating: 4.2,
-            reviews: 89,
-            followers: 1250,
-            personalInfo: {
-              address: `Ward No. ${wardData.ward_number}, ${
-                wardData.municipality || wardData.district_name
-              }`,
-              education: wardData.chairperson_education || "N/A",
-              experience: wardData.chairperson_experience || "N/A",
-              politicalParty: wardData.chairperson_political_party || "N/A",
-              appointmentDate: wardData.chairperson_appointment_date || "N/A",
-            },
-            contactDetails: {
-              phone: wardData.chairperson_phone || "N/A",
-              email: wardData.chairperson_email || "N/A",
-              address: `Ward No. ${wardData.ward_number}, ${
-                wardData.municipality || wardData.district_name
-              }`,
-            },
             wardId: wardData.ward_id,
             officerId: wardData.officer_user_id,
-          });
+          }));
         }
       })
       .catch((err) => console.error("Error fetching profile:", err));
@@ -155,19 +146,7 @@ const Profile = () => {
       .catch((err) => console.error("Error fetching personal assets:", err));
   }, [wardId, refreshStats]);
 
-  useEffect(() => {
-    // Only fetch reviews if a ward is selected and Reviews tab is active
-    if (activeTab === "Reviews" && wardId) {
-      fetch(`${API_ENDPOINTS.communication.getReviews}?ward_id=${wardId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setReviewsList(data.data || []);
-          }
-        })
-        .catch((err) => console.error("Error fetching reviews:", err));
-    }
-  }, [activeTab, wardId]);
+
 
   const handleReviewSubmit = (e) => {
     e.preventDefault();
@@ -192,14 +171,9 @@ const Profile = () => {
         if (data.success) {
           toast.success("Review added!");
           setNewReview({ rating: 5, comment: "" });
-          // Refresh reviews
-          fetch(`${API_ENDPOINTS.communication.getReviews}?ward_id=${wardId}`)
-            .then((res) => res.json())
-            .then((d) => {
-              if (d.success) setReviewsList(d.data);
-              // Refresh global stats to update rating header
-              refreshStats(wardId, user.id);
-            });
+          // Trigger refresh in child component and global stats
+          setReviewRefreshTrigger((prev) => prev + 1);
+          refreshStats(wardId, user.id);
         } else {
           toast.error(data.message);
         }
@@ -220,7 +194,6 @@ const Profile = () => {
       return;
     }
 
-    // Call backend API to persistence follow action (supports both Officer and Ward following)
     fetch(API_ENDPOINTS.officers.toggleFollow, {
       method: "POST",
       headers: {
@@ -235,7 +208,6 @@ const Profile = () => {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          // Trigger global stats refresh!
           refreshStats(ward || 1, user.id);
           setIsFollowing(!isFollowing);
         } else {
@@ -247,13 +219,10 @@ const Profile = () => {
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
-
-    // Set font and colors
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.text("Ward Chairperson Profile", 105, 20, { align: "center" });
 
-    // Add profile name
     doc.setFontSize(14);
     doc.text(profileData.name, 105, 35, { align: "center" });
 
@@ -261,7 +230,6 @@ const Profile = () => {
     doc.setFontSize(11);
     doc.text(profileData.role, 105, 43, { align: "center" });
 
-    // Personal Information Section
     let yPos = 60;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
@@ -293,7 +261,6 @@ const Profile = () => {
       yPos += 8;
     });
 
-    // Contact Details Section
     yPos += 10;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
@@ -317,7 +284,6 @@ const Profile = () => {
       yPos += 8;
     });
 
-    // Stats Section
     yPos += 10;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
@@ -330,7 +296,6 @@ const Profile = () => {
     yPos += 8;
     doc.text(`Followers: ${stats.followers}`, 20, yPos);
 
-    // Save the PDF
     doc.save(`${profileData.name.replace(/\s+/g, "_")}_Profile.pdf`);
   };
 
@@ -342,36 +307,36 @@ const Profile = () => {
             <h2>Personal Information</h2>
             <div className="info-item">
               <label>Address</label>
-              <p>{profileData.personalInfo.address}</p>
+              <p>{profileData.personalInfo?.address}</p>
             </div>
             <div className="info-item">
               <label>Education</label>
-              <p>{profileData.personalInfo.education}</p>
+              <p>{profileData.personalInfo?.education}</p>
             </div>
             <div className="info-item">
               <label>Experience</label>
-              <p>{profileData.personalInfo.experience}</p>
+              <p>{profileData.personalInfo?.experience}</p>
             </div>
             <div className="info-item">
               <label>Political Party</label>
-              <p>{profileData.personalInfo.politicalParty}</p>
+              <p>{profileData.personalInfo?.politicalParty}</p>
             </div>
             <div className="info-item">
               <label>Appointment Date</label>
-              <p>{profileData.personalInfo.appointmentDate}</p>
+              <p>{profileData.personalInfo?.appointmentDate}</p>
             </div>
           </div>
 
           <div className="contact-details">
             <h2>Contact Details</h2>
             <div className="contact-item">
-              <span>&#9742; {profileData.contactDetails.phone}</span>
+              <span>&#9742; {profileData.contactDetails?.phone}</span>
             </div>
             <div className="contact-item">
-              <span>&#9993; {profileData.contactDetails.email}</span>
+              <span>&#9993; {profileData.contactDetails?.email}</span>
             </div>
             <div className="contact-item">
-              <span>&#128205; {profileData.contactDetails.address}</span>
+              <span>&#128205; {profileData.contactDetails?.address}</span>
             </div>
             <button className="download-button" onClick={handleDownloadPDF}>
               Download Details
@@ -406,22 +371,25 @@ const Profile = () => {
             <form onSubmit={handleReviewSubmit}>
               <div className="form-group">
                 <label className="form-label">Rating</label>
-                <select
-                  value={newReview.rating}
-                  onChange={(e) =>
-                    setNewReview({
-                      ...newReview,
-                      rating: parseInt(e.target.value),
-                    })
-                  }
-                  className="form-select"
-                >
-                  <option value="5">5 stars (Excellent)</option>
-                  <option value="4">4 stars (Good)</option>
-                  <option value="3">3 stars (Average)</option>
-                  <option value="2">2 stars (Poor)</option>
-                  <option value="1">1 star (Bad)</option>
-                </select>
+                <div className="interactive-stars">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <i
+                      key={star}
+                      className={`${
+                        newReview.rating >= star ? "fa-solid" : "fa-regular"
+                      } fa-star`}
+                      onClick={() =>
+                        setNewReview({ ...newReview, rating: star })
+                      }
+                      style={{
+                        cursor: "pointer",
+                        color: "#f1c40f",
+                        fontSize: "1.5rem",
+                        marginRight: "5px",
+                      }}
+                    ></i>
+                  ))}
+                </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Your Experience</label>
@@ -443,251 +411,10 @@ const Profile = () => {
 
           {/* Right Column: Reviews List */}
           <div className="reviews-container">
-            <h3>
-              Recent Reviews
-              <span
-                style={{
-                  fontSize: "14px",
-                  color: "#6b7280",
-                  fontWeight: "normal",
-                }}
-              >
-                ({reviewsList.length})
-              </span>
-            </h3>
-
-            {reviewsList.length === 0 ? (
-              <div className="no-reviews">
-                <p>No reviews yet. Be the first to review!</p>
-              </div>
-            ) : (
-              reviewsList.map((review) => (
-                <div key={review.id} className="review-card">
-                  <div className="review-card-header">
-                    <div className="reviewer-info">
-                      <div className="reviewer-avatar">
-                        {review.photo ? (
-                          <img
-                            src={
-                              review.photo.startsWith("http")
-                                ? review.photo
-                                : `${API_BASE_URL}/auth/uploads/${review.photo}`
-                            }
-                            alt={review.first_name}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                              borderRadius: "50%",
-                            }}
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                              e.target.nextSibling.style.display = "block";
-                            }}
-                          />
-                        ) : null}
-                        <span
-                          style={{
-                            display: review.photo ? "none" : "block",
-                          }}
-                        >
-                          {review.first_name
-                            ? review.first_name.charAt(0).toUpperCase()
-                            : "U"}
-                        </span>
-                      </div>
-                      <div className="reviewer-details">
-                        <h4>
-                          {[
-                            review.first_name,
-                            review.middle_name,
-                            review.last_name,
-                          ]
-                            .filter(Boolean)
-                            .join(" ")}
-                        </h4>
-                        <div
-                          className="reviewer-meta"
-                          style={{ fontSize: "12px", color: "#6b7280" }}
-                        >
-                          <span style={{ textTransform: "capitalize" }}>
-                            {review.role || "Citizen"}
-                          </span>
-                          {review.city && (
-                            <span>
-                              {" "}
-                              • {review.city}, {review.district}
-                            </span>
-                          )}
-                        </div>
-                        <div
-                          className="review-date"
-                          style={{
-                            fontSize: "11px",
-                            color: "#9ca3af",
-                            marginTop: "2px",
-                          }}
-                        >
-                          {new Date(review.created_at).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="review-stars">
-                      {"★".repeat(parseInt(review.rating))}
-                      {"☆".repeat(5 - parseInt(review.rating))}
-                    </div>
-                  </div>
-                  <p
-                    className="review-comment"
-                    style={{ marginBottom: "15px" }}
-                  >
-                    {review.comment}
-                  </p>
-
-                  {review.reply_text && (
-                    <div className="official-replies-container">
-                      <details
-                        className="official-replies-details"
-                        style={{ border: "none" }}
-                      >
-                        <summary
-                          style={{
-                            listStyle: "none",
-                            cursor: "pointer",
-                            backgroundColor: "#f3f4f6",
-                            padding: "8px 15px",
-                            borderRadius: "8px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px",
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            color: "#4b5563",
-                            width: "fit-content",
-                            transition: "all 0.2s ease",
-                            marginBottom: "10px",
-                          }}
-                        >
-                          <span style={{ fontSize: "16px" }}>💬</span>
-                          Official Replies (1)
-                          <span style={{ fontSize: "10px", marginLeft: "5px" }}>
-                            ▼
-                          </span>
-                        </summary>
-
-                        <div
-                          className="official-reply-card"
-                          style={{
-                            backgroundColor: "#ffffff",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "12px",
-                            padding: "15px",
-                            marginTop: "5px",
-                            marginLeft: "10px",
-                            boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "12px",
-                              alignItems: "flex-start",
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: "40px",
-                                height: "40px",
-                                borderRadius: "50%",
-                                backgroundColor: "#f3f4f6",
-                                overflow: "hidden",
-                                flexShrink: 0,
-                              }}
-                            >
-                              <img
-                                src={
-                                  review.officer_photo
-                                    ? `${API_BASE_URL}/auth/uploads/${review.officer_photo}`
-                                    : "https://i.imgur.com/JQrOMa7.png"
-                                }
-                                alt="Officer"
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                }}
-                                onError={(e) => {
-                                  e.target.src =
-                                    "https://i.imgur.com/JQrOMa7.png";
-                                }}
-                              />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                  flexWrap: "wrap",
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    fontWeight: "700",
-                                    color: "#111827",
-                                    fontSize: "14px",
-                                  }}
-                                >
-                                  {review.officer_first_name}{" "}
-                                  {review.officer_last_name}
-                                </span>
-                                <span
-                                  style={{
-                                    backgroundColor: "#dbeafe",
-                                    color: "#1e40af",
-                                    fontSize: "10px",
-                                    fontWeight: "800",
-                                    padding: "2px 8px",
-                                    borderRadius: "4px",
-                                    letterSpacing: "0.5px",
-                                  }}
-                                >
-                                  OFFICIAL
-                                </span>
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: "11px",
-                                  color: "#6b7280",
-                                  marginTop: "2px",
-                                }}
-                              >
-                                {review.work_municipality}, Ward{" "}
-                                {review.work_ward} •{" "}
-                                {new Date(
-                                  review.replied_at
-                                ).toLocaleDateString()}
-                              </div>
-                              <p
-                                style={{
-                                  marginTop: "10px",
-                                  color: "#374151",
-                                  fontSize: "14px",
-                                  lineHeight: "1.5",
-                                  margin: "10px 0 0",
-                                }}
-                              >
-                                {review.reply_text}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </details>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
+            <ReviewListFB
+              wardId={wardId}
+              refreshTrigger={reviewRefreshTrigger}
+            />
           </div>
         </div>
       );

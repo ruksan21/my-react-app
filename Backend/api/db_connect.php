@@ -8,6 +8,8 @@ $password = "";
 // MySQLi Object-Oriented style ma connection gareko
 $conn = new mysqli($host, $username, $password, $db_name);
 
+
+
 // Connection check gareko: error xabhane JSON response return garxa
 if ($conn->connect_error) {
     header("Content-Type: application/json; charset=UTF-8");

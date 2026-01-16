@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost/my-react-app/Backend/api";
+const BASE_URL = "http://localhost/new-react-app/Backend/api";
 
 export const API_ENDPOINTS = {
   // Authentication
@@ -79,6 +79,7 @@ export const API_ENDPOINTS = {
     getReplies: `${BASE_URL}/communication/get_replies.php`,
     addReply: `${BASE_URL}/communication/add_reply.php`,
     addReviewReply: `${BASE_URL}/communication/add_review_reply.php`,
+    toggleVote: `${BASE_URL}/communication/toggle_vote.php`,
   },
 
   // Alerts & Notices
@@ -91,7 +92,7 @@ export const API_ENDPOINTS = {
 
   // Statistics
   stats: {
-    getProfileStats: `${BASE_URL}/stats/get_profile_stats.php`,
+    getProfileStats: `${BASE_URL}/stats/get_profile_stats_v2.php`,
   },
 
   // Activities

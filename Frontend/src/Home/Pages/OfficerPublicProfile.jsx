@@ -5,7 +5,6 @@ import "./OfficerPublicProfile.css";
 export default function OfficerPublicProfile() {
   const [activeTab, setActiveTab] = useState("details");
 
-  // Mock officer data - will come from backend API
   const officerData = {
     name: "Ram Bahadur Shrestha",
     address: "Ward No. 1, Kathmandu",
@@ -18,7 +17,6 @@ export default function OfficerPublicProfile() {
     ward: "Ward No. 1, Kathmandu",
   };
 
-  // Mock works data
   const worksData = [
     {
       id: 1,
@@ -49,14 +47,12 @@ export default function OfficerPublicProfile() {
     },
   ];
 
-  // Mock assets data
   const assetsData = [
     { type: "Land", description: "Residential plot in Kathmandu", value: "Rs. 1,50,00,000" },
     { type: "Vehicle", description: "Car (Honda Civic 2020)", value: "Rs. 35,00,000" },
     { type: "Savings", description: "Bank deposits", value: "Rs. 25,00,000" },
   ];
 
-  // Mock activities data
   const activitiesData = [
     { date: "2024/12/15", activity: "Community meeting on sanitation", attendees: "50+ residents" },
     { date: "2024/12/10", activity: "Inauguration of new park", attendees: "200+ citizens" },
@@ -64,7 +60,6 @@ export default function OfficerPublicProfile() {
     { date: "2024/11/28", activity: "School visit and donation drive", attendees: "100+ students" },
   ];
 
-  // Mock reviews data
   const reviewsData = [
     { name: "Sita Sharma", rating: 5, comment: "Excellent work on road construction!", date: "2024/12/18" },
     { name: "Hari Prasad", rating: 4, comment: "Good communication with residents.", date: "2024/12/15" },

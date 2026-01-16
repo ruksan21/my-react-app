@@ -63,7 +63,23 @@
   display: flex;
   align-items: center;
   color: #f59e0b;
+}
+
+.stars-icons {
+  display: flex;
+  gap: 3px;
   font-size: 18px;
+}
+
+.interactive-stars {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.interactive-stars i:hover {
+  transform: scale(1.2);
+  transition: transform 0.2s;
 }
 
 .star-rating .reviews-text {

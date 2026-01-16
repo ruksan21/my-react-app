@@ -202,9 +202,7 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
   if (!showPopup || notices.length === 0) return null;
 
   const currentNotice = notices[currentIndex];
-  // console.log("Notice Data:", currentNotice); // Temporary debug
   const { images, documents } = getNoticeAssets(currentNotice);
-  // console.log("Extracted Assets:", { images, documents }); // Temporary debug
 
   return (
     <>

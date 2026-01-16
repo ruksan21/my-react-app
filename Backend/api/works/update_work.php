@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once '../db_connect.php';
 require_once '../utils/ward_utils.php';
 
-// Local verifyWardAccess removed, using version from ward_utils.php instead
+// Using verifyWardAccess from ward_utils.php
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if it's FormData (with file upload) or JSON

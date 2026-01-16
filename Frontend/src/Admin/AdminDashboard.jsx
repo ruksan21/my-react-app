@@ -5,8 +5,6 @@ import "./AdminDashboard.css";
 
 const AdminDashboard = () => {
   const { allUsers, pendingOfficers } = useAuth();
-  // recentComplaints removed as per cleanup request
-
   // Calculate stats
   // Total users = all roles in users table (admin/officer/citizen)
   const totalUsers = allUsers?.length || 0;
@@ -116,7 +114,7 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      {/* Removed Recent Complaints and Quick Actions as per user request */}
+
     </AdminLayout>
   );
 };
