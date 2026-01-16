@@ -190,7 +190,7 @@ export const AuthProvider = ({ children }) => {
       hasRefreshedSession.current = true;
       refreshSession();
     }
-  }, [isLoggedIn, user?.id]); // Don't include refreshSession to avoid loop
+  }, [isLoggedIn, user?.id, refreshSession]);
 
   // --- Auth Functions ---
 

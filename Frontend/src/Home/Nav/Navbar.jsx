@@ -5,6 +5,7 @@ import "./Navbar.css";
 import Profile from "../Profile/profile.jsx";
 import WardSelector from "../Component/wadaselector.jsx";
 import UserMenu from "../Component/UserMenu.jsx";
+import Notification from "../Component/Notification.jsx";
 import HeroSection from "../Pages/HeroSection.jsx";
 import Status from "../Pages/Status.jsx";
 import { useWard } from "../Context/WardContext.jsx";
@@ -62,6 +63,7 @@ const Navbar = ({ showHomeContent = false }) => {
         {/* Right Section - Ward Selector, Notification, User Menu */}
         <div className="navbar-right">
           <WardSelector />
+          <Notification />
           <UserMenu />
 
           {/* Hamburger Menu Icon (Mobile Only) */}

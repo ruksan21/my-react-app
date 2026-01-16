@@ -91,6 +91,10 @@ $sql = "SELECT
             u.province,
             u.district,
             u.city,
+            u.work_province,
+            u.work_district,
+            u.work_municipality,
+            u.work_ward,
             (SELECT COUNT(*) FROM feedback_replies WHERE review_id = r.id) as reply_count,
              (SELECT COUNT(*) FROM feedback_votes WHERE review_id = r.id AND vote_type = 1) as likes,
             (SELECT COUNT(*) FROM feedback_votes WHERE review_id = r.id AND vote_type = -1) as dislikes

@@ -129,6 +129,8 @@ const Notification = () => {
     }
   };
 
+  if (!user?.id) return null;
+
   return (
     <div className="notification-container">
       <button className="notification-btn" onClick={toggleNotification}>

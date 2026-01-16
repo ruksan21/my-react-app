@@ -50,7 +50,6 @@ if (!$ward_id && $municipality && $ward_number) {
     }
 }
 
-file_put_contents('submission_log.txt', "[" . date('Y-m-d H:i:s') . "] WardID: $ward_id | Muni: $municipality | WardNum: $ward_number | Subj: $subject\n", FILE_APPEND);
 
 if (!$ward_id) {
     echo json_encode(["success" => false, "message" => "Ward not found. Please verify municipality and ward number."]);
@@ -58,6 +57,7 @@ if (!$ward_id) {
 }
 
 // 3. Handle File Upload
+
 $image_path = null;
 if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     $uploadDir = __DIR__ . '/../../../uploads/complaints/';

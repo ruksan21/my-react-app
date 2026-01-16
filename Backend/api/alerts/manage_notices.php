@@ -444,6 +444,55 @@ else if ($method === 'POST') {
             call_user_func_array([$upStmt, 'bind_param'], $bindParams);
             
             if ($upStmt->execute()) {
+                // --- AUTO NOTIFY USERS IN THE WARD ON UPDATE ---
+                $notif_title = "📢 Updated Notice: " . $title;
+                $notif_message = substr($content, 0, 100) . (strlen($content) > 100 ? "..." : "");
+                $notif_type = "notice";
+                
+                if ($ward_id > 0) {
+                    // Get ward details first to find residents
+                    $w_sql = "SELECT d.province, d.name as district, w.municipality, w.ward_number 
+                              FROM wards w 
+                              INNER JOIN districts d ON w.district_id = d.id 
+                              WHERE w.id = ?";
+                    $w_stmt = $conn->prepare($w_sql);
+                    if ($w_stmt) {
+                        $w_stmt->bind_param("i", $ward_id);
+                        $w_stmt->execute();
+                        $w_res = $w_stmt->get_result();
+                        if ($w_row = $w_res->fetch_assoc()) {
+                            $p = $w_row['province'];
+                            $dist = $w_row['district'];
+                            $m = $w_row['municipality'];
+                            $wn = $w_row['ward_number'];
+                            
+                            // Find all users in this ward (by location)
+                            $user_sql = "SELECT id FROM users WHERE province = ? AND district = ? AND city = ? AND ward_number = ?";
+                            $user_stmt = $conn->prepare($user_sql);
+                            if ($user_stmt) {
+                                $user_stmt->bind_param("sssi", $p, $dist, $m, $wn);
+                                $user_stmt->execute();
+                                $user_res = $user_stmt->get_result();
+                                
+                                if ($user_res && $user_res->num_rows > 0) {
+                                    $batch_notif_sql = "INSERT INTO notifications (user_id, ward_id, related_notice_id, title, message, type, source_province, source_district, source_municipality, source_ward, is_read, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())";
+                                    $batch_notif_stmt = $conn->prepare($batch_notif_sql);
+                                    if ($batch_notif_stmt) {
+                                        while ($user_row = $user_res->fetch_assoc()) {
+                                            $u_id = (int)$user_row['id'];
+                                            $batch_notif_stmt->bind_param("iiissssssi", $u_id, $ward_id, $notice_id, $notif_title, $notif_message, $notif_type, $p, $dist, $m, $wn);
+                                            $batch_notif_stmt->execute();
+                                        }
+                                        $batch_notif_stmt->close();
+                                    }
+                                }
+                                $user_stmt->close();
+                            }
+                        }
+                        $w_stmt->close();
+                    }
+                }
+                // --- END AUTO NOTIFY ---
                 echo json_encode(["success" => true, "message" => "Notice updated successfully"]);
             } else {
                 echo json_encode(["success" => false, "message" => "Error updating notice: " . $conn->error]);

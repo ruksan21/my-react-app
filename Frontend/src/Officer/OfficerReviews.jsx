@@ -14,6 +14,7 @@ export default function OfficerReviews() {
   const [replyText, setReplyText] = useState("");
   const [selectedReview, setSelectedReview] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState("reply"); // "reply", "view", or "confirm_delete"
 
   const fetchWardId = useCallback(async () => {
     if (!workLocation) return;
@@ -97,6 +98,30 @@ export default function OfficerReviews() {
     }
   };
 
+  const handleDeleteReview = async () => {
+    if (!selectedReview) return;
+
+    try {
+      const response = await fetch(API_ENDPOINTS.communication.deleteReview, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ review_id: selectedReview.id }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Review deleted successfully");
+        setIsModalOpen(false);
+        fetchReviews();
+      } else {
+        toast.error(data.message || "Failed to delete review");
+      }
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      toast.error("An error occurred while deleting");
+    }
+  };
+
   return (
     <OfficerLayout title="Public Reviews">
       <div className="officer-complaints-container">
@@ -112,7 +137,6 @@ export default function OfficerReviews() {
                 <th>Rating</th>
                 <th>Comment</th>
                 <th>Date</th>
-                <th>Status</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -198,8 +222,18 @@ export default function OfficerReviews() {
                               textTransform: "capitalize",
                             }}
                           >
-                            {review.role || "Citizen"} • {review.city || "N/A"},{" "}
-                            {review.district || ""}
+                            {review.role || "Citizen"} •{" "}
+                            {review.role === "officer"
+                              ? `${
+                                  review.work_municipality ||
+                                  review.city ||
+                                  "N/A"
+                                }, ${
+                                  review.work_district || review.district || ""
+                                }`
+                              : `${review.city || "N/A"}, ${
+                                  review.district || ""
+                                }`}
                           </span>
                         </div>
                       </div>
@@ -224,26 +258,48 @@ export default function OfficerReviews() {
                       </div>
                     </td>
                     <td>{new Date(review.created_at).toLocaleDateString()}</td>
-                    <td>
-                      <span
-                        className={`status-badge ${
-                          review.reply_text ? "resolved" : "open"
-                        }`}
+                    <td style={{ minWidth: "150px" }}>
+                      <div
+                        className="action-buttons-group"
+                        style={{ display: "flex", gap: "6px" }}
                       >
-                        {review.reply_text ? "Replied" : "Pending"}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        className="view-btn"
-                        onClick={() => {
-                          setSelectedReview(review);
-                          setReplyText(review.reply_text || "");
-                          setIsModalOpen(true);
-                        }}
-                      >
-                        {review.reply_text ? "Edit Reply" : "Reply"}
-                      </button>
+                        <button
+                          className="action-icon-btn view"
+                          title="View Details"
+                          onClick={() => {
+                            setSelectedReview(review);
+                            setReplyText(review.reply_text || "");
+                            setModalMode("view");
+                            setIsModalOpen(true);
+                          }}
+                        >
+                          <span className="icon">🔍</span> <span>View</span>
+                        </button>
+                        <button
+                          className="action-icon-btn reply"
+                          title={review.reply_text ? "Edit Reply" : "Reply"}
+                          onClick={() => {
+                            setSelectedReview(review);
+                            setReplyText(review.reply_text || "");
+                            setModalMode("reply");
+                            setIsModalOpen(true);
+                          }}
+                        >
+                          <span className="icon">💬</span>{" "}
+                          <span>{review.reply_text ? "Edit" : "Reply"}</span>
+                        </button>
+                        <button
+                          className="action-icon-btn delete"
+                          title="Remove Review"
+                          onClick={() => {
+                            setSelectedReview(review);
+                            setModalMode("confirm_delete");
+                            setIsModalOpen(true);
+                          }}
+                        >
+                          <span className="icon">🗑️</span> <span>Remove</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -256,7 +312,13 @@ export default function OfficerReviews() {
           <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: "500px" }}>
               <div className="modal-header">
-                <h2>Reply to {selectedReview.first_name}'s Review</h2>
+                <h2>
+                  {modalMode === "view"
+                    ? "Review Details"
+                    : modalMode === "confirm_delete"
+                    ? "Confirm Deletion"
+                    : `Reply to ${selectedReview.first_name}'s Review`}
+                </h2>
                 <button
                   className="close-btn"
                   onClick={() => setIsModalOpen(false)}
@@ -265,116 +327,234 @@ export default function OfficerReviews() {
                 </button>
               </div>
               <div className="modal-body">
-                <div
-                  style={{
-                    backgroundColor: "#f9fafb",
-                    padding: "12px",
-                    borderRadius: "8px",
-                    marginBottom: "20px",
-                    border: "1px solid #e5e7eb",
-                  }}
-                >
-                  <p
-                    style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}
-                  >
-                    User Comment:
-                  </p>
-                  <p style={{ margin: "5px 0 0", fontWeight: "500" }}>
-                    "{selectedReview.comment}"
-                  </p>
-                </div>
-
-                <form
-                  onSubmit={handleReplySubmit}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "15px",
-                  }}
-                >
+                {modalMode !== "confirm_delete" && (
                   <div
                     style={{
-                      backgroundColor: "#ffffff",
+                      backgroundColor: "#f9fafb",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      marginBottom: "20px",
                       border: "1px solid #e5e7eb",
-                      borderRadius: "12px",
-                      padding: "15px",
-                      boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
                     }}
                   >
-                    <label
+                    <p
                       style={{
-                        display: "block",
-                        fontSize: "11px",
-                        fontWeight: "800",
+                        margin: 0,
+                        fontSize: "0.85rem",
                         color: "#6b7280",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        marginBottom: "10px",
                       }}
                     >
-                      Official Response
-                    </label>
-                    <textarea
+                      User Comment:
+                    </p>
+                    <p style={{ margin: "5px 0 0", fontWeight: "500" }}>
+                      "{selectedReview.comment}"
+                    </p>
+                  </div>
+                )}
+
+                {modalMode === "confirm_delete" ? (
+                  <div style={{ textAlign: "center", padding: "20px 0" }}>
+                    <div
                       style={{
-                        width: "100%",
-                        border: "none",
-                        outline: "none",
-                        resize: "none",
-                        fontSize: "14px",
-                        color: "#374151",
-                        minHeight: "120px",
+                        fontSize: "4rem",
+                        marginBottom: "15px",
+                        animation: "bounce 1s infinite",
                       }}
-                      placeholder="Write an official response..."
-                      value={replyText}
-                      onChange={(e) => {
-                        if (e.target.value.length <= 300) {
-                          setReplyText(e.target.value);
-                        }
-                      }}
-                      required
-                    ></textarea>
+                    >
+                      ⚠️
+                    </div>
+                    <h3>Are you sure?</h3>
+                    <p style={{ color: "#6b7280", margin: "10px 0 25px" }}>
+                      This will permanently remove the review and all associated
+                      replies. This action cannot be undone.
+                    </p>
                     <div
                       style={{
                         display: "flex",
-                        justifyContent: "flex-end",
-                        borderTop: "1px solid #f3f4f6",
-                        paddingTop: "10px",
-                        marginTop: "5px",
+                        justifyContent: "center",
+                        gap: "15px",
                       }}
                     >
-                      <span style={{ fontSize: "12px", color: "#9ca3af" }}>
-                        {replyText.length}/300
-                      </span>
+                      <button
+                        className="btn-secondary"
+                        style={{ padding: "10px 25px" }}
+                        onClick={() => setIsModalOpen(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="btn-danger"
+                        style={{
+                          backgroundColor: "#ef4444",
+                          color: "white",
+                          border: "none",
+                          padding: "10px 25px",
+                          borderRadius: "8px",
+                          fontWeight: "600",
+                        }}
+                        onClick={handleDeleteReview}
+                      >
+                        Yes, Delete It
+                      </button>
                     </div>
                   </div>
-                  <div
-                    className="modal-actions"
-                    style={{ justifyContent: "flex-end", gap: "12px" }}
-                  >
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => setIsModalOpen(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn-primary"
+                ) : modalMode === "view" ? (
+                  <div className="view-mode-content">
+                    <div className="review-detail-card">
+                      <div className="detail-row">
+                        <span className="detail-label">Rating:</span>
+                        <div style={{ color: "#f59e0b" }}>
+                          {"★".repeat(parseInt(selectedReview.rating))}
+                          <span style={{ color: "#d1d5db" }}>
+                            {"★".repeat(5 - parseInt(selectedReview.rating))}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Posted On:</span>
+                        <span>
+                          {new Date(selectedReview.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="detail-row full-width">
+                        <span className="detail-label">Citizen Comment:</span>
+                        <div className="detail-value box">
+                          {selectedReview.comment}
+                        </div>
+                      </div>
+                      {selectedReview.reply_text && (
+                        <div className="detail-row full-width">
+                          <span className="detail-label">Your Reply:</span>
+                          <div
+                            className="detail-value box"
+                            style={{
+                              backgroundColor: "#f0f9ff",
+                              borderLeft: "4px solid #3b82f6",
+                            }}
+                          >
+                            {selectedReview.reply_text}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div
                       style={{
-                        backgroundColor: "#3b82f6",
+                        marginTop: "20px",
                         display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "10px 20px",
-                        borderRadius: "8px",
+                        justifyContent: "flex-end",
                       }}
                     >
-                      <span style={{ fontSize: "16px" }}>🚀</span>
-                      Post Official Reply
-                    </button>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => setIsModalOpen(false)}
+                      >
+                        Close
+                      </button>
+                      {!selectedReview.reply_text && (
+                        <button
+                          className="btn-primary"
+                          style={{ marginLeft: "10px" }}
+                          onClick={() => setModalMode("reply")}
+                        >
+                          Write a Reply
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </form>
+                ) : (
+                  <form
+                    onSubmit={handleReplySubmit}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "15px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "12px",
+                        padding: "15px",
+                        boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "11px",
+                          fontWeight: "800",
+                          color: "#6b7280",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        Official Response
+                      </label>
+                      <textarea
+                        style={{
+                          width: "100%",
+                          border: "none",
+                          outline: "none",
+                          resize: "none",
+                          fontSize: "14px",
+                          color: "#374151",
+                          minHeight: "120px",
+                          backgroundColor: "transparent",
+                        }}
+                        placeholder="Write an official response..."
+                        value={replyText}
+                        onChange={(e) => {
+                          if (e.target.value.length <= 300) {
+                            setReplyText(e.target.value);
+                          }
+                        }}
+                        required
+                      ></textarea>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          borderTop: "1px solid #f3f4f6",
+                          paddingTop: "10px",
+                          marginTop: "5px",
+                        }}
+                      >
+                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>
+                          {replyText.length}/300
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      className="modal-actions"
+                      style={{ justifyContent: "flex-end", gap: "12px" }}
+                    >
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => setIsModalOpen(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn-primary"
+                        style={{
+                          backgroundColor: "#3b82f6",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "10px 20px",
+                          borderRadius: "8px",
+                        }}
+                      >
+                        <span style={{ fontSize: "16px" }}>🚀</span>
+                        Post Official Reply
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
             </div>
           </div>
