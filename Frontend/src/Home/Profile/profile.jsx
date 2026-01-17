@@ -146,8 +146,6 @@ const Profile = () => {
       .catch((err) => console.error("Error fetching personal assets:", err));
   }, [wardId, refreshStats]);
 
-
-
   const handleReviewSubmit = (e) => {
     e.preventDefault();
     const user = JSON.parse(localStorage.getItem("user"));
@@ -536,9 +534,6 @@ const Profile = () => {
 
   return (
     <div className="profile-container">
-      {/* Notice Popup */}
-      <NoticePopup />
-
       {/* Profile Header */}
       <div className="profile-header">
         <div className="profile-header-left">

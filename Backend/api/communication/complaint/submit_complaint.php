@@ -60,7 +60,7 @@ if (!$ward_id) {
 
 $image_path = null;
 if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-    $uploadDir = __DIR__ . '/../../../uploads/complaints/';
+    $uploadDir = __DIR__ . '/../../uploads/complaints/';
     if (!file_exists($uploadDir)) {
         mkdir($uploadDir, 0777, true);
     }

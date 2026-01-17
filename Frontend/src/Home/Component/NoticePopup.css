@@ -247,10 +247,37 @@
   border-top: 1px solid #e2e8f0;
 }
 
+.notice-counter-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .notice-counter {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.notice-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.notice-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.notice-dot.active {
+  width: 18px;
+  border-radius: 10px;
+  background: #6366f1;
 }
 
 .notice-navigation {

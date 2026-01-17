@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 import { useAuth } from "../Home/Context/AuthContext";
 import OfficerLayout from "./OfficerLayout";
 import "./OfficerComplaints.css";
-import { API_ENDPOINTS } from "../config/api";
+import { API_ENDPOINTS, API_BASE_URL } from "../config/api";
 
 const OfficerComplaints = () => {
   const { user, getOfficerWorkLocation } = useAuth();
@@ -661,7 +661,7 @@ const OfficerComplaints = () => {
                   </h4>
                   <div className="image-container">
                     <img
-                      src={`http://localhost/my-react-app/uploads/complaints/${selectedComplaint.image}`}
+                      src={`${API_BASE_URL}/uploads/complaints/${selectedComplaint.image}`}
                       alt="attachment"
                       onError={(e) => {
                         e.target.onerror = null;

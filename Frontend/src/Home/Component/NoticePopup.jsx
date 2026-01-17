@@ -318,13 +318,29 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
 
         {notices.length > 1 && (
           <div className="notice-popup-footer">
-            <div className="notice-counter">
-              Notice {currentIndex + 1} of {notices.length}
+            <div className="notice-counter-container">
+              <div className="notice-counter">
+                {currentIndex + 1} / {notices.length}
+              </div>
+              <div className="notice-dots">
+                {notices.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`notice-dot ${
+                      idx === currentIndex ? "active" : ""
+                    }`}
+                    onClick={() => setCurrentIndex(idx)}
+                  ></div>
+                ))}
+              </div>
             </div>
             <div className="notice-navigation">
               <button
                 className="footer-nav-btn prev"
-                onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex((prev) => Math.max(0, prev - 1));
+                }}
                 disabled={currentIndex === 0}
               >
                 ← Prev
@@ -332,13 +348,16 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
               {currentIndex < notices.length - 1 ? (
                 <button
                   className="footer-nav-btn next highlight"
-                  onClick={handleClose}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIndex((prev) => prev + 1);
+                  }}
                 >
-                  Next Notice →
+                  Next →
                 </button>
               ) : (
                 <button className="footer-nav-btn close" onClick={handleClose}>
-                  Finish
+                  Got it
                 </button>
               )}
             </div>
