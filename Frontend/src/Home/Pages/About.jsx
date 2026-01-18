@@ -3,7 +3,7 @@ import "./About.css";
 import Navbar from "../Nav/Navbar";
 import HomeImage from "../../Image/Home.png";
 import PhotoImage from "../../Image/photo.jpeg";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 
 export default function About() {
   const { t } = useLanguage();

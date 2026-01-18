@@ -3,7 +3,7 @@ import "./works.css";
 import CommentSection from "../Component/CommentSection";
 import { useWard } from "../Context/WardContext";
 import { useAuth } from "../Context/AuthContext";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 import { toNepaliNumber } from "../../data/nepal_locations";
 import { toast } from "react-toastify";
 import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";

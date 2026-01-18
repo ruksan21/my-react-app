@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Navbar from "../Nav/Navbar";
 import "./Documents.css";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 
 export default function Documents() {
   const { t } = useLanguage();

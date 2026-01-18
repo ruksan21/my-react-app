@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./RoleSelection.css";
-import { useLanguage } from "../Context/LanguageContext.jsx";
+import { useLanguage } from "../Context/useLanguage";
 
 export default function RoleSelection() {
   const navigate = useNavigate();

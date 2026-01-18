@@ -1,5 +1,5 @@
 import React from "react";
-import { useLanguage } from "../Context/LanguageContext.jsx";
+import { useLanguage } from "../Context/useLanguage";
 import HeroImage from "../../Image/Home.png";
 
 // Reusable hero section component.

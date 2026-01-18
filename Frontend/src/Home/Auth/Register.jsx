@@ -10,7 +10,7 @@ import {
 } from "../../data/nepal_locations";
 import API_ENDPOINTS from "../../config/api";
 import { toast } from "react-toastify";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 
 export default function RegisterPage({
   initialRole = "citizen",

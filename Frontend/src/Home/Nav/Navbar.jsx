@@ -11,7 +11,7 @@ import Status from "../Pages/Status.jsx";
 import { useWard } from "../Context/WardContext.jsx";
 // import { useAuth } from "../Context/AuthContext.jsx";
 
-import { useLanguage } from "../Context/LanguageContext.jsx";
+import { useLanguage } from "../Context/useLanguage";
 
 const Navbar = ({ showHomeContent = false }) => {
   const { municipality, ward } = useWard();

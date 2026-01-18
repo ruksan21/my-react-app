@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useWard } from "../Context/WardContext";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 import { toNepaliNumber } from "../../data/nepal_locations";
 
 // Working, backend-ready Status component.

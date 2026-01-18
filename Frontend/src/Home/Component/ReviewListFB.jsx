@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../Context/AuthContext";
 import { API_ENDPOINTS } from "../../config/api";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 import { toNepaliNumber } from "../../data/nepal_locations";
 import "./CommentSection.css"; // Reuse the Facebook styles
 

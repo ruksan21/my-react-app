@@ -12,11 +12,11 @@ import {
   toNepaliNumber,
 } from "../data/nepal_locations";
 import "./WardManagement.css";
-import { useLanguage } from "../Home/Context/LanguageContext";
+import { useLanguage } from "../Home/Context/useLanguage";
 
 const WardManagement = () => {
   const { refreshWards } = useAuth();
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
 
   // State for District Management
   const [isAddingDistrict, setIsAddingDistrict] = useState(false);

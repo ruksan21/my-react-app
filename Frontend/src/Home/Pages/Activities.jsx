@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../Nav/Navbar";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 import { toNepaliNumber } from "../../data/nepal_locations";
 import "./Activities.css";
 import { useWard } from "../Context/WardContext";

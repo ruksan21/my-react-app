@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./Dashboard.css";
 import { useWard } from "../Context/WardContext";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 import { toNepaliNumber } from "../../data/nepal_locations";
 import Navbar from "../Nav/Navbar";
 import { API_ENDPOINTS } from "../../config/api";

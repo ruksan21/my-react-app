@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Navbar from "../Nav/Navbar";
 import "./OfficerPublicProfile.css";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 import { toNepaliNumber } from "../../data/nepal_locations";
 
 export default function OfficerPublicProfile() {

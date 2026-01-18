@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./Home/Context/AuthContext";
 import { WardProvider } from "./Home/Context/WardContext";
-import { LanguageProvider } from "./Home/Context/LanguageContext";
+import { LanguageProvider } from "./Home/Context/LanguageProvider";
 import Navbar from "./Home/Nav/Navbar";
 import Login from "./Home/Auth/Login";
 import RoleSelection from "./Home/Auth/RoleSelection";

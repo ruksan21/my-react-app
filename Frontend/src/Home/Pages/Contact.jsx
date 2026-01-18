@@ -4,7 +4,7 @@ import "./Contact.css";
 import { useWard } from "../Context/WardContext";
 import { useAuth } from "../Context/AuthContext";
 import { API_ENDPOINTS } from "../../config/api";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 
 export default function Contact() {
   const { t } = useLanguage();

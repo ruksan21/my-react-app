@@ -8,7 +8,7 @@ import Dashboard from "../Pages/Dashboard";
 import Assets from "../Pages/Assets";
 import Activities from "../Pages/Activities";
 import { useWard } from "../Context/WardContext";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 import { toNepaliNumber } from "../../data/nepal_locations";
 import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 import ReviewListFB from "../Component/ReviewListFB";

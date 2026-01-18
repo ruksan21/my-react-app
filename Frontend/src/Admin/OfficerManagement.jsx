@@ -10,7 +10,7 @@ import {
   toNepaliNumber,
 } from "../data/nepal_locations";
 import "./OfficerManagement.css";
-import { useLanguage } from "../Home/Context/LanguageContext";
+import { useLanguage } from "../Home/Context/useLanguage";
 
 const OfficerManagement = () => {
   const {

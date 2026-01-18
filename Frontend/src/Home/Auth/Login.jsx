@@ -4,7 +4,7 @@ import { useAuth } from "../Context/AuthContext";
 import "./Login.css";
 import { API_ENDPOINTS } from "../../config/api";
 import { toast } from "react-toastify";
-import { useLanguage } from "../Context/LanguageContext";
+import { useLanguage } from "../Context/useLanguage";
 
 export default function LoginPage() {
   const { login } = useAuth();
