@@ -27,6 +27,12 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
 
     if (!wardId) return;
 
+    // Only automatically show popups on the home page (root path)
+    if (location.pathname !== "/") {
+      setShowPopup((prev) => (prev ? false : prev));
+      return;
+    }
+
     const fetchAndShowNotices = () => {
       const url = `${API_ENDPOINTS.alerts.manageNotices}?ward_id=${wardId}`;
 
@@ -35,10 +41,10 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
         .then((data) => {
           if (data.success && data.data && data.data.length > 0) {
             const shownNotices = JSON.parse(
-              localStorage.getItem("shownNotices") || "[]"
+              localStorage.getItem("shownNotices") || "[]",
             );
             const unshownNotices = data.data.filter(
-              (n) => !shownNotices.includes(n.id)
+              (n) => !shownNotices.includes(n.id),
             );
 
             if (unshownNotices.length > 0) {
@@ -48,7 +54,7 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
           }
         })
         .catch((err) =>
-          console.error("NoticePopup: Error fetching notices:", err)
+          console.error("NoticePopup: Error fetching notices:", err),
         );
     };
 
@@ -61,7 +67,7 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
     if (!propNotice && notices.length > 0) {
       // Mark current notice as shown in localStorage
       const shownNotices = JSON.parse(
-        localStorage.getItem("shownNotices") || "[]"
+        localStorage.getItem("shownNotices") || "[]",
       );
       const currentId = notices[currentIndex].id;
       if (!shownNotices.includes(currentId)) {
@@ -236,7 +242,7 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
               <span>📅</span>
               <span>
                 {new Date(
-                  currentNotice.created_at || Date.now()
+                  currentNotice.created_at || Date.now(),
                 ).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
@@ -276,7 +282,7 @@ const NoticePopup = ({ notice: propNotice, onClose }) => {
                     onError={(e) => {
                       console.error(
                         "NoticePopup: Image failed to load:",
-                        e.target.src
+                        e.target.src,
                       );
                       e.target.parentElement.style.display = "none";
                     }}
