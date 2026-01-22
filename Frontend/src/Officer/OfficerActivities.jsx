@@ -225,52 +225,18 @@ export default function OfficerActivities() {
                       </div>
                     </td>
                     <td>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "8px",
-                          justifyContent: "center",
-                        }}
-                      >
+                      <div className="action-buttons-container">
                         <button
                           onClick={() => handleEdit(act)}
                           title="Edit Activity"
-                          style={{
-                            padding: "8px 14px",
-                            borderRadius: "8px",
-                            border: "none",
-                            background:
-                              "linear-gradient(135deg, #3b82f6, #2563eb)",
-                            color: "white",
-                            fontWeight: 600,
-                            fontSize: "0.85rem",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            transition: "all 0.2s",
-                            boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
-                          }}
+                          className="edit-activity-btn"
                         >
                           ✏️ Edit
                         </button>
                         <button
                           onClick={() => handleDelete(act.id)}
                           title="Delete Activity"
-                          style={{
-                            padding: "8px 14px",
-                            borderRadius: "8px",
-                            border: "2px solid #fee2e2",
-                            background: "white",
-                            color: "#dc2626",
-                            fontWeight: 600,
-                            fontSize: "0.85rem",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            transition: "all 0.2s",
-                          }}
+                          className="delete-activity-btn"
                         >
                           🗑️ Delete
                         </button>
@@ -417,8 +383,8 @@ export default function OfficerActivities() {
                       {loading
                         ? "Saving..."
                         : isEditing
-                        ? "💾 Update Activity"
-                        : "📅 Add Activity"}
+                          ? "💾 Update Activity"
+                          : "📅 Add Activity"}
                     </button>
                   </div>
                 </form>

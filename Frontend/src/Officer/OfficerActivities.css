@@ -92,7 +92,9 @@
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.2s;
+  transition:
+    transform 0.1s,
+    box-shadow 0.2s;
   align-self: flex-start;
 }
 
@@ -142,6 +144,65 @@
 .activity-item-admin:hover {
   transform: translateX(5px);
   border-color: #cbd5e0;
+}
+
+/* Action Buttons Container */
+.action-buttons-container {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Edit Activity Button */
+.edit-activity-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.edit-activity-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.edit-activity-btn:active {
+  transform: translateY(0);
+}
+
+/* Delete Activity Button */
+.delete-activity-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 2px solid #fee2e2;
+  background: white;
+  color: #dc2626;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.delete-activity-btn:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  transform: translateY(-1px);
+}
+
+.delete-activity-btn:active {
+  transform: translateY(0);
 }
 
 @media (max-width: 768px) {

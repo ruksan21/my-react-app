@@ -28,7 +28,10 @@ const WorkCard = ({ work }) => {
     setReactionBreakdown(work.reaction_breakdown || {});
   }, [work]);
   const handleLike = async (reactionType = "like") => {
-    if (!user) return toast.info("Please login to like.");
+    if (!user)
+      return toast.info(
+        isNP ? "कृपया मन पराउन लगइन गर्नुहोस्।" : "Please login to like.",
+      );
     try {
       const res = await fetch(API_ENDPOINTS.works.toggleLike, {
         method: "POST",
@@ -218,7 +221,9 @@ const WorkCard = ({ work }) => {
               ) : (
                 <div className="reaction-breakdown-item">
                   <span className="reaction-icon">👍</span>
-                  <span className="reaction-label">Like</span>
+                  <span className="reaction-label">
+                    {isNP ? "मनपर्‍यो" : "Like"}
+                  </span>
                   <span className="reaction-count">
                     {isNP ? toNepaliNumber(likes) : likes}
                   </span>
@@ -293,7 +298,9 @@ const WorkCard = ({ work }) => {
             ) : (
               <>
                 <i className="fa-regular fa-thumbs-up"></i>
-                <span className="reaction-label">Like</span>
+                <span className="reaction-label">
+                  {isNP ? "मनपर्‍यो" : "Like"}
+                </span>
               </>
             )}
           </button>
