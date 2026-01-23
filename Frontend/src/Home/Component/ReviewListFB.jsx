@@ -17,6 +17,17 @@ const ReviewListFB = ({ wardId, refreshTrigger }) => {
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
 
+  const sanitizeName = (name) => {
+    if (!name) return "";
+    if (/^\s*black\s+black\s*$/i.test(name)) return "";
+    return name;
+  };
+
+  const getFirstName = (name) => {
+    const s = sanitizeName(name);
+    return s ? s.split(" ")[0] : "";
+  };
+
   const fetchReviews = useCallback(() => {
     if (wardId) {
       const userParam = user?.id ? `&user_id=${user.id}` : "";
@@ -454,12 +465,12 @@ const ReviewListFB = ({ wardId, refreshTrigger }) => {
                         <img
                           src={getPhotoUrl(rep.user_photo)}
                           className="fb-avatar-xs"
-                          alt={rep.user_name}
+                          alt={sanitizeName(rep.user_name) || 'User'}
                         />
                         <div className="fb-reply-bubble">
                           <div className="fb-reply-content">
                             <span className="fb-reply-user">
-                              {rep.user_name}
+                              {sanitizeName(rep.user_name) || 'Anonymous'}
                               {rep.user_role === "officer" && (
                                 <i className="fas fa-check-circle fb-verified-icon"></i>
                               )}

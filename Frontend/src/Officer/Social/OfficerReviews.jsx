@@ -5,6 +5,20 @@ import { useAuth } from "../../Home/Context/AuthContext";
 import { API_ENDPOINTS } from "../../config/api";
 import "../Complaints/OfficerComplaints.css"; // Reuse table styles
 
+const sanitizeName = (name) => {
+  if (!name) return "";
+  if (/^\s*black\s+black\s*$/i.test(name)) return "";
+  return name;
+};
+
+const getFullName = (review) => {
+  const full = [review.first_name, review.middle_name, review.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return sanitizeName(full) || "";
+};
+
 export default function OfficerReviews() {
   const { user, getOfficerWorkLocation } = useAuth();
   const workLocation = getOfficerWorkLocation();
@@ -192,7 +206,7 @@ export default function OfficerReviews() {
                                   ? review.photo
                                   : `${API_ENDPOINTS.authUploads}/${review.photo}`
                               }
-                              alt=""
+                              alt={getFullName(review) || 'User'}
                               style={{
                                 width: "100%",
                                 height: "100%",
@@ -207,13 +221,7 @@ export default function OfficerReviews() {
                           style={{ display: "flex", flexDirection: "column" }}
                         >
                           <span style={{ fontWeight: "600" }}>
-                            {[
-                              review.first_name,
-                              review.middle_name,
-                              review.last_name,
-                            ]
-                              .filter(Boolean)
-                              .join(" ")}
+                            {getFullName(review) || "Anonymous"}
                           </span>
                           <span
                             style={{

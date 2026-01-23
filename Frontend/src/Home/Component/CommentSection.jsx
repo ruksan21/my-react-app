@@ -42,11 +42,24 @@ const CommentSection = ({
   const [showFullSection, setShowFullSection] = useState(initialExpanded); // Toggle the whole section
   const [activeMenuId, setActiveMenuId] = useState(null); // ID of comment whose three-dot menu is open
 
+  // Helper to sanitize display names (remove testing placeholder like 'black black')
+  const sanitizeName = (name) => {
+    if (!name) return "";
+    // Remove exact placeholder 'black black' (case-insensitive)
+    if (/^\s*black\s+black\s*$/i.test(name)) return "";
+    return name;
+  };
+
+  const getFirstName = (name) => {
+    const s = sanitizeName(name);
+    return s ? s.split(" ")[0] : "";
+  };
+
   const fetchComments = useCallback(() => {
     if (workId) {
       const userParam = user?.id ? `&current_user_id=${user.id}` : "";
       fetch(
-        `${API_ENDPOINTS.communication.getFeedback}?work_id=${workId}${userParam}`
+        `${API_ENDPOINTS.communication.getFeedback}?work_id=${workId}${userParam}`,
       )
         .then((res) => res.json())
         .then((data) => {
@@ -102,8 +115,8 @@ const CommentSection = ({
         toast.success("Comment updated.");
         setComments((prev) =>
           prev.map((c) =>
-            c.id === feedbackId ? { ...c, comment: editingText } : c
-          )
+            c.id === feedbackId ? { ...c, comment: editingText } : c,
+          ),
         );
         setEditingId(null);
       } else {
@@ -135,8 +148,8 @@ const CommentSection = ({
           prev.map((c) =>
             c.id === commentId
               ? { ...c, reply_count: Math.max(0, (c.reply_count || 0) - 1) }
-              : c
-          )
+              : c,
+          ),
         );
       } else {
         toast.error(data.message);
@@ -165,7 +178,7 @@ const CommentSection = ({
         setReplies((prev) => ({
           ...prev,
           [commentId]: prev[commentId].map((r) =>
-            r.id === replyId ? { ...r, reply_text: editingReplyText } : r
+            r.id === replyId ? { ...r, reply_text: editingReplyText } : r,
           ),
         }));
         setEditingReplyId(null);
@@ -208,7 +221,7 @@ const CommentSection = ({
   const fetchReplies = (commentId) => {
     const userParam = user?.id ? `&user_id=${user.id}` : "";
     fetch(
-      `${API_ENDPOINTS.communication.getReplies}?feedback_id=${commentId}${userParam}`
+      `${API_ENDPOINTS.communication.getReplies}?feedback_id=${commentId}${userParam}`,
     )
       .then((res) => res.json())
       .then((data) => {
@@ -254,7 +267,7 @@ const CommentSection = ({
               };
             }
             return c;
-          })
+          }),
         );
       }
     } catch (error) {
@@ -291,7 +304,7 @@ const CommentSection = ({
                   user_reaction: data.user_reaction,
                   reaction_breakdown: data.reaction_breakdown,
                 }
-              : r
+              : r,
           ),
         }));
       }
@@ -332,8 +345,8 @@ const CommentSection = ({
           prev.map((c) =>
             c.id === commentId
               ? { ...c, reply_count: (c.reply_count || 0) + 1 }
-              : c
-          )
+              : c,
+          ),
         );
       } else {
         toast.error(data.message);
@@ -557,13 +570,13 @@ const CommentSection = ({
                     <div className="fb-comment-row">
                       <img
                         src={getPhotoUrl(c.user_photo)}
-                        alt={c.user_name}
+                        alt={sanitizeName(c.user_name) || 'User'}
                         className="fb-avatar-small"
                       />
                       <div className="fb-bubble-container">
                         <div className="fb-bubble">
                           <div className="fb-user-name">
-                            {c.user_name}
+                            {sanitizeName(c.user_name) || 'Anonymous'}
                             {c.user_role === "officer" && (
                               <span className="fb-badge-official">
                                 Official
@@ -625,7 +638,7 @@ const CommentSection = ({
                                   key={r.type}
                                   className="reaction-emoji"
                                   onClick={() => handleVote(c.id, r.type)}
-                                  title={r.label}
+                                  data-label={r.label}
                                 >
                                   {r.icon}
                                 </span>
@@ -640,7 +653,7 @@ const CommentSection = ({
                               onClick={() =>
                                 handleVote(
                                   c.id,
-                                  c.user_reaction ? c.user_reaction : "like"
+                                  c.user_reaction ? c.user_reaction : "like",
                                 )
                               }
                             >
@@ -649,7 +662,7 @@ const CommentSection = ({
                                   <span className="current-reaction-icon">
                                     {
                                       reactionTypes.find(
-                                        (r) => r.type === c.user_reaction
+                                        (r) => r.type === c.user_reaction,
                                       )?.icon
                                     }
                                   </span>
@@ -657,13 +670,13 @@ const CommentSection = ({
                                     className="reaction-label"
                                     style={{
                                       color: reactionTypes.find(
-                                        (r) => r.type === c.user_reaction
+                                        (r) => r.type === c.user_reaction,
                                       )?.color,
                                     }}
                                   >
                                     {
                                       reactionTypes.find(
-                                        (r) => r.type === c.user_reaction
+                                        (r) => r.type === c.user_reaction,
                                       )?.label
                                     }
                                   </span>
@@ -692,7 +705,7 @@ const CommentSection = ({
                                   setActiveMenuId(
                                     activeMenuId === `c-${c.id}`
                                       ? null
-                                      : `c-${c.id}`
+                                      : `c-${c.id}`,
                                   );
                                 }}
                               >
@@ -739,7 +752,7 @@ const CommentSection = ({
                                     .slice(0, 3)
                                     .map(([rt]) => {
                                       const icon = reactionTypes.find(
-                                        (r) => r.type === rt
+                                        (r) => r.type === rt,
                                       )?.icon;
                                       return icon ? (
                                         <span
@@ -763,7 +776,7 @@ const CommentSection = ({
                                   Object.entries(c.reaction_breakdown).map(
                                     ([type, count]) => {
                                       const reaction = reactionTypes.find(
-                                        (r) => r.type === type
+                                        (r) => r.type === type,
                                       );
                                       return count > 0 && reaction ? (
                                         <div
@@ -781,7 +794,7 @@ const CommentSection = ({
                                           </span>
                                         </div>
                                       ) : null;
-                                    }
+                                    },
                                   )
                                 ) : (
                                   <div className="reaction-breakdown-item">
@@ -848,13 +861,13 @@ const CommentSection = ({
                                 <div className="fb-reply-card">
                                   <img
                                     src={getPhotoUrl(r.user_photo)}
-                                    alt={r.user_name}
+                                    alt={sanitizeName(r.user_name) || 'User'}
                                     className="fb-avatar-xs"
                                   />
                                   <div className="fb-reply-bubble">
                                     <div className="fb-reply-content">
                                       <span className="fb-reply-user">
-                                        {r.user_name}
+                                        {sanitizeName(r.user_name) || 'Anonymous'}
                                         {r.user_role === "officer" && (
                                           <i
                                             className="fas fa-check-circle fb-verified-icon"
@@ -870,7 +883,7 @@ const CommentSection = ({
                                             value={editingReplyText}
                                             onChange={(e) =>
                                               setEditingReplyText(
-                                                e.target.value
+                                                e.target.value,
                                               )
                                             }
                                             autoFocus
@@ -912,10 +925,10 @@ const CommentSection = ({
                                                 handleReplyVote(
                                                   c.id,
                                                   r.id,
-                                                  rt.type
+                                                  rt.type,
                                                 )
                                               }
-                                              title={rt.label}
+                                              data-label={rt.label}
                                             >
                                               {rt.icon}
                                             </span>
@@ -933,7 +946,7 @@ const CommentSection = ({
                                               r.id,
                                               r.user_reaction
                                                 ? r.user_reaction
-                                                : "like"
+                                                : "like",
                                             )
                                           }
                                         >
@@ -943,14 +956,14 @@ const CommentSection = ({
                                               style={{
                                                 color: reactionTypes.find(
                                                   (rt) =>
-                                                    rt.type === r.user_reaction
+                                                    rt.type === r.user_reaction,
                                                 )?.color,
                                               }}
                                             >
                                               {
                                                 reactionTypes.find(
                                                   (rt) =>
-                                                    rt.type === r.user_reaction
+                                                    rt.type === r.user_reaction,
                                                 )?.label
                                               }
                                             </span>
@@ -969,9 +982,8 @@ const CommentSection = ({
                                           // Set active reply to THIS specific reply
                                           setActiveReplyId(r.id);
                                           // Pre-fill mention
-                                          const name =
-                                            r.user_name.split(" ")[0];
-                                          setReplyText(`@${name} `);
+                                          const first = getFirstName(r.user_name);
+                                          if (first) setReplyText(`@${first} `);
                                         }}
                                       >
                                         Reply
@@ -992,7 +1004,7 @@ const CommentSection = ({
                                               setActiveMenuId(
                                                 activeMenuId === `r-${r.id}`
                                                   ? null
-                                                  : `r-${r.id}`
+                                                  : `r-${r.id}`,
                                               );
                                             }}
                                           >
@@ -1005,7 +1017,7 @@ const CommentSection = ({
                                                   onClick={() => {
                                                     setEditingReplyId(r.id);
                                                     setEditingReplyText(
-                                                      r.reply_text
+                                                      r.reply_text,
                                                     );
                                                     setActiveMenuId(null);
                                                   }}
@@ -1041,7 +1053,7 @@ const CommentSection = ({
                                             {r.likes}
                                           </span>
                                           {Object.entries(
-                                            r.reaction_breakdown || {}
+                                            r.reaction_breakdown || {},
                                           ).length > 0 ? (
                                             <div className="reaction-badges">
                                               {Object.keys(r.reaction_breakdown)
@@ -1053,7 +1065,8 @@ const CommentSection = ({
                                                   >
                                                     {
                                                       reactionTypes.find(
-                                                        (rt) => rt.type === type
+                                                        (rt) =>
+                                                          rt.type === type,
                                                       )?.icon
                                                     }
                                                   </span>
@@ -1077,7 +1090,7 @@ const CommentSection = ({
                                   <div className="fb-reply-card input-card">
                                     <img
                                       src={getPhotoUrl(
-                                        user?.photo || user?.photoUrl
+                                        user?.photo || user?.photoUrl,
                                       )}
                                       alt="Me"
                                       className="fb-avatar-xs"
@@ -1085,9 +1098,7 @@ const CommentSection = ({
                                     <div className="fb-reply-box-modern">
                                       <textarea
                                         autoFocus
-                                        placeholder={`Reply to ${
-                                          r.user_name.split(" ")[0]
-                                        }...`}
+                                        placeholder={`Reply to ${getFirstName(r.user_name) || ''}...`}
                                         value={replyText}
                                         onChange={(e) =>
                                           setReplyText(e.target.value)
@@ -1132,9 +1143,7 @@ const CommentSection = ({
                         <div className="fb-reply-box-modern">
                           <textarea
                             autoFocus
-                            placeholder={`Reply to ${
-                              c.user_name.split(" ")[0]
-                            }...`}
+                            placeholder={`Reply to ${getFirstName(c.user_name) || ''}...`}
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
                             onKeyDown={(e) => {
