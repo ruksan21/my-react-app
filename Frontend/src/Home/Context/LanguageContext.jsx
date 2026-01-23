@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { translations } from "../../data/translations";
-import { LanguageContext } from "./LanguageContext";
+import { LanguageContext } from "./useLanguage";
 
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
