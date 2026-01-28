@@ -10,16 +10,6 @@ const WardSelector = ({ onWardSelect }) => {
   const [selectedMunicipality, setSelectedMunicipality] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-  // Track screen size for responsive design
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   // Helper function to convert to title case
   const toTitleCase = (str) => {
@@ -118,8 +108,8 @@ const WardSelector = ({ onWardSelect }) => {
         title={displayText}
       >
         <i className="icon-map-pin">📍</i>
-        {!isMobile && <span className="ward-text">{displayText}</span>}
-        {!isMobile && <i className={`arrow-icon ${isOpen ? "up" : ""}`}>▲</i>}
+        <span className="ward-text">{displayText}</span>
+        <i className={`arrow-icon ${isOpen ? "up" : ""}`}>▲</i>
       </button>
 
       {isOpen && (
