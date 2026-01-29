@@ -59,6 +59,17 @@ try {
         if ($result->num_rows == 0) {
             throw new Exception("Invalid verification code or email!");
         }
+
+        // Password Strength Validation
+        if (strlen($new_password) < 8) {
+            throw new Exception("Password must be at least 8 characters long.");
+        }
+        if (!preg_match('/[0-9]/', $new_password)) {
+            throw new Exception("Password must contain at least one number.");
+        }
+        if (!preg_match('/[\W_]/', $new_password)) {
+            throw new Exception("Password must contain at least one special character (e.g. @, #, $).");
+        }
         
         $user = $result->fetch_assoc();
         

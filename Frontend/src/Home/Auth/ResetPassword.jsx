@@ -21,6 +21,20 @@ const ResetPassword = () => {
       toast.warning("Please fill all fields.");
       return;
     }
+    if (newPassword.length < 8) {
+      toast.warning("Password must be at least 8 characters long.");
+      return;
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      toast.warning("Password must contain at least one number.");
+      return;
+    }
+    if (!/[\W_]/.test(newPassword)) {
+      toast.warning(
+        "Password must contain at least one special character (e.g. @, #, $).",
+      );
+      return;
+    }
     if (newPassword !== confirmPassword) {
       toast.error("Passwords do not match.");
       return;

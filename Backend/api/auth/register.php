@@ -82,6 +82,20 @@ if (!$first_name || !$last_name || !$email || !$password_plain || !$contact_numb
     exit();
 }
 
+// Password Strength Validation
+if (strlen($password_plain) < 8) {
+    echo json_encode(["success" => false, "message" => "पासवर्ड कम्तिमा ८ अक्षरको हुनुपर्छ।"]);
+    exit();
+}
+if (!preg_match('/[0-9]/', $password_plain)) {
+    echo json_encode(["success" => false, "message" => "पासवर्डमा कम्तिमा एउटा नम्बर (०-९) हुनुपर्छ।"]);
+    exit();
+}
+if (!preg_match('/[\W_]/', $password_plain)) { // \W matches any non-word character (special chars)
+    echo json_encode(["success" => false, "message" => "पासवर्डमा कम्तिमा एउटा विशेष क्यारेक्टर (जस्तै @, #, $, आदि) हुनुपर्छ।"]);
+    exit();
+}
+
 // Photo upload logic for Citizenship
 $citizenship_photo = "";
 if (isset($_FILES['citizenshipPhoto']) && $_FILES['citizenshipPhoto']['error'] === UPLOAD_ERR_OK) {

@@ -134,6 +134,16 @@ export default function RegisterPage({
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
     if (!emailRegex.test(email)) newErrors.email = t("auth.email_invalid");
     if (password.length < 8) newErrors.password = t("auth.password_min");
+    else if (!/[0-9]/.test(password))
+      newErrors.password =
+        language === "NP"
+          ? "पासवर्डमा कम्तिमा एउटा नम्बर हुनुपर्छ"
+          : "Password must contain at least one number";
+    else if (!/[\W_]/.test(password))
+      newErrors.password =
+        language === "NP"
+          ? "पासवर्डमा कम्तिमा एउटा विशेष क्यारेक्टर हुनुपर्छ"
+          : "Password must contain at least one special character";
     if (password !== confirmPassword)
       newErrors.confirmPassword = t("auth.password_mismatch");
     if (!province) newErrors.province = t("auth.province_required");
