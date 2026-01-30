@@ -1,0 +1,53 @@
+/* Officer Layout Specific Styles */
+
+.ward-info {
+  padding: 0 20px 20px;
+  font-size: 0.85rem;
+  color: #a0aec0;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 8px;
+  margin: 0 12px 16px;
+  padding: 12px;
+}
+
+.location-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #718096;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.location-detail {
+  font-size: 0.8rem;
+  color: #cbd5e0;
+  padding: 3px 0;
+  line-height: 1.4;
+}
+
+.location-ward {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(203, 213, 224, 0.1);
+  font-size: 0.9rem;
+  color: #63b3ed;
+  font-weight: 600;
+}
+
+.logout-nav-item {
+  margin-top: auto;
+  color: #fc8181 !important; /* Force override if needed or just specific styling */
+}
+
+.officer-avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: #cbd5e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #4a5568;
+}
